@@ -54,9 +54,9 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen bg-canvas font-sans text-saas-dark">
+    <div className="flex h-screen bg-canvas font-sans text-saas-dark overflow-hidden">
       {/* 1. SIDEBAR NAVIGASI KIRI */}
-      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col justify-between p-6 shrink-0">
+      <aside className="w-64 h-full bg-white border-r border-gray-100 flex flex-col justify-between p-6 shrink-0 overflow-y-auto">
         <div>
           {/* Logo Brand */}
           <div className="flex items-center gap-3 mb-8 px-2">
@@ -114,7 +114,7 @@ export default function Home() {
       </aside>
 
       {/* AREA KONTEN UTAMA */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto">
         {/* 2. TOP NAVBAR */}
         <header className="h-20 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0">
           {/* Kolom Pencarian Global */}
