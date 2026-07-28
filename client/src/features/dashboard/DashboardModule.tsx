@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Modal from "../../components/Modal";
 import {
   ArrowUpRight,
   SlidersHorizontal,
@@ -8,7 +9,13 @@ import {
   MoreHorizontal,
   CheckCircle2,
   AlertCircle,
-  Clock
+  Clock,
+  Plus,
+  Search,
+  Baby,
+  Heart,
+  X,
+  UserCheck2
 } from "lucide-react";
 
 interface DashboardModuleProps {
@@ -26,26 +33,162 @@ interface Kunjungan {
   waktu: string;
 }
 
-const mockKunjungan: Kunjungan[] = [
-  { id: "1", nama: "Andi Pratama", tipe: "Balita", detail: "12 Bulan", status: "Selesai Periksa", statusType: "success", waktu: "09:30 WIB" },
-  { id: "2", nama: "Mbah Karto", tipe: "Lansia", detail: "RT 02 / RW 02", status: "Belum Periksa", statusType: "warning", waktu: "09:45 WIB" },
-  { id: "3", nama: "Citra Lestari", tipe: "Balita", detail: "24 Bulan", status: "Selesai Periksa", statusType: "success", waktu: "10:15 WIB" },
-  { id: "4", nama: "Budi Santoso", tipe: "Lansia", detail: "RT 01 / RW 02", status: "Ditunda", statusType: "info", waktu: "10:30 WIB" },
-  { id: "5", nama: "Aisyah Putri", tipe: "Balita", detail: "6 Bulan", status: "Selesai Periksa", statusType: "success", waktu: "10:50 WIB" },
-  { id: "6", nama: "Mbah Sumi", tipe: "Lansia", detail: "RT 03 / RW 02", status: "Belum Periksa", statusType: "warning", waktu: "11:00 WIB" },
+// Mock patients list for selection inside modal
+interface Pasien {
+  id: string;
+  nama: string;
+  tipe: "Balita" | "Lansia";
+  detailInfo: string; // "12 Bulan" or "RT 02"
+}
+
+const mockPasiens: Pasien[] = [
+  { id: "b1", nama: "Andi Pratama", tipe: "Balita", detailInfo: "Usia 12 Bulan, Ibu: Siti" },
+  { id: "b2", nama: "Citra Lestari", tipe: "Balita", detailInfo: "Usia 24 Bulan, Ibu: Endah" },
+  { id: "b3", nama: "Aisyah Putri", tipe: "Balita", detailInfo: "Usia 6 Bulan, Ibu: Aminah" },
+  { id: "b4", nama: "Budi Raharjo", tipe: "Balita", detailInfo: "Usia 47 Bulan, Ibu: Purwati" },
+  { id: "l1", nama: "Mbah Karto", tipe: "Lansia", detailInfo: "RT 02 / RW 02, Dusun Karanggayam" },
+  { id: "l2", nama: "Mbah Sumi", tipe: "Lansia", detailInfo: "RT 03 / RW 02, Dusun Karanggayam" },
+  { id: "l3", nama: "Budi Santoso", tipe: "Lansia", detailInfo: "RT 01 / RW 02, Dusun Karanggayam" },
+  { id: "l4", nama: "Mbah Harjo", tipe: "Lansia", detailInfo: "RT 01 / RW 02, Dusun Karanggayam" },
 ];
 
 export default function DashboardModule({ searchQuery, onNavigate }: DashboardModuleProps) {
   const [activeTab, setActiveTab] = useState<"Semua" | "Balita" | "Lansia">("Semua");
+  
+  // Real-time local state to display added visits in dashboard list
+  const [kunjungans, setKunjungans] = useState<Kunjungan[]>([
+    { id: "1", nama: "Andi Pratama", tipe: "Balita", detail: "12 Bulan", status: "Selesai Periksa", statusType: "success", waktu: "09:30 WIB" },
+    { id: "2", nama: "Mbah Karto", tipe: "Lansia", detail: "RT 02 / RW 02", status: "Belum Periksa", statusType: "warning", waktu: "09:45 WIB" },
+    { id: "3", nama: "Citra Lestari", tipe: "Balita", detail: "24 Bulan", status: "Selesai Periksa", statusType: "success", waktu: "10:15 WIB" },
+    { id: "4", nama: "Budi Santoso", tipe: "Lansia", detail: "RT 01 / RW 02", status: "Ditunda", statusType: "info", waktu: "10:30 WIB" },
+    { id: "5", nama: "Aisyah Putri", tipe: "Balita", detail: "6 Bulan", status: "Selesai Periksa", statusType: "success", waktu: "10:50 WIB" },
+    { id: "6", nama: "Mbah Sumi", tipe: "Lansia", detail: "RT 03 / RW 02", status: "Belum Periksa", statusType: "warning", waktu: "11:00 WIB" },
+  ]);
 
-  const filteredKunjungan = mockKunjungan.filter((k) => {
+  // Modal State
+  const [isOpenModal, setIsOpenModal] = useState(false);
+  const [modalSearch, setModalSearch] = useState("");
+  const [selectedPasien, setSelectedPasien] = useState<Pasien | null>(null);
+
+  // Form Fields - Common
+  const [examDate, setExamDate] = useState("2026-07-28");
+  const [examBB, setExamBB] = useState("");
+  const [examTB, setExamTB] = useState("");
+
+  // Form Fields - Balita
+  const [examLK, setExamLK] = useState("");
+  const [examBBU, setExamBBU] = useState("Normal");
+  const [examTBU, setExamTBU] = useState("Normal");
+  const [examBBTB, setExamBBTB] = useState("Normal");
+  const [examVitA, setExamVitA] = useState(false);
+
+  // Form Fields - Lansia
+  const [examSistol, setExamSistol] = useState("");
+  const [examDiastol, setExamDiastol] = useState("");
+  const [examGds, setExamGds] = useState("");
+  const [examLp, setExamLp] = useState("");
+
+  // Warning & Success State
+  const [modalError, setModalError] = useState("");
+  const [modalWarning, setModalWarning] = useState("");
+  const [toastSuccess, setToastSuccess] = useState("");
+
+  // Filter Kunjungan
+  const filteredKunjungan = kunjungans.filter((k) => {
     const matchesSearch = k.nama.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTab = activeTab === "Semua" || k.tipe === activeTab;
     return matchesSearch && matchesTab;
   });
 
+  // Filter Pasien in Modal
+  const filteredPasiens = mockPasiens.filter((p) =>
+    p.nama.toLowerCase().includes(modalSearch.toLowerCase())
+  );
+
+  // Warning Check
+  const checkWarnings = (bbVal: string, sistolVal: string) => {
+    setModalWarning("");
+    if (!selectedPasien) return;
+
+    const bb = parseFloat(bbVal);
+    const sistol = parseInt(sistolVal);
+
+    if (selectedPasien.tipe === "Balita" && bb > 25) {
+      setModalWarning("Apakah Berat Badan (>25 kg) sudah sesuai untuk balita ini? Cek kembali.");
+    } else if (selectedPasien.tipe === "Lansia" && sistol > 200) {
+      setModalWarning("Tekanan darah sistol >200 mmHg sangat tinggi. Mohon rujuk lansia ke puskesmas.");
+    }
+  };
+
+  // Submit Quick Exam
+  const handleQuickExamSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setModalError("");
+
+    if (!selectedPasien) return;
+
+    const bb = parseFloat(examBB);
+    const tb = parseFloat(examTB);
+
+    if (isNaN(bb) || bb <= 0 || isNaN(tb) || tb <= 0) {
+      setModalError("Berat Badan dan Tinggi Badan wajib diisi angka positif.");
+      return;
+    }
+
+    if (selectedPasien.tipe === "Lansia") {
+      const sis = parseInt(examSistol);
+      const dia = parseInt(examDiastol);
+      const gds = parseInt(examGds);
+      const lp = parseInt(examLp);
+
+      if (isNaN(sis) || isNaN(dia) || isNaN(gds) || isNaN(lp)) {
+        setModalError("Kolom tekanan darah, GDS, dan lingkar perut wajib diisi.");
+        return;
+      }
+    }
+
+    // Add mock visit to dashboard table
+    const timeNow = new Date();
+    const timeStr = `${String(timeNow.getHours()).padStart(2, "0")}:${String(timeNow.getMinutes()).padStart(2, "0")} WIB`;
+    const newKunjungan: Kunjungan = {
+      id: `quick-${Date.now()}`,
+      nama: selectedPasien.nama,
+      tipe: selectedPasien.tipe,
+      detail: selectedPasien.tipe === "Balita" ? "Baru di-input" : "RT 01 / RW 02",
+      status: "Selesai Periksa",
+      statusType: "success",
+      waktu: timeStr,
+    };
+
+    setKunjungans([newKunjungan, ...kunjungans]);
+    setToastSuccess(`Pemeriksaan untuk ${selectedPasien.nama} berhasil dicatat.`);
+    
+    // Close & Reset
+    setIsOpenModal(false);
+    setSelectedPasien(null);
+    setModalSearch("");
+    setExamBB("");
+    setExamTB("");
+    setExamLK("");
+    setExamSistol("");
+    setExamDiastol("");
+    setExamGds("");
+    setExamLp("");
+    setModalWarning("");
+
+    setTimeout(() => setToastSuccess(""), 4000);
+  };
+
   return (
     <div className="space-y-8">
+      {/* Toast Success Alert */}
+      {toastSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 p-4 bg-green-50 text-trend-successText border border-green-150 rounded-card shadow-lg flex items-center gap-2.5">
+          <UserCheck2 className="w-5 h-5 text-green-600 shrink-0" />
+          <span className="text-xs font-bold">{toastSuccess}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -55,18 +198,21 @@ export default function DashboardModule({ searchQuery, onNavigate }: DashboardMo
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-input bg-white text-xs font-bold text-saas-dark hover:bg-gray-50 transition-all shadow-sm">
-            <Download className="w-3.5 h-3.5 text-saas-muted" /> Export Laporan
+          <button
+            onClick={() => setIsOpenModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Catat Pemeriksaan Cepat
           </button>
           <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-input bg-white text-xs font-bold text-saas-dark hover:bg-gray-50 transition-all shadow-sm">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-saas-muted" /> Filter Data
+            <Download className="w-3.5 h-3.5 text-saas-muted" /> Export Laporan
           </button>
         </div>
       </div>
 
       {/* 4 Summary Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Card 1: Total Balita */}
+        {/* Card 1 */}
         <div className="bg-saas-primary rounded-card shadow-soft-card p-6 relative overflow-hidden flex flex-col justify-between h-40 group text-white">
           <button 
             onClick={() => onNavigate("Balita")}
@@ -90,7 +236,7 @@ export default function DashboardModule({ searchQuery, onNavigate }: DashboardMo
           <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-white/5 rounded-full filter blur-xl group-hover:scale-125 transition-transform duration-500"></div>
         </div>
 
-        {/* Card 2: Total Lansia */}
+        {/* Card 2 */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 relative flex flex-col justify-between h-40">
           <button 
             onClick={() => onNavigate("Lansia")}
@@ -112,7 +258,7 @@ export default function DashboardModule({ searchQuery, onNavigate }: DashboardMo
           </div>
         </div>
 
-        {/* Card 3: Gizi Kurang */}
+        {/* Card 3 */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 relative flex flex-col justify-between h-40">
           <button 
             onClick={() => onNavigate("Balita")}
@@ -134,7 +280,7 @@ export default function DashboardModule({ searchQuery, onNavigate }: DashboardMo
           </div>
         </div>
 
-        {/* Card 4: Kehadiran Pelayanan */}
+        {/* Card 4 */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 relative flex flex-col justify-between h-40 overflow-hidden">
           <button 
             onClick={() => onNavigate("Riwayat")}
@@ -179,7 +325,7 @@ export default function DashboardModule({ searchQuery, onNavigate }: DashboardMo
         </div>
       </div>
 
-      {/* Main Charts & Progress */}
+      {/* Main Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Tren Status Gizi Balita (Bar Chart) */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 lg:col-span-2">
@@ -351,7 +497,7 @@ export default function DashboardModule({ searchQuery, onNavigate }: DashboardMo
               <tbody>
                 {filteredKunjungan.length > 0 ? (
                   filteredKunjungan.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors text-sm">
+                    <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
                       <td className="py-4 font-bold text-saas-dark">{item.nama}</td>
                       <td className="py-4 text-saas-muted font-medium">{item.tipe}</td>
                       <td className="py-4 text-saas-muted font-medium">{item.detail}</td>
@@ -419,6 +565,300 @@ export default function DashboardModule({ searchQuery, onNavigate }: DashboardMo
           </div>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 5. INTERACTIVE MODAL: QUICK EXAMINATION INPUT */}
+      {/* ========================================================================= */}
+      <Modal
+        isOpen={isOpenModal}
+        onClose={() => {
+          setIsOpenModal(false);
+          setSelectedPasien(null);
+          setModalSearch("");
+        }}
+        title="Catat Pemeriksaan Cepat"
+        description="Input rekam medis bulanan langsung tanpa membuka detail profil."
+        type="modal"
+      >
+        {!selectedPasien ? (
+              <div className="space-y-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Ketik nama balita atau lansia..."
+                    value={modalSearch}
+                    onChange={(e) => setModalSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                  />
+                  <Search className="absolute left-3.5 top-3 text-saas-muted w-4 h-4" />
+                </div>
+
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {filteredPasiens.length > 0 ? (
+                    filteredPasiens.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setSelectedPasien(p)}
+                        className="w-full text-left p-3 border border-gray-100 hover:border-saas-primary/30 hover:bg-gray-50/50 rounded-xl flex items-center justify-between text-xs transition-all group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            p.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-red-50 text-red-500"
+                          }`}>
+                            {p.tipe === "Balita" ? <Baby className="w-4 h-4" /> : <Heart className="w-4 h-4" />}
+                          </div>
+                          <div>
+                            <p className="font-bold text-saas-dark group-hover:text-saas-primary transition-colors">{p.nama}</p>
+                            <p className="text-[10px] text-saas-muted font-semibold mt-0.5">{p.detailInfo}</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-saas-muted group-hover:text-saas-primary transition-colors">Pilih & Lanjut →</span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-center text-xs text-saas-muted py-6 font-semibold">Nama warga tidak ditemukan.</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              // Step 2: Show Form based on Patient Type
+              <form onSubmit={handleQuickExamSubmit} className="space-y-4">
+                {modalError && (
+                  <div className="p-3 bg-red-50 text-trend-dangerText border border-red-100 rounded-lg text-xs font-bold flex gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" /> {modalError}
+                  </div>
+                )}
+                {modalWarning && (
+                  <div className="p-3 bg-yellow-50 text-yellow-700 border border-yellow-100 rounded-lg text-xs font-semibold flex gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" /> {modalWarning}
+                  </div>
+                )}
+
+                {/* Selected patient preview box */}
+                <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-saas-dark">Mencatat data untuk:</span>
+                    <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                      selectedPasien.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-red-50 text-red-500"
+                    }`}>
+                      {selectedPasien.nama} ({selectedPasien.tipe})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPasien(null);
+                      setModalWarning("");
+                      setModalError("");
+                    }}
+                    className="text-xs text-saas-primary font-bold hover:underline"
+                  >
+                    Ganti
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-50 pt-3">
+                  {/* Tanggal */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-saas-muted uppercase">Tanggal Periksa</label>
+                    <input
+                      type="date"
+                      value={examDate}
+                      onChange={(e) => setExamDate(e.target.value)}
+                      className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                    />
+                  </div>
+
+                  {/* BB */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-saas-muted uppercase">Berat Badan (kg)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Cth: 8.5"
+                      value={examBB}
+                      onChange={(e) => {
+                        setExamBB(e.target.value);
+                        checkWarnings(e.target.value, examSistol);
+                      }}
+                      className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                    />
+                  </div>
+
+                  {/* TB */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-saas-muted uppercase">Tinggi Badan (cm)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Cth: 72"
+                      value={examTB}
+                      onChange={(e) => setExamTB(e.target.value)}
+                      className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                    />
+                  </div>
+                </div>
+
+                {/* Balita Specific Inputs */}
+                {selectedPasien.tipe === "Balita" && (
+                  <div className="space-y-4 border-t border-gray-50 pt-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Lingkar Kepala */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Lingkar Kepala (cm)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="Opsional, cth: 44"
+                          value={examLK}
+                          onChange={(e) => setExamLK(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        />
+                      </div>
+
+                      {/* Vit A */}
+                      <div className="flex items-center pb-2 pl-2">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={examVitA}
+                            onChange={(e) => setExamVitA(e.target.checked)}
+                            className="w-4.5 h-4.5 text-saas-primary focus:ring-saas-primary/30"
+                          />
+                          <span className="text-xs font-bold text-saas-dark">Pemberian Vitamin A</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                      {/* WHO Statuses */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Status BB/U</label>
+                        <select
+                          value={examBBU}
+                          onChange={(e) => setExamBBU(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        >
+                          <option value="Normal">Normal</option>
+                          <option value="Kurang">Kurang</option>
+                          <option value="Sangat Kurang">Sangat Kurang</option>
+                          <option value="Lebih">Lebih</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Status TB/U</label>
+                        <select
+                          value={examTBU}
+                          onChange={(e) => setExamTBU(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        >
+                          <option value="Normal">Normal</option>
+                          <option value="Pendek">Pendek</option>
+                          <option value="Sangat Pendek">Sangat Pendek</option>
+                          <option value="Tinggi">Tinggi</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Status BB/TB</label>
+                        <select
+                          value={examBBTB}
+                          onChange={(e) => setExamBBTB(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        >
+                          <option value="Normal">Normal</option>
+                          <option value="Kurus">Kurus</option>
+                          <option value="Sangat Kurus">Sangat Kurus</option>
+                          <option value="Gemuk">Gemuk</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lansia Specific Inputs */}
+                {selectedPasien.tipe === "Lansia" && (
+                  <div className="space-y-4 border-t border-gray-50 pt-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Sistol */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Sistol (mmHg)</label>
+                        <input
+                          type="number"
+                          placeholder="TD atas, cth: 130"
+                          value={examSistol}
+                          onChange={(e) => {
+                            setExamSistol(e.target.value);
+                            checkWarnings(examBB, e.target.value);
+                          }}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        />
+                      </div>
+
+                      {/* Diastol */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Diastol (mmHg)</label>
+                        <input
+                          type="number"
+                          placeholder="TD bawah, cth: 85"
+                          value={examDiastol}
+                          onChange={(e) => setExamDiastol(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* GDS */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Gula Darah (GDS - mg/dL)</label>
+                        <input
+                          type="number"
+                          placeholder="Cth: 120"
+                          value={examGds}
+                          onChange={(e) => setExamGds(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        />
+                      </div>
+
+                      {/* Lingkar Perut */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Lingkar Perut (cm)</label>
+                        <input
+                          type="number"
+                          placeholder="Cth: 90"
+                          value={examLp}
+                          onChange={(e) => setExamLp(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end pt-4 border-t border-gray-50 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPasien(null);
+                      setModalError("");
+                      setModalWarning("");
+                    }}
+                    className="px-4 py-2 border border-gray-200 text-saas-dark text-xs font-bold rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Kembali
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-lg shadow-md shadow-teal-500/10 transition-colors"
+                  >
+                    Simpan Hasil Pemeriksaan
+                  </button>
+                </div>
+              </form>
+            )}
+      </Modal>
     </div>
   );
 }

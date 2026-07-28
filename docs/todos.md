@@ -39,7 +39,11 @@ Fase ini berfokus pada pembangunan antarmuka pengguna (UI/UX) premium, bersih, d
     *   Sistem deteksi peringatan *real-time* untuk tekanan darah sistol tinggi (>200 mmHg) atau GDS tinggi (>300 mg/dL).
 *   [x] **Modul Riwayat Log Sentral:**
     *   Tabel riwayat seluruh assessment bulanan posyandu terintegrasi.
-    *   Filter berdasarkan kategori pasien (Balita/Lansia) dan kondisi kesehatan.
+*   [x] **Modul Pencatatan Pelayanan (Baru - Layar Penuh):**
+    *   Halaman khusus pencatatan terpisah untuk kemudahan kader saat melayani antrean ramai.
+    *   Panel pencarian dan pemilihan cepat balita/lansia di sisi kiri.
+    *   Formulir input pemeriksaan bulanan (pediatrik/geriatrik) di sisi kanan dengan alert/warning real-time.
+    *   Tabel log rekap hasil pemeriksaan untuk sesi pelayanan hari ini di bagian bawah.
 *   [x] **Modul Manajemen Akun & Pengaturan (Terpisah):**
     *   Form detail edit nama, desa, kecamatan, dan alamat posyandu (Modul Pengaturan).
     *   Manajemen daftar kader aktif - Ubah Status, Ubah Peran, dan Hapus Akses (Modul Manajemen Akun).

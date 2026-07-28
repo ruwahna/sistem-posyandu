@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   LayoutDashboard,
+  ClipboardList,
   Baby,
   HeartPulse,
   History,
@@ -18,6 +19,7 @@ import {
 
 // Feature Modules
 import DashboardModule from "../features/dashboard/DashboardModule";
+import PelayananModule from "../features/pelayanan/PelayananModule";
 import BalitaModule from "../features/balita/BalitaModule";
 import LansiaModule from "../features/lansia/LansiaModule";
 import RiwayatModule from "../features/riwayat/RiwayatModule";
@@ -34,6 +36,8 @@ export default function Home() {
     switch (activeMenu) {
       case "Overview":
         return <DashboardModule searchQuery={searchQuery} onNavigate={setActiveMenu} />;
+      case "Pelayanan":
+        return <PelayananModule />;
       case "Balita":
         return <BalitaModule />;
       case "Lansia":
@@ -69,6 +73,7 @@ export default function Home() {
           <nav className="space-y-1">
             {[
               { name: "Overview", icon: LayoutDashboard },
+              { name: "Pelayanan", icon: ClipboardList },
               { name: "Balita", icon: Baby },
               { name: "Lansia", icon: HeartPulse },
               { name: "Riwayat", icon: History },
@@ -140,8 +145,8 @@ export default function Home() {
               <div className="absolute top-20 right-28 w-80 bg-white rounded-card shadow-lg border border-gray-100 p-4 z-50">
                 <h4 className="font-bold text-sm text-saas-dark mb-2">Notifikasi Terbaru</h4>
                 <div className="space-y-2">
-                  <div className="p-2.5 bg-yellow-50/40 rounded-lg text-xs text-saas-dark border border-yellow-100/50 flex gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
+                  <div className="p-2.5 bg-yellow-400/10 text-yellow-800 border border-yellow-250/20 rounded-lg text-xs flex gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-bold">3 Lansia belum periksa</p>
                       <p className="text-saas-muted mt-0.5">Mbah Karto, Mbah Sumi, Mbah Harjo belum input.</p>
