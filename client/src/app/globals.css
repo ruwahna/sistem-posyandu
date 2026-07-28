@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background-color: #F8F9FA; /* canvas color */
+  color: #0B0F19; /* saas.dark color */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
