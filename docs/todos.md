@@ -49,6 +49,10 @@ Fase ini berfokus pada pembangunan antarmuka pengguna (UI/UX) premium, bersih, d
     *   Manajemen daftar kader aktif - Ubah Status, Ubah Peran, dan Hapus Akses (Modul Manajemen Akun).
     *   Pembuatan akun kader baru secara langsung oleh Owner (Modul Manajemen Akun).
     *   Fitur penentu kode undangan acak (*generate invitation code*) untuk kolaborasi (Modul Manajemen Akun).
+*   [x] **Modul Pusat Bantuan (Help Center):**
+    *   Halaman khusus berisi panduan operasional (Kader) dan administratif (Owner).
+    *   Kolom pencarian interaktif dan FAQ bergaya akordion.
+    *   Daftar kontak dukungan medis & teknis (Bidan Desa, Hotline Puskesmas, developer).
 *   [x] **Validasi Build:**
     *   Tes build produksi (`npm run build`) sukses tanpa ada error lint/TypeScript.
 

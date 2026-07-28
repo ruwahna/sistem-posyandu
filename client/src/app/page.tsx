@@ -25,6 +25,7 @@ import LansiaModule from "../features/lansia/LansiaModule";
 import RiwayatModule from "../features/riwayat/RiwayatModule";
 import PengaturanModule from "../features/pengaturan/PengaturanModule";
 import ManajemenAkunModule from "../features/pengaturan/ManajemenAkunModule";
+import BantuanModule from "../features/bantuan/BantuanModule";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,6 +49,8 @@ export default function Home() {
         return <ManajemenAkunModule />;
       case "Pengaturan":
         return <PengaturanModule />;
+      case "Bantuan":
+        return <BantuanModule />;
       default:
         return <DashboardModule searchQuery={searchQuery} onNavigate={setActiveMenu} />;
     }
@@ -102,8 +105,15 @@ export default function Home() {
 
         {/* Menu Bawah */}
         <div className="border-t border-gray-100 pt-4 space-y-1">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-saas-muted hover:text-saas-dark hover:bg-gray-50/80 transition-all">
-            <HelpCircle className="w-4 h-4" />
+          <button
+            onClick={() => setActiveMenu("Bantuan")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              activeMenu === "Bantuan"
+                ? "bg-saas-primary text-white shadow-lg shadow-teal-500/15"
+                : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80"
+            }`}
+          >
+            <HelpCircle className={`w-4 h-4 ${activeMenu === "Bantuan" ? "text-white" : "text-saas-muted"}`} />
             Bantuan
           </button>
           <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-trend-dangerText hover:bg-red-55/40 transition-all">
