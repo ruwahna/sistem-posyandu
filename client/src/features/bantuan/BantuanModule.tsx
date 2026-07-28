@@ -14,298 +14,317 @@ import {
   ChevronUp,
   Baby,
   Heart,
-  MessageSquareCode,
-  FileText
+  FileText,
+  ArrowLeft,
+  CheckCircle,
+  HelpCircle as InfoIcon,
+  AlertTriangle,
+  UserX,
+  ListTodo
 } from "lucide-react";
 
-interface FAQItem {
+interface Guide {
   id: string;
+  title: string;
   category: "kader" | "owner";
-  question: string;
-  answer: React.ReactNode;
+  description: string;
+  icon: any;
+  steps: {
+    title: string;
+    text: string;
+    badge?: string;
+  }[];
 }
 
 export default function BantuanModule() {
-  const [activeTab, setActiveTab] = useState<"kader" | "owner">("kader");
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedFaqId, setExpandedFaqId] = useState<string | null>(null);
+  const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
 
-  const toggleFaq = (id: string) => {
-    setExpandedFaqId(expandedFaqId === id ? null : id);
-  };
+  // Kamus Istilah Sederhana (Glossary)
+  const glossary = [
+    { istilah: "Stunting (Kerdil)", arti: "Kondisi anak yang terlalu pendek dibanding anak seusianya karena kurang gizi dalam waktu yang sangat lama." },
+    { istilah: "Wasting (Kurus)", arti: "Kondisi anak yang berat badannya terlalu kurus dibanding tinggi badannya karena kurang gizi mendadak/sakit." },
+    { istilah: "Hipertensi", arti: "Tekanan darah tinggi (sistol di atas 140 atau diastol di atas 90)." },
+    { istilah: "Diabetes (Penyakit Gula)", arti: "Kondisi di mana kadar gula dalam darah terlalu tinggi (kencing manis)." },
+    { istilah: "Sistol & Diastol", arti: "Angka tensi darah. Sistol adalah angka atas (saat jantung memompa), diastol adalah angka bawah (saat jantung istirahat)." },
+  ];
 
-  const faqData: FAQItem[] = [
-    // Panduan Kader (Operational)
+  // Panduan Langkah Demi Langkah (Step-by-Step Guides)
+  const guides: Guide[] = [
     {
-      id: "k-1",
+      id: "g1",
+      title: "Mencatat Pemeriksaan Bulanan",
       category: "kader",
-      question: "Bagaimana cara cepat mencatat kunjungan/pemeriksaan warga?",
-      answer: (
-        <div className="space-y-2">
-          <p>Anda dapat menggunakan menu **Pelayanan** di sidebar untuk melakukan pencatatan masal:</p>
-          <ol className="list-decimal pl-5 space-y-1">
-            <li>Buka halaman **Pelayanan**.</li>
-            <li>Cari nama anak/lansia di panel pencarian sebelah kiri.</li>
-            <li>Klik nama warga tersebut untuk memunculkan formulir pemeriksaan di sebelah kanan.</li>
-            <li>Isi hasil penimbangan, tinggi badan, dll., lalu klik **Simpan Pemeriksaan**.</li>
-          </ol>
-          <p className="text-saas-primary font-semibold">💡 Tips: Jika warga baru pertama kali datang dan namanya belum ada, klik tombol "+ Balita Baru" atau "+ Lansia Baru" di kanan atas halaman Pelayanan untuk mendaftarkannya terlebih dahulu secara instan.</p>
-        </div>
-      )
+      description: "Cara mencatat berat badan, tinggi badan, dan vit A saat pelayanan posyandu berlangsung.",
+      icon: FileText,
+      steps: [
+        { title: "Langkah 1: Masuk Menu Pelayanan", text: "Klik tombol bertuliskan 'Pelayanan' di menu sebelah kiri (ikon kertas catatan)." },
+        { title: "Langkah 2: Cari Nama Warga", text: "Ketik nama anak atau lansia pada kolom pencarian di sebelah kiri, lalu klik nama warga tersebut." },
+        { title: "Langkah 3: Isi Formulir di Kanan", text: "Formulir input akan muncul di sebelah kanan. Masukkan angka Berat Badan (BB) dan Tinggi Badan (TB) sesuai hasil timbangan fisik." },
+        { title: "Langkah 4: Klik Simpan", text: "Periksa kembali angka yang dimasukkan. Jika sudah benar, klik tombol hijau/toska 'Simpan Pemeriksaan'. Data akan langsung terekam.", badge: "Penting" }
+      ]
     },
     {
-      id: "k-2",
+      id: "g2",
+      title: "Mendaftarkan Balita Baru",
       category: "kader",
-      question: "Apa arti warna warning/peringatan kuning yang muncul saat input?",
-      answer: (
-        <p>Sistem memiliki fitur **validasi manusiawi** untuk mencegah kesalahan salah ketik di lapangan yang bising. Jika Anda menginput berat badan yang tidak wajar untuk usia balita (misal: 30 kg untuk bayi 10 bulan) atau tekanan darah lansia di atas batas aman (lebih dari 200 mmHg), kotak peringatan kuning akan muncul. Harap periksa kembali angka timbangan sebelum menekan tombol Simpan.</p>
-      )
+      description: "Cara mendaftarkan anak/bayi yang baru pertama kali datang ke posyandu.",
+      icon: Baby,
+      steps: [
+        { title: "Langkah 1: Klik Tombol Balita Baru", text: "Buka menu 'Pelayanan', lalu klik tombol '+ Balita Baru' di sudut kanan atas halaman." },
+        { title: "Langkah 2: Isi Nama & Tanggal Lahir", text: "Masukkan Nama Lengkap anak, NIK (jika ada di kartu keluarga), dan Tanggal Lahir (sistem akan menghitung usianya secara otomatis)." },
+        { title: "Langkah 3: Masukkan Nama Ibu", text: "Masukkan nama lengkap ibu kandung untuk mencocokkan identitas anak." },
+        { title: "Langkah 4: Klik Daftar & Pilih", text: "Klik tombol 'Daftarkan & Pilih'. Anak baru akan otomatis tersimpan ke daftar warga dan formulir rekam medisnya langsung terbuka untuk diisi." }
+      ]
     },
     {
-      id: "k-3",
+      id: "g3",
+      title: "Mendaftarkan Lansia Baru",
       category: "kader",
-      question: "Bagaimana cara memahami klasifikasi status gizi WHO untuk balita?",
-      answer: (
-        <div className="space-y-1">
-          <p>Pengukuran gizi balita menggunakan standar WHO:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li><strong>BB/U (Berat Badan menurut Umur):</strong> Menentukan status berat kurang (underweight), normal, atau lebih.</li>
-            <li><strong>TB/U (Tinggi Badan menurut Umur):</strong> Menentukan status stunting (pendek/sangat pendek) atau normal.</li>
-            <li><strong>BB/TB (Berat menurut Tinggi):</strong> Menentukan status kurus (wasting), normal, atau obesitas.</li>
-          </ul>
-        </div>
-      )
+      description: "Cara mendaftarkan warga lansia baru di lingkungan posyandu.",
+      icon: Heart,
+      steps: [
+        { title: "Langkah 1: Klik Tombol Lansia Baru", text: "Buka menu 'Pelayanan', lalu klik tombol '+ Lansia Baru' di sudut kanan atas halaman." },
+        { title: "Langkah 2: Isi NIK & BPJS", text: "Ketik NIK 16 digit sesuai KTP lansia dan nomor kartu BPJS (jika ada)." },
+        { title: "Langkah 3: Pilih Tingkat Kemandirian", text: "Pilih status kemandirian lansia (Kategori A: Mandiri, B: Bantuan Sebagian, C: Tergantung Total)." },
+        { title: "Langkah 4: Klik Daftar", text: "Klik tombol 'Daftarkan & Pilih' untuk menyimpan. Lansia tersebut langsung terdaftar sebagai peserta aktif posyandu." }
+      ]
     },
     {
-      id: "k-4",
+      id: "g4",
+      title: "Mengoreksi / Mengubah Salah Ketik Data",
       category: "kader",
-      question: "Bagaimana cara melihat riwayat rekam medis warga terdahulu?",
-      answer: (
-        <p>Anda dapat melihat semua log histori di menu **Riwayat** di sidebar. Untuk riwayat detail satu orang warga secara khusus, buka menu **Balita** atau **Lansia**, cari nama yang bersangkutan, lalu klik tombol **Detail Data** untuk masuk ke profil lengkapnya yang memuat riwayat tabel perkembangan dari bulan ke bulan.</p>
-      )
-    },
-    // Panduan Owner (Administrative)
-    {
-      id: "o-1",
-      category: "owner",
-      question: "Bagaimana cara menambahkan kader/anggota baru ke Posyandu?",
-      answer: (
-        <div className="space-y-2">
-          <p>Sebagai Owner, Anda memiliki dua cara untuk merekrut kader pelaksana baru:</p>
-          <ul className="list-disc pl-5 space-y-1.5">
-            <li><strong>Cara 1 (Membuat Akun Langsung):</strong> Buka menu **Manajemen Akun**, klik **Buat Akun Kader Baru**, isi data lengkap beserta kata sandi awal, lalu klik Simpan. Akun kader tersebut langsung aktif dan bisa digunakan login.</li>
-            <li><strong>Cara 2 (Kode Undangan):</strong> Salin **Kode Undangan Mandiri** yang tertera di menu Manajemen Akun, lalu bagikan kode tersebut (misal via WhatsApp) ke kader baru agar mereka dapat menginputnya sendiri saat mendaftar akun.</li>
-          </ul>
-        </div>
-      )
+      description: "Cara membetulkan data pemeriksaan warga jika kader tidak sengaja salah menginput angka.",
+      icon: ShieldAlert,
+      steps: [
+        { title: "Langkah 1: Buka Data Warga", text: "Klik menu 'Balita' atau 'Lansia' di sebelah kiri, cari nama warga yang datanya salah." },
+        { title: "Langkah 2: Buka Profil Detail", text: "Klik tombol abu-abu 'Detail Data' di sebelah kanan nama warga tersebut." },
+        { title: "Langkah 3: Lihat Tabel Riwayat", text: "Gulir layar ke bawah. Di sana terdapat tabel berisi seluruh hasil pemeriksaan dari bulan ke bulan." },
+        { title: "Langkah 4: Klik Edit/Hapus", text: "Klik tombol edit di samping baris bulan yang salah ketik (atau segera hubungi kader Owner jika Anda tidak memiliki hak menghapus data)." }
+      ]
     },
     {
-      id: "o-2",
+      id: "g5",
+      title: "Mendaftarkan Kader / Anggota Baru",
       category: "owner",
-      question: "Apa perbedaan peran antara Kader Owner dan Kader Anggota?",
-      answer: (
-        <div className="space-y-2">
-          <p>Sistem membedakan hak akses demi keamanan data posyandu:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Kader Owner (Pemilik):</strong> Memiliki akses penuh termasuk mengedit profil posyandu, mengundang kader baru, mengubah peran, menonaktifkan akun kader lain, dan melakukan penghapusan data medis.</li>
-            <li><strong>Kader Anggota:</strong> Memiliki akses operasional seperti menginput data balita/lansia, mencatat kunjungan bulanan, membaca dashboard, dan mencetak laporan. Anggota tidak bisa mengakses menu Manajemen Akun dan Pengaturan Posyandu.</li>
-          </ul>
-        </div>
-      )
+      description: "Panduan untuk kader Owner dalam mengundang kader pembantu baru.",
+      icon: Users,
+      steps: [
+        { title: "Langkah 1: Buka Manajemen Akun", text: "Klik menu 'Manajemen Akun' di sidebar kiri (khusus akun berstatus Owner)." },
+        { title: "Langkah 2: Klik Buat Akun", text: "Klik tombol 'Buat Akun Kader Baru' di kanan atas." },
+        { title: "Langkah 3: Buat Username & Password", text: "Masukkan Nama Lengkap, Email, Kata Sandi awal (misal: 123456), dan tentukan perannya (Anggota/Owner)." },
+        { title: "Langkah 4: Bagikan Akses", text: "Klik Simpan. Berikan email dan kata sandi tersebut kepada kader baru agar mereka bisa langsung masuk ke sistem." }
+      ]
     },
     {
-      id: "o-3",
+      id: "g6",
+      title: "Menggunakan Kode Undangan Mandiri",
       category: "owner",
-      question: "Apakah posyandu lain dapat melihat atau mengubah data posyandu saya?",
-      answer: (
-        <p><strong>Tidak bisa.</strong> Sistem posyandu kita menerapkan isolasi data multi-tenant (keamanan tingkat tinggi). Data posyandu diisolasi secara ketat berdasarkan kode registrasi posyandu masing-masing. Kader dari Posyandu A sama sekali tidak memiliki akses teknis maupun visual ke data Posyandu B.</p>
-      )
-    },
-    {
-      id: "o-4",
-      category: "owner",
-      question: "Bagaimana cara mengubah profil dan alamat posyandu?",
-      answer: (
-        <p>Buka menu **Pengaturan** di sidebar kiri. Di sana Anda dapat memperbarui Nama Posyandu, Kelurahan/Desa, Kecamatan, serta detail Alamat Jalan/RT/RW. Klik **Simpan Perubahan** untuk memperbarui identitas posyandu Anda di database.</p>
-      )
+      description: "Cara membagikan kode rahasia posyandu untuk kader mendaftar sendiri.",
+      icon: Building2,
+      steps: [
+        { title: "Langkah 1: Salin Kode Undangan", text: "Masuk ke menu 'Manajemen Akun' di sisi kiri, lihat kotak 'Kode Undangan Mandiri' di sebelah kanan." },
+        { title: "Langkah 2: Klik Ikon Salin", text: "Klik tombol salin (ikon kertas ganda) di samping kode (misal: SRILESTARI-KADER-99A8)." },
+        { title: "Langkah 3: Bagikan ke Kader Baru", text: "Kirim kode tersebut ke WhatsApp kader baru." },
+        { title: "Langkah 4: Kader Baru Mendaftar", text: "Saat kader baru mendaftar di halaman registrasi, mereka cukup memasukkan kode ini agar otomatis terhubung ke posyandu Anda." }
+      ]
     }
   ];
 
-  // Filtering FAQs based on tab and query
-  const filteredFaqs = faqData.filter((faq) => {
-    const matchesTab = faq.category === activeTab;
-    const matchesSearch = faq.question.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          faq.question.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
+  // Filter guides based on search query
+  const filteredGuides = guides.filter((g) =>
+    g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    g.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const selectedGuide = guides.find((g) => g.id === activeGuideId);
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-saas-dark tracking-tight">Pusat Bantuan & Panduan</h2>
-        <p className="text-sm text-saas-muted mt-0.5">Temukan solusi panduan penggunaan sistem informasi PosyanduKita.</p>
-      </div>
+      {/* View Detail Panduan */}
+      {selectedGuide ? (
+        <div className="space-y-6 max-w-3xl">
+          <button
+            onClick={() => setActiveGuideId(null)}
+            className="flex items-center gap-1.5 text-xs font-bold text-saas-primary hover:underline transition-all"
+          >
+            <ArrowLeft className="w-4 h-4" /> Kembali ke Pusat Bantuan
+          </button>
 
-      {/* Grid Utama */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Kolom Kiri: Tab FAQ & Accordion (Width 2/3) */}
-        <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-saas-primary/10 flex items-center justify-center text-saas-primary">
+                <selectedGuide.icon className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-saas-dark">{selectedGuide.title}</h3>
+                <p className="text-xs text-saas-muted mt-0.5">{selectedGuide.description}</p>
+              </div>
+            </div>
+
+            {/* Steps Container */}
+            <div className="space-y-4 pt-4 border-t border-gray-50">
+              {selectedGuide.steps.map((step, idx) => (
+                <div key={idx} className="flex gap-4 p-4 bg-gray-50 border border-gray-100/55 rounded-xl text-xs">
+                  <div className="w-8 h-8 rounded-full bg-saas-primary/15 flex items-center justify-center text-saas-primary font-black shrink-0">
+                    {idx + 1}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-extrabold text-saas-dark">{step.title}</h4>
+                      {step.badge && (
+                        <span className="px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 font-bold text-[9px]">
+                          {step.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-saas-muted font-semibold leading-relaxed">{step.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-4 border-t border-gray-50 flex justify-end">
+              <button
+                onClick={() => setActiveGuideId(null)}
+                className="px-5 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-colors"
+              >
+                Sudah Paham, Kembali
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Main Help View
+        <div className="space-y-8">
+          {/* Search Box */}
+          <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-4">
+            <div className="max-w-xl space-y-2">
+              <h3 className="font-extrabold text-base text-saas-dark">Ada kendala apa hari ini?</h3>
+              <p className="text-xs text-saas-muted leading-normal">
+                Pilih topik di bawah atau ketik kata kunci kendala Anda untuk panduan langkah demi langkah yang mudah dipahami.
+              </p>
+            </div>
             
-            {/* Search Bar FAQ */}
-            <div className="relative">
+            <div className="relative max-w-xl">
               <input
                 type="text"
-                placeholder="Cari pertanyaan bantuan..."
+                placeholder="Cari kendala, misal: salah ketik, daftar balita..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 focus:bg-white transition-all"
               />
               <Search className="absolute left-4 top-3.5 text-saas-muted w-4.5 h-4.5" />
             </div>
+          </div>
 
-            {/* Tabs Filter */}
-            <div className="flex gap-2 border-b border-gray-100 pb-3">
-              <button
-                onClick={() => {
-                  setActiveTab("kader");
-                  setExpandedFaqId(null);
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  activeTab === "kader"
-                    ? "bg-saas-primary text-white shadow-md shadow-teal-500/10"
-                    : "text-saas-muted hover:text-saas-dark hover:bg-gray-50"
-                }`}
-              >
-                <BookOpen className="w-4 h-4" /> Panduan Kader (Operasional)
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab("owner");
-                  setExpandedFaqId(null);
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  activeTab === "owner"
-                    ? "bg-saas-primary text-white shadow-md shadow-teal-500/10"
-                    : "text-saas-muted hover:text-saas-dark hover:bg-gray-50"
-                }`}
-              >
-                <Building2 className="w-4 h-4" /> Panduan Owner (Administrasi)
-              </button>
-            </div>
-
-            {/* Accordion FAQ list */}
-            <div className="space-y-3">
-              {filteredFaqs.length > 0 ? (
-                filteredFaqs.map((faq) => {
-                  const isExpanded = expandedFaqId === faq.id;
-                  return (
-                    <div
-                      key={faq.id}
-                      className={`border rounded-xl transition-all ${
-                        isExpanded ? "border-saas-primary bg-saas-primary/5" : "border-gray-100 hover:border-gray-250"
-                      }`}
-                    >
-                      <button
-                        onClick={() => toggleFaq(faq.id)}
-                        className="w-full flex items-center justify-between p-4 text-left font-bold text-xs text-saas-dark"
-                      >
-                        <span>{faq.question}</span>
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4 text-saas-primary shrink-0" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-saas-muted shrink-0" />
-                        )}
-                      </button>
-                      
-                      {isExpanded && (
-                        <div className="px-4 pb-4 pt-1 text-xs text-saas-muted leading-relaxed font-semibold border-t border-gray-100/50">
-                          {faq.answer}
-                        </div>
-                      )}
+          {/* Quick Action Guides Grid */}
+          <div className="space-y-4">
+            <h3 className="font-extrabold text-sm text-saas-dark">Pilih Panduan Sesuai Kebutuhan Anda</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredGuides.map((guide) => {
+                const Icon = guide.icon;
+                return (
+                  <button
+                    key={guide.id}
+                    onClick={() => setActiveGuideId(guide.id)}
+                    className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-5 text-left flex gap-4 hover:border-saas-primary/35 hover:shadow-md transition-all group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-saas-primary/10 text-saas-primary flex items-center justify-center shrink-0 group-hover:bg-saas-primary group-hover:text-white transition-colors">
+                      <Icon className="w-5 h-5" />
                     </div>
-                  );
-                })
-              ) : (
-                <div className="text-center py-12 text-xs text-saas-muted font-semibold">
-                  Tidak menemukan pertanyaan bantuan yang cocok.
-                </div>
-              )}
+                    <div className="space-y-1">
+                      <h4 className="font-extrabold text-xs text-saas-dark group-hover:text-saas-primary transition-colors">
+                        {guide.title}
+                      </h4>
+                      <p className="text-[11px] text-saas-muted leading-normal font-semibold">
+                        {guide.description}
+                      </p>
+                      <span className="text-[10px] text-saas-primary font-bold inline-block pt-1.5 group-hover:underline">
+                        Lihat Langkah →
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        </div>
 
-        {/* Kolom Kanan: Kontak Dukungan & Panduan Cepat (Width 1/3) */}
-        <div className="space-y-6">
-          {/* Dukungan Kontak */}
+          {/* Alur Kerja Hari-H Pelayanan Posyandu */}
           <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-4">
             <div className="flex items-center gap-2">
-              <PhoneCall className="w-4.5 h-4.5 text-saas-primary" />
-              <h3 className="font-extrabold text-sm text-saas-dark">Kontak Medis & Dukungan</h3>
+              <ListTodo className="w-4.5 h-4.5 text-saas-primary" />
+              <h3 className="font-extrabold text-sm text-saas-dark">Urutan Kegiatan Pelayanan Posyandu (Hari-H)</h3>
             </div>
             
-            <p className="text-[11px] text-saas-muted leading-normal">
-              Hubungi bidan desa atau puskesmas setempat jika menemukan indikasi warga berisiko tinggi saat penimbangan.
-            </p>
-
-            <div className="space-y-3 pt-3 border-t border-gray-50">
-              {/* Kontak 1 */}
-              <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-1">
-                <p className="text-[10px] text-saas-muted font-bold uppercase">Bidan Desa Sri Lestari</p>
-                <p className="text-xs font-bold text-saas-dark">Bidan Sri Utami, A.Md.Keb</p>
-                <p className="text-xs text-saas-primary font-bold hover:underline cursor-pointer mt-0.5">
-                  📞 +62 812-3456-7890 (WA)
-                </p>
-              </div>
-
-              {/* Kontak 2 */}
-              <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-1">
-                <p className="text-[10px] text-saas-muted font-bold uppercase">Puskesmas Kecamatan</p>
-                <p className="text-xs font-bold text-saas-dark">Hotline Rujukan Karanggayam</p>
-                <p className="text-xs text-saas-primary font-bold hover:underline cursor-pointer mt-0.5">
-                  📞 (0287) 123-456
-                </p>
-              </div>
-
-              {/* Kontak 3 */}
-              <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-1">
-                <p className="text-[10px] text-saas-muted font-bold uppercase">Dukungan Sistem PosyanduKita</p>
-                <p className="text-xs font-bold text-saas-dark">Tim IT Developer</p>
-                <p className="text-xs text-saas-primary font-bold hover:underline cursor-pointer mt-0.5">
-                  📧 support@posyandukita.id
-                </p>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs font-semibold leading-normal pt-2">
+              {[
+                { step: "1", title: "Buka Laptop / Tablet", desc: "Buka website PosyanduKita di meja pendaftaran." },
+                { step: "2", title: "Cari Nama / Daftar Baru", desc: "Cari nama warga yang datang. Jika warga baru, daftarkan dahulu." },
+                { step: "3", title: "Input di Menu Pelayanan", desc: "Pilih nama warga lalu ketik hasil timbangan (BB/TB) bulan ini." },
+                { step: "4", title: "Selesai", desc: "Klik Simpan. Data otomatis terekam dan aman di database." },
+              ].map((s) => (
+                <div key={s.step} className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-1 relative">
+                  <div className="absolute top-2 right-3 text-[10px] font-black text-saas-primary bg-saas-primary/10 w-5 h-5 rounded-full flex items-center justify-center">
+                    {s.step}
+                  </div>
+                  <p className="font-extrabold text-saas-dark pr-6">{s.title}</p>
+                  <p className="text-[11px] text-saas-muted leading-relaxed font-semibold mt-1">{s.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Quick Stats / Info Kesehatan */}
-          <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="w-4.5 h-4.5 text-saas-primary" />
-              <h3 className="font-extrabold text-sm text-saas-dark">Indikator Darurat Medis</h3>
+          {/* Kamus Istilah Sederhana & Kontak */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Kamus Istilah */}
+            <div className="lg:col-span-2 bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <InfoIcon className="w-4.5 h-4.5 text-saas-primary" />
+                <h3 className="font-extrabold text-sm text-saas-dark">Kamus Istilah Posyandu (Penjelasan Sederhana)</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {glossary.map((g, idx) => (
+                  <div key={idx} className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-1">
+                    <p className="font-extrabold text-saas-dark text-[11px]">{g.istilah}</p>
+                    <p className="text-[10px] text-saas-muted leading-normal font-semibold">{g.arti}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="space-y-3 pt-2 text-[11px] text-saas-muted leading-relaxed font-semibold">
-              <div className="flex gap-2">
-                <Baby className="w-4.5 h-4.5 text-saas-primary shrink-0" />
-                <div>
-                  <p className="font-bold text-saas-dark">Gizi Buruk Balita</p>
-                  <p>Segera koordinasi dengan Bidan Desa jika grafik WHO balita berada di zona merah (Sangat Kurang/Sangat Pendek).</p>
-                </div>
+            {/* Kontak Dukungan */}
+            <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <PhoneCall className="w-4.5 h-4.5 text-saas-primary" />
+                <h3 className="font-extrabold text-sm text-saas-dark">Kontak Dukungan Rujukan</h3>
               </div>
+              <p className="text-[10px] text-saas-muted font-medium leading-normal">
+                Bila ada kendala darurat medis pada balita/lansia saat pemeriksaan, hubungi bidan desa:
+              </p>
+              
+              <div className="space-y-3 pt-1">
+                <div className="p-3 bg-teal-50/40 border border-teal-100/35 rounded-xl space-y-0.5">
+                  <p className="text-[9px] text-saas-primary font-bold uppercase tracking-wider">Bidan Desa Karanggayam</p>
+                  <p className="text-xs font-black text-saas-dark">Bidan Sri Utami, A.Md.Keb</p>
+                  <p className="text-xs text-saas-primary font-bold hover:underline cursor-pointer pt-1">
+                    📞 +62 812-3456-7890 (WA)
+                  </p>
+                </div>
 
-              <div className="flex gap-2 border-t border-gray-50 pt-2">
-                <Heart className="w-4.5 h-4.5 text-red-500 shrink-0" />
-                <div>
-                  <p className="font-bold text-saas-dark">Risiko Hipertensi Lansia</p>
-                  <p>Lansia dengan tekanan darah sistol &gt; 180 mmHg wajib diistirahatkan sejenak lalu ditensi ulang sebelum rujukan.</p>
+                <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-0.5">
+                  <p className="text-[9px] text-saas-muted font-bold uppercase tracking-wider">Hotline Puskesmas</p>
+                  <p className="text-xs font-black text-saas-dark">Hotline Karanggayam</p>
+                  <p className="text-xs text-saas-primary font-bold hover:underline cursor-pointer pt-1">
+                    📞 (0287) 123-456
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
