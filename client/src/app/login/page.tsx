@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   HeartPulse,
@@ -565,7 +566,26 @@ function InputField({
 // ─────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
+  const { user, posyanduId, isLoading } = useAuth();
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
+
+  useEffect(() => {
+    if (!isLoading && user && posyanduId) {
+      router.replace("/");
+    }
+  }, [user, posyanduId, isLoading, router]);
+
+  if (isLoading || (user && posyanduId)) {
+    return (
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-saas-primary animate-spin" />
+          <p className="text-sm text-saas-muted font-medium">Mengalihkan ke beranda...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
