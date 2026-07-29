@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { lansiaApi } from "../../lib/api";
 import {
   ArrowLeft,
   Plus,
@@ -122,19 +123,25 @@ const initialLansias: Lansia[] = [
 ];
 
 // Helper Hitung Umur (Tahun)
-function calculateAgeInYears(birthDateStr: string, refDateStr: string = "2026-07-28"): number {
+function calculateAgeInYears(birthDateStr: string, refDate: Date = new Date()): number {
   const birth = new Date(birthDateStr);
-  const ref = new Date(refDateStr);
-  let age = ref.getFullYear() - birth.getFullYear();
-  const m = ref.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && ref.getDate() < birth.getDate())) {
+  let age = refDate.getFullYear() - birth.getFullYear();
+  const m = refDate.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && refDate.getDate() < birth.getDate())) {
     age--;
   }
   return age <= 0 ? 0 : age;
 }
 
-export default function LansiaModule() {
-  const [lansias, setLansias] = useState<Lansia[]>(initialLansias);
+interface LansiaModuleProps {
+  posyanduId: string;
+}
+
+export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
+  const [lansias, setLansias] = useState<Lansia[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [view, setView] = useState<"list" | "detail" | "add">("list");
   const [selectedLansiaId, setSelectedLansiaId] = useState<string | null>(null);
 
@@ -142,6 +149,46 @@ export default function LansiaModule() {
   const [query, setQuery] = useState("");
   const [ageFilter, setAgeFilter] = useState<"semua" | "45-59" | "60-69" | "70+">("semua");
   const [diseaseFilter, setDiseaseFilter] = useState<"semua" | "ht" | "dm">("semua");
+
+  // Fetch lansia from API
+  const fetchLansias = useCallback(() => {
+    setIsLoading(true);
+    setApiError(null);
+    lansiaApi
+      .getAll(posyanduId, query ? { search: query } : undefined)
+      .then((res) => {
+        if (res.success) {
+          const mapped: Lansia[] = res.data.map((l) => ({
+            ...l,
+            tanggalLahir: typeof l.tanggalLahir === "string" ? l.tanggalLahir : new Date(l.tanggalLahir).toISOString().split("T")[0],
+            pemeriksaan: (l.pemeriksaans ?? []).map((p) => ({
+              ...p,
+              tanggalPeriksa: typeof p.tanggalPeriksa === "string" ? p.tanggalPeriksa : new Date(p.tanggalPeriksa).toISOString().split("T")[0],
+            })),
+          }));
+          setLansias(mapped);
+        }
+      })
+      .catch((err) => setApiError(err.message))
+      .finally(() => setIsLoading(false));
+  }, [posyanduId, query]);
+
+  useEffect(() => {
+    fetchLansias();
+  }, [fetchLansias]);
+
+  // Filter List Lansia (client-side)
+  const filteredLansias = lansias.filter((l) => {
+    const ageYears = calculateAgeInYears(l.tanggalLahir);
+    let matchesAge = true;
+    if (ageFilter === "45-59") matchesAge = ageYears >= 45 && ageYears <= 59;
+    else if (ageFilter === "60-69") matchesAge = ageYears >= 60 && ageYears <= 69;
+    else if (ageFilter === "70+") matchesAge = ageYears >= 70;
+    let matchesDisease = true;
+    if (diseaseFilter === "ht") matchesDisease = l.riwayatHt;
+    else if (diseaseFilter === "dm") matchesDisease = l.riwayatDm;
+    return matchesAge && matchesDisease;
+  });
 
   // Form State Tambah Lansia
   const [formNama, setFormNama] = useState("");
@@ -158,7 +205,7 @@ export default function LansiaModule() {
   const [formError, setFormError] = useState("");
 
   // Form State Tambah Pemeriksaan
-  const [examDate, setExamDate] = useState("2026-07-10");
+  const [examDate, setExamDate] = useState(new Date().toISOString().split("T")[0]);
   const [examBB, setExamBB] = useState("");
   const [examTB, setExamTB] = useState("");
   const [examSistol, setExamSistol] = useState("");
@@ -170,27 +217,8 @@ export default function LansiaModule() {
 
   const activeLansia = lansias.find((l) => l.id === selectedLansiaId);
 
-  // Filter List Lansia
-  const filteredLansias = lansias.filter((l) => {
-    const ageYears = calculateAgeInYears(l.tanggalLahir);
-    const matchesSearch = l.nama.toLowerCase().includes(query.toLowerCase()) || 
-                          l.nik.includes(query) ||
-                          (l.noBpjs && l.noBpjs.includes(query));
-
-    let matchesAge = true;
-    if (ageFilter === "45-59") matchesAge = ageYears >= 45 && ageYears <= 59;
-    else if (ageFilter === "60-69") matchesAge = ageYears >= 60 && ageYears <= 69;
-    else if (ageFilter === "70+") matchesAge = ageYears >= 70;
-
-    let matchesDisease = true;
-    if (diseaseFilter === "ht") matchesDisease = l.riwayatHt;
-    else if (diseaseFilter === "dm") matchesDisease = l.riwayatDm;
-
-    return matchesSearch && matchesAge && matchesDisease;
-  });
-
-  // Handler Submit Tambah Lansia
-  const handleAddLansiaSubmit = (e: React.FormEvent) => {
+  // Handler Submit Tambah Lansia (via API)
+  const handleAddLansiaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
 
@@ -204,37 +232,39 @@ export default function LansiaModule() {
       return;
     }
 
-    const newLansia: Lansia = {
-      id: `l_${Date.now()}`,
-      nama: formNama,
-      nik: formNik,
-      noBpjs: formBpjs || undefined,
-      tanggalLahir: formTglLahir,
-      jenisKelamin: formJk,
-      rtRw: formRtRw,
-      alamat: formAlamat,
-      riwayatHt: formHt,
-      riwayatDm: formDm,
-      tingkatKemandirian: formKemandirian,
-      gangguanMentalEmosional: formMental || undefined,
-      pemeriksaan: [],
-    };
-
-    setLansias([newLansia, ...lansias]);
-    
-    // Reset Form
-    setFormNama("");
-    setFormNik("");
-    setFormBpjs("");
-    setFormTglLahir("1960-01-01");
-    setFormJk("L");
-    setFormRtRw("");
-    setFormAlamat("Desa Karanggayam");
-    setFormHt(false);
-    setFormDm(false);
-    setFormKemandirian("A");
-    setFormMental("");
-    setView("list");
+    setIsSaving(true);
+    try {
+      await lansiaApi.create(posyanduId, {
+        nama: formNama,
+        nik: formNik,
+        noBpjs: formBpjs || undefined,
+        tanggalLahir: formTglLahir,
+        jenisKelamin: formJk,
+        rtRw: formRtRw,
+        alamat: formAlamat,
+        riwayatHt: formHt,
+        riwayatDm: formDm,
+        tingkatKemandirian: formKemandirian,
+        gangguanMentalEmosional: formMental || undefined,
+      });
+      fetchLansias();
+      setFormNama("");
+      setFormNik("");
+      setFormBpjs("");
+      setFormTglLahir("1960-01-01");
+      setFormJk("L");
+      setFormRtRw("");
+      setFormAlamat("Desa Karanggayam");
+      setFormHt(false);
+      setFormDm(false);
+      setFormKemandirian("A");
+      setFormMental("");
+      setView("list");
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Gagal menyimpan data.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Check input values warning
@@ -250,8 +280,8 @@ export default function LansiaModule() {
     }
   };
 
-  // Handler Submit Tambah Pemeriksaan
-  const handleAddExamSubmit = (e: React.FormEvent) => {
+  // Handler Submit Tambah Pemeriksaan (via API)
+  const handleAddExamSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setExamError("");
 
@@ -269,38 +299,37 @@ export default function LansiaModule() {
 
     if (!activeLansia) return;
 
-    const newExam: PemeriksaanLansia = {
-      id: `le_${Date.now()}`,
-      tanggalPeriksa: examDate,
-      beratBadan: bb,
-      tinggiBadan: tb,
-      tekananDarahSistol: sistol,
-      tekananDarahDiastol: diastol,
-      gulaDarahSewaktu: gds,
-      lingkarPerut: lp,
-    };
-
-    // Update lansias state
-    const updatedLansias = lansias.map((l) => {
-      if (l.id === activeLansia.id) {
-        return {
-          ...l,
-          pemeriksaan: [newExam, ...l.pemeriksaan],
+    setIsSaving(true);
+    try {
+      await lansiaApi.createPemeriksaan(posyanduId, activeLansia.id, {
+        tanggalPeriksa: examDate,
+        beratBadan: bb,
+        tinggiBadan: tb,
+        tekananDarahSistol: sistol,
+        tekananDarahDiastol: diastol,
+        gulaDarahSewaktu: gds,
+        lingkarPerut: lp,
+      });
+      // Refresh lansia detail
+      const res = await lansiaApi.getById(posyanduId, activeLansia.id);
+      if (res.success) {
+        const updated: Lansia = {
+          ...res.data,
+          tanggalLahir: new Date(res.data.tanggalLahir).toISOString().split("T")[0],
+          pemeriksaan: (res.data.pemeriksaans ?? []).map((p) => ({
+            ...p,
+            tanggalPeriksa: new Date(p.tanggalPeriksa).toISOString().split("T")[0],
+          })),
         };
+        setLansias((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
       }
-      return l;
-    });
-
-    setLansias(updatedLansias);
-
-    // Reset Form
-    setExamBB("");
-    setExamTB("");
-    setExamSistol("");
-    setExamDiastol("");
-    setExamGds("");
-    setExamLp("");
-    setExamWarning("");
+      setExamBB(""); setExamTB(""); setExamSistol(""); setExamDiastol("");
+      setExamGds(""); setExamLp(""); setExamWarning("");
+    } catch (err: unknown) {
+      setExamError(err instanceof Error ? err.message : "Gagal menyimpan pemeriksaan.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

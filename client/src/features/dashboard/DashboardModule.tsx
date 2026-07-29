@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { dashboardApi, DashboardSummary } from "../../lib/api";
 import Modal from "../../components/Modal";
 import {
   ArrowUpRight,
@@ -21,6 +22,7 @@ import {
 interface DashboardModuleProps {
   searchQuery: string;
   onNavigate: (menu: string) => void;
+  posyanduId: string;
 }
 
 interface Kunjungan {
@@ -52,18 +54,49 @@ const mockPasiens: Pasien[] = [
   { id: "l4", nama: "Mbah Harjo", tipe: "Lansia", detailInfo: "RT 01 / RW 02, Dusun Karanggayam" },
 ];
 
-export default function DashboardModule({ searchQuery, onNavigate }: DashboardModuleProps) {
+export default function DashboardModule({ searchQuery, onNavigate, posyanduId }: DashboardModuleProps) {
   const [activeTab, setActiveTab] = useState<"Semua" | "Balita" | "Lansia">("Semua");
-  
-  // Real-time local state to display added visits in dashboard list
-  const [kunjungans, setKunjungans] = useState<Kunjungan[]>([
-    { id: "1", nama: "Andi Pratama", tipe: "Balita", detail: "12 Bulan", status: "Selesai Periksa", statusType: "success", waktu: "09:30 WIB" },
-    { id: "2", nama: "Mbah Karto", tipe: "Lansia", detail: "RT 02 / RW 02", status: "Belum Periksa", statusType: "warning", waktu: "09:45 WIB" },
-    { id: "3", nama: "Citra Lestari", tipe: "Balita", detail: "24 Bulan", status: "Selesai Periksa", statusType: "success", waktu: "10:15 WIB" },
-    { id: "4", nama: "Budi Santoso", tipe: "Lansia", detail: "RT 01 / RW 02", status: "Ditunda", statusType: "info", waktu: "10:30 WIB" },
-    { id: "5", nama: "Aisyah Putri", tipe: "Balita", detail: "6 Bulan", status: "Selesai Periksa", statusType: "success", waktu: "10:50 WIB" },
-    { id: "6", nama: "Mbah Sumi", tipe: "Lansia", detail: "RT 03 / RW 02", status: "Belum Periksa", statusType: "warning", waktu: "11:00 WIB" },
-  ]);
+
+  // ── API state ──────────────────────────────────────────────
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(true);
+
+  useEffect(() => {
+    setIsSummaryLoading(true);
+    dashboardApi
+      .getSummary(posyanduId)
+      .then((res) => {
+        if (res.success) setSummary(res.data);
+      })
+      .catch(console.error)
+      .finally(() => setIsSummaryLoading(false));
+  }, [posyanduId]);
+
+  // Build kunjungan list from API data (recent pemeriksaan)
+  const apiKunjungans: Kunjungan[] = [
+    ...(summary?.pemeriksaanTerbaru.balita ?? []).map((p, i) => ({
+      id: `b-${p.id ?? i}`,
+      nama: p.balita.nama,
+      tipe: "Balita" as const,
+      detail: p.statusBbU ?? "-",
+      status: "Selesai Periksa",
+      statusType: "success" as const,
+      waktu: new Date(p.tanggalPeriksa).toLocaleDateString("id-ID"),
+    })),
+    ...(summary?.pemeriksaanTerbaru.lansia ?? []).map((p, i) => ({
+      id: `l-${p.id ?? i}`,
+      nama: p.lansia.nama,
+      tipe: "Lansia" as const,
+      detail: `${p.tekananDarahSistol}/${p.tekananDarahDiastol} mmHg`,
+      status: "Selesai Periksa",
+      statusType: "success" as const,
+      waktu: new Date(p.tanggalPeriksa).toLocaleDateString("id-ID"),
+    })),
+  ].sort(() => Math.random() - 0.5); // merge both lists
+
+  // Real-time additions from quick-exam modal go here
+  const [localKunjungans, setLocalKunjungans] = useState<Kunjungan[]>([]);
+  const kunjungans = [...localKunjungans, ...apiKunjungans];
 
   // Modal State
   const [isOpenModal, setIsOpenModal] = useState(false);
@@ -147,20 +180,20 @@ export default function DashboardModule({ searchQuery, onNavigate }: DashboardMo
       }
     }
 
-    // Add mock visit to dashboard table
+    // Add locally to dashboard table (optimistic update)
     const timeNow = new Date();
     const timeStr = `${String(timeNow.getHours()).padStart(2, "0")}:${String(timeNow.getMinutes()).padStart(2, "0")} WIB`;
     const newKunjungan: Kunjungan = {
       id: `quick-${Date.now()}`,
       nama: selectedPasien.nama,
       tipe: selectedPasien.tipe,
-      detail: selectedPasien.tipe === "Balita" ? "Baru di-input" : "RT 01 / RW 02",
+      detail: selectedPasien.tipe === "Balita" ? "Baru di-input" : "-",
       status: "Selesai Periksa",
       statusType: "success",
       waktu: timeStr,
     };
 
-    setKunjungans([newKunjungan, ...kunjungans]);
+    setLocalKunjungans((prev) => [newKunjungan, ...prev]);
     setToastSuccess(`Pemeriksaan untuk ${selectedPasien.nama} berhasil dicatat.`);
     
     // Close & Reset
@@ -223,14 +256,16 @@ export default function DashboardModule({ searchQuery, onNavigate }: DashboardMo
           
           <div>
             <span className="text-xs uppercase tracking-wider text-white/70 font-bold">Total Balita</span>
-            <h3 className="text-3xl font-extrabold mt-1">48 Anak</h3>
+            <h3 className="text-3xl font-extrabold mt-1">
+              {isSummaryLoading ? "…" : `${summary?.totalBalita ?? 0} Anak`}
+            </h3>
           </div>
 
           <div className="flex items-center gap-2 z-10">
             <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white">
-              +3.9%
+              Live
             </span>
-            <span className="text-xs text-white/70 font-medium">vs bulan lalu</span>
+            <span className="text-xs text-white/70 font-medium">dari database</span>
           </div>
 
           <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-white/5 rounded-full filter blur-xl group-hover:scale-125 transition-transform duration-500"></div>
@@ -247,14 +282,16 @@ export default function DashboardModule({ searchQuery, onNavigate }: DashboardMo
 
           <div>
             <span className="text-xs uppercase tracking-wider text-saas-muted font-bold">Total Lansia</span>
-            <h3 className="text-3xl font-extrabold text-saas-dark mt-1">32 Jiwa</h3>
+            <h3 className="text-3xl font-extrabold text-saas-dark mt-1">
+              {isSummaryLoading ? "…" : `${summary?.totalLansia ?? 0} Jiwa`}
+            </h3>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-trend-successBg text-trend-successText">
-              +4.2%
+              Live
             </span>
-            <span className="text-xs text-saas-muted font-medium">vs bulan lalu</span>
+            <span className="text-xs text-saas-muted font-medium">dari database</span>
           </div>
         </div>
 
@@ -269,14 +306,16 @@ export default function DashboardModule({ searchQuery, onNavigate }: DashboardMo
 
           <div>
             <span className="text-xs uppercase tracking-wider text-saas-muted font-bold">Balita Gizi Kurang</span>
-            <h3 className="text-3xl font-extrabold text-saas-dark mt-1">3 Anak</h3>
+            <h3 className="text-3xl font-extrabold text-saas-dark mt-1">
+              {isSummaryLoading ? "…" : `${(summary?.statusGizi?.bbU?.["Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["Sangat Kurang"] ?? 0)} Anak`}
+            </h3>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-trend-dangerBg text-trend-dangerText">
-              -2.8%
+              Live
             </span>
-            <span className="text-xs text-saas-muted font-medium">vs bulan lalu</span>
+            <span className="text-xs text-saas-muted font-medium">dari database</span>
           </div>
         </div>
 

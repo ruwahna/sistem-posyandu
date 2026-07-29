@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   Plus,
@@ -42,6 +42,8 @@ export interface Balita {
   alamat: string;
   pemeriksaan: PemeriksaanBalita[];
 }
+
+import { balitaApi } from "../../lib/api";
 
 // Initial Mock Data
 const initialBalitas: Balita[] = [
@@ -99,17 +101,23 @@ const initialBalitas: Balita[] = [
 ];
 
 // Helper Hitung Usia (Bulan)
-function calculateAgeInMonths(birthDateStr: string, refDateStr: string = "2026-07-28"): number {
+function calculateAgeInMonths(birthDateStr: string, refDate: Date = new Date()): number {
   const birth = new Date(birthDateStr);
-  const ref = new Date(refDateStr);
-  let months = (ref.getFullYear() - birth.getFullYear()) * 12;
+  let months = (refDate.getFullYear() - birth.getFullYear()) * 12;
   months -= birth.getMonth();
-  months += ref.getMonth();
+  months += refDate.getMonth();
   return months <= 0 ? 0 : months;
 }
 
-export default function BalitaModule() {
-  const [balitas, setBalitas] = useState<Balita[]>(initialBalitas);
+interface BalitaModuleProps {
+  posyanduId: string;
+}
+
+export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
+  const [balitas, setBalitas] = useState<Balita[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [view, setView] = useState<"list" | "detail" | "add">("list");
   const [selectedBalitaId, setSelectedBalitaId] = useState<string | null>(null);
   
@@ -117,7 +125,45 @@ export default function BalitaModule() {
   const [query, setQuery] = useState("");
   const [ageFilter, setAgeFilter] = useState<"semua" | "0-6" | "7-12" | "13-24" | "25-60">("semua");
 
-  // Form State Tambah Balita
+  // Fetch balita from API
+  const fetchBalitas = useCallback(() => {
+    setIsLoading(true);
+    setApiError(null);
+    balitaApi
+      .getAll(posyanduId, query ? { search: query } : undefined)
+      .then((res) => {
+        if (res.success) {
+          // Map API shape to local shape (pemeriksaans → pemeriksaan)
+          const mapped: Balita[] = res.data.map((b) => ({
+            ...b,
+            pemeriksaan: (b.pemeriksaans ?? []).map((p) => ({
+              ...p,
+              statusBBU: (p as unknown as Record<string, string>).statusBbU as PemeriksaanBalita["statusBBU"] ?? "Normal",
+              statusTBU: (p as unknown as Record<string, string>).statusTbU as PemeriksaanBalita["statusTBU"] ?? "Normal",
+              statusBBTB: (p as unknown as Record<string, string>).statusBbTb as PemeriksaanBalita["statusBBTB"] ?? "Normal",
+            })),
+          }));
+          setBalitas(mapped);
+        }
+      })
+      .catch((err) => setApiError(err.message))
+      .finally(() => setIsLoading(false));
+  }, [posyanduId, query]);
+
+  useEffect(() => {
+    fetchBalitas();
+  }, [fetchBalitas]);
+
+  // Filter List Balita (client-side age filter)
+  const filteredBalitas = balitas.filter((b) => {
+    const ageMonths = calculateAgeInMonths(b.tanggalLahir);
+    let matchesAge = true;
+    if (ageFilter === "0-6") matchesAge = ageMonths >= 0 && ageMonths <= 6;
+    else if (ageFilter === "7-12") matchesAge = ageMonths >= 7 && ageMonths <= 12;
+    else if (ageFilter === "13-24") matchesAge = ageMonths >= 13 && ageMonths <= 24;
+    else if (ageFilter === "25-60") matchesAge = ageMonths >= 25 && ageMonths <= 60;
+    return matchesAge;
+  });
   const [formNama, setFormNama] = useState("");
   const [formNik, setFormNik] = useState("");
   const [formTglLahir, setFormTglLahir] = useState("2025-01-01");
@@ -127,7 +173,7 @@ export default function BalitaModule() {
   const [formError, setFormError] = useState("");
 
   // Form State Tambah Pemeriksaan
-  const [examDate, setExamDate] = useState("2026-07-10");
+  const [examDate, setExamDate] = useState(new Date().toISOString().split("T")[0]);
   const [examBB, setExamBB] = useState("");
   const [examTB, setExamTB] = useState("");
   const [examLK, setExamLK] = useState("");
@@ -140,24 +186,9 @@ export default function BalitaModule() {
 
   const activeBalita = balitas.find((b) => b.id === selectedBalitaId);
 
-  // Filter List Balita
-  const filteredBalitas = balitas.filter((b) => {
-    const ageMonths = calculateAgeInMonths(b.tanggalLahir);
-    const matchesSearch = b.nama.toLowerCase().includes(query.toLowerCase()) || 
-                          (b.nik && b.nik.includes(query)) ||
-                          b.namaIbu.toLowerCase().includes(query.toLowerCase());
-    
-    let matchesAge = true;
-    if (ageFilter === "0-6") matchesAge = ageMonths >= 0 && ageMonths <= 6;
-    else if (ageFilter === "7-12") matchesAge = ageMonths >= 7 && ageMonths <= 12;
-    else if (ageFilter === "13-24") matchesAge = ageMonths >= 13 && ageMonths <= 24;
-    else if (ageFilter === "25-60") matchesAge = ageMonths >= 25 && ageMonths <= 60;
 
-    return matchesSearch && matchesAge;
-  });
-
-  // Handler Submit Tambah Balita
-  const handleAddBalitaSubmit = (e: React.FormEvent) => {
+  // Handler Submit Tambah Balita (via API)
+  const handleAddBalitaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
 
@@ -171,26 +202,30 @@ export default function BalitaModule() {
       return;
     }
 
-    const newBalita: Balita = {
-      id: `b_${Date.now()}`,
-      nama: formNama,
-      nik: formNik || undefined,
-      tanggalLahir: formTglLahir,
-      jenisKelamin: formJk,
-      namaIbu: formNamaIbu,
-      alamat: formAlamat,
-      pemeriksaan: [],
-    };
-
-    setBalitas([newBalita, ...balitas]);
-    // Reset Form
-    setFormNama("");
-    setFormNik("");
-    setFormTglLahir("2025-01-01");
-    setFormJk("L");
-    setFormNamaIbu("");
-    setFormAlamat("");
-    setView("list");
+    setIsSaving(true);
+    try {
+      await balitaApi.create(posyanduId, {
+        nama: formNama,
+        nik: formNik || undefined,
+        tanggalLahir: formTglLahir,
+        jenisKelamin: formJk,
+        namaIbu: formNamaIbu,
+        alamat: formAlamat,
+      });
+      // Refresh list
+      fetchBalitas();
+      setFormNama("");
+      setFormNik("");
+      setFormTglLahir("2025-01-01");
+      setFormJk("L");
+      setFormNamaIbu("");
+      setFormAlamat("");
+      setView("list");
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Gagal menyimpan data.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Handler Real-time Warning untuk input Pemeriksaan (Manusiawi)
@@ -200,7 +235,7 @@ export default function BalitaModule() {
 
     const bb = parseFloat(bbVal);
     const tb = parseFloat(tbVal);
-    const usia = calculateAgeInMonths(activeBalita.tanggalLahir, examDate);
+    const usia = calculateAgeInMonths(activeBalita.tanggalLahir, new Date(examDate));
 
     // Warning BB tidak masuk akal untuk bayi
     if (bb > 25 && usia < 18) {
@@ -212,8 +247,8 @@ export default function BalitaModule() {
     }
   };
 
-  // Handler Submit Tambah Pemeriksaan
-  const handleAddExamSubmit = (e: React.FormEvent) => {
+  // Handler Submit Tambah Pemeriksaan (via API)
+  const handleAddExamSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setExamError("");
 
@@ -228,44 +263,52 @@ export default function BalitaModule() {
 
     if (!activeBalita) return;
 
-    const newExam: PemeriksaanBalita = {
-      id: `e_${Date.now()}`,
-      tanggalPeriksa: examDate,
-      usiaBulan: calculateAgeInMonths(activeBalita.tanggalLahir, examDate),
-      beratBadan: bb,
-      tinggiBadan: tb,
-      lingkarKepala: lk,
-      statusBBU: examBBU,
-      statusTBU: examTBU,
-      statusBBTB: examBBTB,
-      vitaminA: examVitA,
-    };
-
-    // Update state balitas
-    const updatedBalitas = balitas.map((b) => {
-      if (b.id === activeBalita.id) {
-        return {
-          ...b,
-          pemeriksaan: [newExam, ...b.pemeriksaan],
+    setIsSaving(true);
+    try {
+      await balitaApi.createPemeriksaan(posyanduId, activeBalita.id, {
+        tanggalPeriksa: examDate,
+        usiaBulan: calculateAgeInMonths(activeBalita.tanggalLahir, new Date(examDate)),
+        beratBadan: bb,
+        tinggiBadan: tb,
+        lingkarKepala: lk,
+        statusBbU: examBBU,
+        statusTbU: examTBU,
+        statusBbTb: examBBTB,
+        vitaminA: examVitA,
+      } as unknown as import("../../lib/api").PemeriksaanBalita);
+      // Refresh balita detail
+      const res = await balitaApi.getById(posyanduId, activeBalita.id);
+      if (res.success) {
+        const updated: Balita = {
+          ...res.data,
+          pemeriksaan: (res.data.pemeriksaans ?? []).map((p) => ({
+            ...p,
+            statusBBU: (p as unknown as Record<string, string>).statusBbU as PemeriksaanBalita["statusBBU"] ?? "Normal",
+            statusTBU: (p as unknown as Record<string, string>).statusTbU as PemeriksaanBalita["statusTBU"] ?? "Normal",
+            statusBBTB: (p as unknown as Record<string, string>).statusBbTb as PemeriksaanBalita["statusBBTB"] ?? "Normal",
+          })),
         };
+        setBalitas((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
       }
-      return b;
-    });
-
-    setBalitas(updatedBalitas);
-    // Reset Form Pemeriksaan
-    setExamBB("");
-    setExamTB("");
-    setExamLK("");
-    setExamBBU("Normal");
-    setExamTBU("Normal");
-    setExamBBTB("Normal");
-    setExamVitA(false);
-    setExamWarning("");
+      setExamBB(""); setExamTB(""); setExamLK("");
+      setExamBBU("Normal"); setExamTBU("Normal"); setExamBBTB("Normal");
+      setExamVitA(false); setExamWarning("");
+    } catch (err: unknown) {
+      setExamError(err instanceof Error ? err.message : "Gagal menyimpan pemeriksaan.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* API Error Banner */}
+      {apiError && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+          Gagal memuat data: {apiError}
+        </div>
+      )}
+
       {/* ========================================================================= */}
       {/* 1. VIEW: LIST BALITA */}
       {/* ========================================================================= */}

@@ -44,6 +44,86 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
+ * POST /api/auth/register-posyandu
+ * Registrasi publik: membuat Posyandu baru + Kader OWNER pertama sekaligus.
+ */
+export const registerPosyandu = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      // Posyandu fields
+      namaPosyandu, desa, kecamatan, alamat,
+      // Kader fields
+      namaKader, email, password,
+    } = req.body;
+
+    // Validasi wajib
+    if (!namaPosyandu || !desa || !kecamatan || !alamat || !namaKader || !email || !password) {
+      res.status(400).json({ success: false, message: 'Semua field wajib diisi' });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({ success: false, message: 'Password minimal 8 karakter' });
+      return;
+    }
+
+    // Cek email sudah dipakai
+    const existingKader = await prisma.kader.findUnique({ where: { email } });
+    if (existingKader) {
+      res.status(409).json({ success: false, message: 'Email sudah terdaftar' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Buat Posyandu + Owner dalam satu transaksi
+    const result = await prisma.$transaction(async (tx) => {
+      const posyandu = await tx.posyandu.create({
+        data: { nama: namaPosyandu, desa, kecamatan, alamat },
+      });
+
+      const kader = await tx.kader.create({
+        data: {
+          id: uuidv4(),
+          nama: namaKader,
+          email,
+          password: hashedPassword,
+          posyanduId: posyandu.id,
+          role: 'OWNER',
+        },
+        select: { id: true, nama: true, email: true, role: true },
+      });
+
+      return { posyandu, kader };
+    });
+
+    // Auto-login: buat token JWT
+    const secret = process.env.JWT_SECRET;
+    if (!secret) throw new Error('JWT_SECRET tidak dikonfigurasi');
+
+    const token = jwt.sign(
+      { userId: result.kader.id, posyanduId: result.posyandu.id, role: 'OWNER' },
+      secret,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Posyandu dan akun berhasil dibuat',
+      data: {
+        token,
+        kader: {
+          ...result.kader,
+          posyandu: { id: result.posyandu.id, nama: result.posyandu.nama },
+        },
+      },
+    });
+  } catch (err) {
+    throw err;
+  }
+};
+
+/**
  * POST /api/auth/login
  */
 export const login = async (req: Request, res: Response): Promise<void> => {

@@ -14,8 +14,10 @@ import {
   Search,
   Bell,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 // Feature Modules
 import DashboardModule from "../features/dashboard/DashboardModule";
@@ -27,22 +29,49 @@ import PengaturanModule from "../features/pengaturan/PengaturanModule";
 import ManajemenAkunModule from "../features/pengaturan/ManajemenAkunModule";
 import BantuanModule from "../features/bantuan/BantuanModule";
 
+// Login Page (rendered inline when not authenticated)
+import LoginPage from "./login/page";
+
 export default function Home() {
+  const { user, posyanduId, isLoading, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotification, setShowNotification] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Overview");
 
-  // Conditional Rendering of Views
+  // ── Loading spinner ──────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-canvas">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-saas-primary animate-spin" />
+          <p className="text-sm text-saas-muted font-medium">Memuat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Login wall ───────────────────────────────────────────
+  if (!user || !posyanduId) {
+    return <LoginPage />;
+  }
+
+  // ── Conditional Rendering of Views ──────────────────────
   const renderActiveView = () => {
     switch (activeMenu) {
       case "Overview":
-        return <DashboardModule searchQuery={searchQuery} onNavigate={setActiveMenu} />;
+        return (
+          <DashboardModule
+            searchQuery={searchQuery}
+            onNavigate={setActiveMenu}
+            posyanduId={posyanduId}
+          />
+        );
       case "Pelayanan":
         return <PelayananModule />;
       case "Balita":
-        return <BalitaModule />;
+        return <BalitaModule posyanduId={posyanduId} />;
       case "Lansia":
-        return <LansiaModule />;
+        return <LansiaModule posyanduId={posyanduId} />;
       case "Riwayat":
         return <RiwayatModule />;
       case "Manajemen Akun":
@@ -52,9 +81,23 @@ export default function Home() {
       case "Bantuan":
         return <BantuanModule />;
       default:
-        return <DashboardModule searchQuery={searchQuery} onNavigate={setActiveMenu} />;
+        return (
+          <DashboardModule
+            searchQuery={searchQuery}
+            onNavigate={setActiveMenu}
+            posyanduId={posyanduId}
+          />
+        );
     }
   };
+
+  // User initials for avatar
+  const initials = user.nama
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <div className="flex h-screen bg-canvas font-sans text-saas-dark overflow-hidden">
@@ -116,7 +159,10 @@ export default function Home() {
             <HelpCircle className={`w-4 h-4 ${activeMenu === "Bantuan" ? "text-white" : "text-saas-muted"}`} />
             Bantuan
           </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-trend-dangerText hover:bg-red-55/40 transition-all">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50/60 transition-all"
+          >
             <LogOut className="w-4 h-4" />
             Keluar
           </button>
@@ -147,10 +193,10 @@ export default function Home() {
               className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center relative hover:bg-gray-50 transition-all"
             >
               <Bell className="w-4 h-4 text-saas-dark" />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-trend-dangerText rounded-full border border-white"></span>
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
             </button>
 
-            {/* Dropdown Notifikasi Mock */}
+            {/* Dropdown Notifikasi */}
             {showNotification && (
               <div className="absolute top-20 right-28 w-80 bg-white rounded-card shadow-lg border border-gray-100 p-4 z-50">
                 <h4 className="font-bold text-sm text-saas-dark mb-2">Notifikasi Terbaru</h4>
@@ -158,15 +204,15 @@ export default function Home() {
                   <div className="p-2.5 bg-yellow-400/10 text-yellow-800 border border-yellow-250/20 rounded-lg text-xs flex gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold">3 Lansia belum periksa</p>
-                      <p className="text-saas-muted mt-0.5">Mbah Karto, Mbah Sumi, Mbah Harjo belum input.</p>
+                      <p className="font-bold">Cek data terbaru</p>
+                      <p className="text-saas-muted mt-0.5">Lihat dashboard untuk ringkasan posyandu.</p>
                     </div>
                   </div>
                   <div className="p-2.5 bg-green-50/40 rounded-lg text-xs text-saas-dark border border-green-100/50 flex gap-2">
                     <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold">Input Balita Berhasil</p>
-                      <p className="text-saas-muted mt-0.5">Data berat badan Andi Pratama berhasil disimpan.</p>
+                      <p className="font-bold">Terhubung ke server</p>
+                      <p className="text-saas-muted mt-0.5">Data diambil langsung dari database.</p>
                     </div>
                   </div>
                 </div>
@@ -176,11 +222,13 @@ export default function Home() {
             {/* Profil Kader */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-saas-primary/10 flex items-center justify-center font-bold text-saas-primary text-sm border border-saas-primary/20 overflow-hidden">
-                IA
+                {initials}
               </div>
               <div className="text-left hidden md:block">
-                <p className="text-sm font-bold text-saas-dark leading-none">Ibu Aminah</p>
-                <p className="text-[11px] text-saas-muted font-semibold mt-0.5">Kader Posyandu Sri Lestari</p>
+                <p className="text-sm font-bold text-saas-dark leading-none">{user.nama}</p>
+                <p className="text-[11px] text-saas-muted font-semibold mt-0.5">
+                  {user.role === "OWNER" ? "Pengelola" : "Kader"} · {user.posyandu.nama}
+                </p>
               </div>
             </div>
           </div>
