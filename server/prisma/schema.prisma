@@ -1,0 +1,181 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// POSYANDU
+// ─────────────────────────────────────────────────────────────
+model Posyandu {
+  id         String   @id @default(uuid())
+  nama       String
+  desa       String
+  kecamatan  String
+  alamat     String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  kaders  Kader[]
+  balitas Balita[]
+  lansias Lansia[]
+
+  @@map("posyandu")
+}
+
+// ─────────────────────────────────────────────────────────────
+// KADER / USER
+// ─────────────────────────────────────────────────────────────
+model Kader {
+  id          String   @id @default(uuid())
+  posyanduId  String   @map("posyandu_id")
+  nama        String
+  email       String   @unique
+  password    String
+  role        Role     @default(KADER)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  posyandu Posyandu @relation(fields: [posyanduId], references: [id], onDelete: Cascade)
+
+  @@map("kader")
+}
+
+enum Role {
+  OWNER
+  KADER
+}
+
+// ─────────────────────────────────────────────────────────────
+// BALITA
+// ─────────────────────────────────────────────────────────────
+model Balita {
+  id            String        @id @default(uuid())
+  posyanduId    String        @map("posyandu_id")
+  nama          String
+  nik           String?
+  tanggalLahir  DateTime      @map("tanggal_lahir") @db.Date
+  jenisKelamin  JenisKelamin  @map("jenis_kelamin")
+  namaIbu       String        @map("nama_ibu")
+  alamat        String
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  posyandu     Posyandu           @relation(fields: [posyanduId], references: [id], onDelete: Cascade)
+  pemeriksaans PemeriksaanBalita[]
+
+  @@map("balita")
+}
+
+model PemeriksaanBalita {
+  id             String      @id @default(uuid())
+  balitaId       String      @map("balita_id")
+  tanggalPeriksa DateTime    @map("tanggal_periksa") @db.Date
+  usiaBulan      Int         @map("usia_bulan")
+  beratBadan     Decimal     @map("berat_badan") @db.Decimal(5, 2)
+  tinggiBadan    Decimal     @map("tinggi_badan") @db.Decimal(5, 2)
+  lingkarKepala  Decimal?    @map("lingkar_kepala") @db.Decimal(5, 2)
+  statusBbU      StatusBbU   @map("status_bb_u")
+  statusTbU      StatusTbU   @map("status_tb_u")
+  statusBbTb     StatusBbTb  @map("status_bb_tb")
+  vitaminA       Boolean     @map("vitamin_a")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  balita Balita @relation(fields: [balitaId], references: [id], onDelete: Cascade)
+
+  @@map("pemeriksaan_balita")
+}
+
+// ─────────────────────────────────────────────────────────────
+// LANSIA
+// ─────────────────────────────────────────────────────────────
+model Lansia {
+  id                      String           @id @default(uuid())
+  posyanduId              String           @map("posyandu_id")
+  nama                    String
+  nik                     String
+  noBpjs                  String?          @map("no_bpjs")
+  rtRw                    String           @map("rt_rw")
+  tanggalLahir            DateTime         @map("tanggal_lahir") @db.Date
+  jenisKelamin            JenisKelamin     @map("jenis_kelamin")
+  alamat                  String
+  riwayatHt               Boolean          @default(false) @map("riwayat_ht")
+  riwayatDm               Boolean          @default(false) @map("riwayat_dm")
+  tingkatKemandirian      Kemandirian      @map("tingkat_kemandirian")
+  gangguanMentalEmosional String?          @map("gangguan_mental_emosional") @db.Text
+  createdAt               DateTime         @default(now()) @map("created_at")
+  updatedAt               DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  posyandu     Posyandu            @relation(fields: [posyanduId], references: [id], onDelete: Cascade)
+  pemeriksaans PemeriksaanLansia[]
+
+  @@map("lansia")
+}
+
+model PemeriksaanLansia {
+  id                  String   @id @default(uuid())
+  lansiaId            String   @map("lansia_id")
+  tanggalPeriksa      DateTime @map("tanggal_periksa") @db.Date
+  beratBadan          Decimal  @map("berat_badan") @db.Decimal(5, 2)
+  tinggiBadan         Decimal  @map("tinggi_badan") @db.Decimal(5, 2)
+  tekananDarahSistol  Int      @map("tekanan_darah_sistol")
+  tekananDarahDiastol Int      @map("tekanan_darah_diastol")
+  gulaDarahSewaktu    Decimal  @map("gula_darah_sewaktu") @db.Decimal(6, 2)
+  lingkarPerut        Decimal  @map("lingkar_perut") @db.Decimal(5, 2)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  lansia Lansia @relation(fields: [lansiaId], references: [id], onDelete: Cascade)
+
+  @@map("pemeriksaan_lansia")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
+enum JenisKelamin {
+  L
+  P
+}
+
+enum StatusBbU {
+  SK
+  K
+  N
+  L
+}
+
+enum StatusTbU {
+  SP
+  P
+  N
+  T
+}
+
+enum StatusBbTb {
+  SK
+  K
+  N
+  G
+}
+
+enum Kemandirian {
+  A
+  B
+  C
+}

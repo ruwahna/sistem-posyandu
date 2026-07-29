@@ -21,7 +21,7 @@ build/
 .env.test.local
 .env.production.local
 **/.env
-**/.env.*
+**/.env.local
 
 # Logs
 logs
