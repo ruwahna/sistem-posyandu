@@ -223,143 +223,124 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-hairline pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-saas-dark tracking-tight">Dashboard Overview</h2>
-          <p className="text-sm text-saas-muted mt-0.5">
-            Overview data tumbuh kembang anak dan kesehatan lansia di Posyandu Sri Lestari.
+          <span className="inline-block px-2.5 py-0.5 bg-teal-50 text-saas-primary rounded-pill text-[11px] font-semibold tracking-wide uppercase mb-1">
+            Ringkasan Real-Time
+          </span>
+          <h2 className="text-3xl font-normal text-saas-dark tracking-tight">Dashboard Overview</h2>
+          <p className="text-sm text-saas-muted mt-1 font-normal">
+            Pantau pertumbuhan anak dan kondisi kesehatan lansia secara terpusat.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsOpenModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-all"
+            className="flex items-center gap-2 px-5 py-2.5 bg-saas-primary hover:bg-saas-primary-active text-white text-xs font-semibold rounded-pill transition-all shadow-sm"
           >
-            <Plus className="w-4 h-4" /> Catat Pemeriksaan Cepat
+            <Plus className="w-4 h-4" /> Catat Pemeriksaan
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-input bg-white text-xs font-bold text-saas-dark hover:bg-gray-50 transition-all shadow-sm">
-            <Download className="w-3.5 h-3.5 text-saas-muted" /> Export Laporan
+          <button className="flex items-center gap-2 px-4 py-2.5 border border-hairline rounded-pill bg-white text-xs font-semibold text-saas-dark hover:bg-surface-soft transition-all">
+            <Download className="w-3.5 h-3.5 text-saas-muted" /> Export Data
           </button>
         </div>
       </div>
 
-      {/* 4 Summary Cards Grid */}
+      {/* 4 Summary KPI Cards Grid — Unified Coinbase Feature Card Layout with Unique Brand Palettes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Card 1 */}
-        <div className="bg-saas-primary rounded-card shadow-soft-card p-6 relative overflow-hidden flex flex-col justify-between h-40 group text-white">
+        {/* Card 1: Toska / Mint (Total Balita) */}
+        <div className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-card p-6 relative overflow-hidden flex flex-col justify-between h-44 shadow-soft-card group text-white">
+          <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <button 
             onClick={() => onNavigate("Balita")}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors"
+            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/30 transition-colors z-10"
           >
             <ArrowUpRight className="w-4 h-4 text-white" />
           </button>
           
           <div>
-            <span className="text-xs uppercase tracking-wider text-white/70 font-bold">Total Balita</span>
-            <h3 className="text-3xl font-extrabold mt-1">
-              {isSummaryLoading ? "…" : `${summary?.totalBalita ?? 0} Anak`}
+            <span className="text-[11px] uppercase tracking-wider text-white/80 font-medium">Total Balita</span>
+            <h3 className="text-3xl font-mono font-medium mt-1">
+              {isSummaryLoading ? "…" : `${summary?.totalBalita ?? 0}`}
             </h3>
+            <span className="text-xs text-white/70 font-sans">Anak Terdaftar</span>
           </div>
 
-          <div className="flex items-center gap-2 z-10">
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white">
-              Live
-            </span>
-            <span className="text-xs text-white/70 font-medium">dari database</span>
+          <div className="flex items-center gap-2 text-xs font-medium text-white/90 z-10">
+            <span className="px-2.5 py-0.5 rounded-pill bg-white/20 text-white text-[10px] font-mono">LIVE</span>
+            <span>Update Hari Ini</span>
           </div>
-
-          <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-white/5 rounded-full filter blur-xl group-hover:scale-125 transition-transform duration-500"></div>
         </div>
 
-        {/* Card 2 */}
-        <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 relative flex flex-col justify-between h-40">
+        {/* Card 2: Royal Blue / Indigo (Total Lansia) */}
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-card p-6 relative overflow-hidden flex flex-col justify-between h-44 shadow-soft-card group text-white">
+          <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <button 
             onClick={() => onNavigate("Lansia")}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-saas-dark hover:bg-saas-primary hover:text-white transition-colors"
+            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/30 transition-colors z-10"
           >
-            <ArrowUpRight className="w-4 h-4" />
+            <ArrowUpRight className="w-4 h-4 text-white" />
           </button>
 
           <div>
-            <span className="text-xs uppercase tracking-wider text-saas-muted font-bold">Total Lansia</span>
-            <h3 className="text-3xl font-extrabold text-saas-dark mt-1">
-              {isSummaryLoading ? "…" : `${summary?.totalLansia ?? 0} Jiwa`}
+            <span className="text-[11px] uppercase tracking-wider text-white/80 font-medium">Total Lansia</span>
+            <h3 className="text-3xl font-mono font-medium mt-1">
+              {isSummaryLoading ? "…" : `${summary?.totalLansia ?? 0}`}
             </h3>
+            <span className="text-xs text-white/70 font-sans">Jiwa Terdaftar</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-trend-successBg text-trend-successText">
-              Live
-            </span>
-            <span className="text-xs text-saas-muted font-medium">dari database</span>
+          <div className="flex items-center gap-2 text-xs font-medium text-white/90 z-10">
+            <span className="px-2.5 py-0.5 rounded-pill bg-white/20 text-white text-[10px] font-mono">TERPANTAU</span>
+            <span>Pemeriksaan Rutin</span>
           </div>
         </div>
 
-        {/* Card 3 */}
-        <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 relative flex flex-col justify-between h-40">
+        {/* Card 3: Rose / Crimson (Balita Gizi Kurang) */}
+        <div className="bg-gradient-to-br from-rose-500 to-pink-600 rounded-card p-6 relative overflow-hidden flex flex-col justify-between h-44 shadow-soft-card group text-white">
+          <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <button 
             onClick={() => onNavigate("Balita")}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-saas-dark hover:bg-saas-primary hover:text-white transition-colors"
+            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/30 transition-colors z-10"
           >
-            <ArrowUpRight className="w-4 h-4" />
+            <AlertCircle className="w-4 h-4 text-white" />
           </button>
 
           <div>
-            <span className="text-xs uppercase tracking-wider text-saas-muted font-bold">Balita Gizi Kurang</span>
-            <h3 className="text-3xl font-extrabold text-saas-dark mt-1">
-              {isSummaryLoading ? "…" : `${(summary?.statusGizi?.bbU?.["Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["Sangat Kurang"] ?? 0)} Anak`}
+            <span className="text-[11px] uppercase tracking-wider text-white/80 font-medium">Perhatian Gizi</span>
+            <h3 className="text-3xl font-mono font-medium mt-1">
+              {isSummaryLoading ? "…" : `${(summary?.statusGizi?.bbU?.["Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["Sangat Kurang"] ?? 0)}`}
             </h3>
+            <span className="text-xs text-white/70 font-sans">Balita Kurang Gizi</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-trend-dangerBg text-trend-dangerText">
-              Live
-            </span>
-            <span className="text-xs text-saas-muted font-medium">dari database</span>
+          <div className="flex items-center gap-2 text-xs font-medium text-white/90 z-10">
+            <span className="px-2.5 py-0.5 rounded-pill bg-white/20 text-white text-[10px] font-mono">PRIORITAS</span>
+            <span>Perlu Pendampingan</span>
           </div>
         </div>
 
-        {/* Card 4 */}
-        <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 relative flex flex-col justify-between h-40 overflow-hidden">
+        {/* Card 4: Coinbase Dark Ink / Slate (Lansia Hipertensi) */}
+        <div className="bg-gradient-to-br from-slate-900 to-surface-dark rounded-card p-6 relative overflow-hidden flex flex-col justify-between h-44 shadow-elevated group text-white border border-white/10">
+          <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-amber-500/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <button 
-            onClick={() => onNavigate("Riwayat")}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-saas-dark hover:bg-saas-primary hover:text-white transition-colors"
+            onClick={() => onNavigate("Lansia")}
+            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors z-10"
           >
-            <ArrowUpRight className="w-4 h-4" />
+            <ArrowUpRight className="w-4 h-4 text-amber-400" />
           </button>
 
           <div>
-            <span className="text-xs uppercase tracking-wider text-saas-muted font-bold">Kehadiran Pelayanan</span>
-            <h3 className="text-3xl font-extrabold text-saas-dark mt-1">72%</h3>
+            <span className="text-[11px] uppercase tracking-wider text-saas-muted-soft font-medium">Kesehatan Lansia</span>
+            <h3 className="text-3xl font-mono font-medium mt-1 text-white">
+              {isSummaryLoading ? "…" : `${summary?.lansiaHtDm?.totalHt ?? 0}`}
+            </h3>
+            <span className="text-xs text-saas-muted-soft font-sans">Riwayat Hipertensi</span>
           </div>
 
-          <div className="absolute right-6 bottom-4 w-28 h-10">
-            <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="gradient-spark" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#14B8A6" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M 0 25 C 20 18, 40 5, 60 15 C 80 25, 90 2, 100 5 L 100 30 L 0 30 Z"
-                fill="url(#gradient-spark)"
-              />
-              <path
-                d="M 0 25 C 20 18, 40 5, 60 15 C 80 25, 90 2, 100 5"
-                fill="none"
-                stroke="#14B8A6"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-trend-successBg text-trend-successText">
-              +4.2%
-            </span>
-            <span className="text-xs text-saas-muted font-medium">Bulan ini</span>
+          <div className="flex items-center gap-2 text-xs font-medium text-amber-300 z-10">
+            <span className="px-2.5 py-0.5 rounded-pill bg-amber-500/20 text-amber-300 text-[10px] font-mono font-semibold">MONITORING</span>
+            <span className="text-saas-muted-soft">Kontrol Berkala</span>
           </div>
         </div>
       </div>

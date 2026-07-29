@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Modal from "../../components/Modal";
 import {
   ArrowLeft,
   Plus,
@@ -121,6 +122,17 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   const [view, setView] = useState<"list" | "detail" | "add">("list");
   const [selectedBalitaId, setSelectedBalitaId] = useState<string | null>(null);
   
+  // Edit & Delete Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editNama, setEditNama] = useState("");
+  const [editNik, setEditNik] = useState("");
+  const [editTglLahir, setEditTglLahir] = useState("");
+  const [editJk, setEditJk] = useState<"L" | "P">("L");
+  const [editNamaIbu, setEditNamaIbu] = useState("");
+  const [editAlamat, setEditAlamat] = useState("");
+  const [editError, setEditError] = useState("");
+
   // Search & Filter State
   const [query, setQuery] = useState("");
   const [ageFilter, setAgeFilter] = useState<"semua" | "0-6" | "7-12" | "13-24" | "25-60">("semua");
@@ -185,6 +197,65 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   const [examError, setExamError] = useState("");
 
   const activeBalita = balitas.find((b) => b.id === selectedBalitaId);
+
+  // Populate Edit Form
+  const openEditModal = (b: Balita) => {
+    setEditNama(b.nama);
+    setEditNik(b.nik || "");
+    setEditTglLahir(b.tanggalLahir);
+    setEditJk(b.jenisKelamin);
+    setEditNamaIbu(b.namaIbu);
+    setEditAlamat(b.alamat);
+    setEditError("");
+    setIsEditModalOpen(true);
+  };
+
+  // Handle Edit Submit
+  const handleEditBalitaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditError("");
+    if (!selectedBalitaId) return;
+
+    if (!editNama.trim() || !editNamaIbu.trim() || !editAlamat.trim()) {
+      setEditError("Mohon isi nama lengkap, nama ibu, dan alamat.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await balitaApi.update(posyanduId, selectedBalitaId, {
+        nama: editNama,
+        nik: editNik || undefined,
+        tanggalLahir: editTglLahir,
+        jenisKelamin: editJk,
+        namaIbu: editNamaIbu,
+        alamat: editAlamat,
+      });
+      fetchBalitas();
+      setIsEditModalOpen(false);
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : "Gagal mengedit profil balita.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle Delete Balita
+  const handleDeleteBalita = async () => {
+    if (!selectedBalitaId) return;
+    setIsSaving(true);
+    try {
+      await balitaApi.delete(posyanduId, selectedBalitaId);
+      fetchBalitas();
+      setIsDeleteModalOpen(false);
+      setSelectedBalitaId(null);
+      setView("list");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Gagal menghapus profil balita.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
 
   // Handler Submit Tambah Balita (via API)
@@ -459,13 +530,29 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
           {/* Profile Card & Input Pemeriksaan Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Profil Balita */}
-            <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 flex flex-col justify-between h-fit space-y-6">
+            <div className="bg-white rounded-card shadow-soft-card border border-hairline p-6 flex flex-col justify-between h-fit space-y-6">
               <div>
-                <div className="w-12 h-12 rounded-xl bg-saas-primary/10 flex items-center justify-center text-saas-primary mb-4">
-                  <Baby className="w-6 h-6" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center text-saas-primary">
+                    <Baby className="w-6 h-6" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEditModal(activeBalita)}
+                      className="px-3 py-1.5 border border-hairline text-saas-dark rounded-pill text-xs font-semibold hover:bg-surface-soft transition-all"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setIsDeleteModalOpen(true)}
+                      className="px-3 py-1.5 border border-red-200 text-trend-dangerText rounded-pill text-xs font-semibold hover:bg-red-50 transition-all"
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </div>
                 <h3 className="text-xl font-bold text-saas-dark tracking-tight">{activeBalita.nama}</h3>
-                <p className="text-xs text-saas-muted font-semibold mt-1">NIK: {activeBalita.nik || "Tidak terdaftar"}</p>
+                <p className="text-xs text-saas-muted font-mono mt-1">NIK: {activeBalita.nik || "Tidak terdaftar"}</p>
               </div>
 
               <div className="space-y-4 border-t border-gray-50 pt-4 text-sm font-semibold">
@@ -854,6 +941,145 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
           </form>
         </div>
       )}
+
+      {/* MODAL EDIT BALITA */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Profil Balita"
+      >
+        <form onSubmit={handleEditBalitaSubmit} className="space-y-4">
+          {editError && (
+            <div className="p-3 bg-red-50 text-trend-dangerText border border-red-100 rounded-lg text-xs font-bold">
+              {editError}
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-saas-dark">Nama Lengkap Anak</label>
+            <input
+              type="text"
+              required
+              value={editNama}
+              onChange={(e) => setEditNama(e.target.value)}
+              className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-saas-dark">NIK (16 digit, opsional)</label>
+            <input
+              type="text"
+              maxLength={16}
+              value={editNik}
+              onChange={(e) => setEditNik(e.target.value)}
+              className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-saas-dark">Tanggal Lahir</label>
+              <input
+                type="date"
+                required
+                value={editTglLahir}
+                onChange={(e) => setEditTglLahir(e.target.value)}
+                className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-saas-dark">Jenis Kelamin</label>
+              <div className="flex gap-4 pt-2">
+                <label className="flex items-center gap-2 text-xs font-semibold text-saas-dark cursor-pointer">
+                  <input
+                    type="radio"
+                    name="editJk"
+                    checked={editJk === "L"}
+                    onChange={() => setEditJk("L")}
+                  />
+                  Laki-laki
+                </label>
+                <label className="flex items-center gap-2 text-xs font-semibold text-saas-dark cursor-pointer">
+                  <input
+                    type="radio"
+                    name="editJk"
+                    checked={editJk === "P"}
+                    onChange={() => setEditJk("P")}
+                  />
+                  Perempuan
+                </label>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-saas-dark">Nama Ibu Kandung</label>
+            <input
+              type="text"
+              required
+              value={editNamaIbu}
+              onChange={(e) => setEditNamaIbu(e.target.value)}
+              className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-saas-dark">Alamat Rumah</label>
+            <textarea
+              rows={2}
+              required
+              value={editAlamat}
+              onChange={(e) => setEditAlamat(e.target.value)}
+              className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-4 py-2 border border-hairline rounded-pill text-xs font-semibold text-saas-dark hover:bg-surface-soft"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="px-4 py-2 bg-saas-primary text-white rounded-pill text-xs font-semibold hover:bg-saas-primary-active disabled:opacity-50"
+            >
+              {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL KONFIRMASI HAPUS BALITA */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Hapus Profil Balita"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-saas-dark font-medium">
+            Apakah Anda yakin ingin menghapus data profil balita <span className="font-bold text-trend-dangerText">{activeBalita?.nama}</span>?
+          </p>
+          <p className="text-xs text-saas-muted">
+            Seluruh riwayat pemeriksaan anak ini juga akan dihapus secara permanen dari sistem.
+          </p>
+          <div className="flex justify-end gap-2 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="px-4 py-2 border border-hairline rounded-pill text-xs font-semibold text-saas-dark hover:bg-surface-soft"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteBalita}
+              disabled={isSaving}
+              className="px-4 py-2 bg-trend-dangerText text-white rounded-pill text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
+            >
+              {isSaving ? "Menghapus..." : "Ya, Hapus Permanen"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

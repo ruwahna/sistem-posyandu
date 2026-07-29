@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Modal from "../../components/Modal";
 import { lansiaApi } from "../../lib/api";
 import {
   ArrowLeft,
@@ -150,6 +151,22 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
   const [ageFilter, setAgeFilter] = useState<"semua" | "45-59" | "60-69" | "70+">("semua");
   const [diseaseFilter, setDiseaseFilter] = useState<"semua" | "ht" | "dm">("semua");
 
+  // Edit & Delete Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editNama, setEditNama] = useState("");
+  const [editNik, setEditNik] = useState("");
+  const [editBpjs, setEditBpjs] = useState("");
+  const [editTglLahir, setEditTglLahir] = useState("");
+  const [editJk, setEditJk] = useState<"L" | "P">("L");
+  const [editRtRw, setEditRtRw] = useState("");
+  const [editAlamat, setEditAlamat] = useState("");
+  const [editHt, setEditHt] = useState(false);
+  const [editDm, setEditDm] = useState(false);
+  const [editKemandirian, setEditKemandirian] = useState<"A" | "B" | "C">("A");
+  const [editMental, setEditMental] = useState("");
+  const [editError, setEditError] = useState("");
+
   // Fetch lansia from API
   const fetchLansias = useCallback(() => {
     setIsLoading(true);
@@ -216,6 +233,75 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
   const [examError, setExamError] = useState("");
 
   const activeLansia = lansias.find((l) => l.id === selectedLansiaId);
+
+  // Populate Edit Lansia
+  const openEditModal = (l: Lansia) => {
+    setEditNama(l.nama);
+    setEditNik(l.nik);
+    setEditBpjs(l.noBpjs || "");
+    setEditTglLahir(l.tanggalLahir);
+    setEditJk(l.jenisKelamin);
+    setEditRtRw(l.rtRw);
+    setEditAlamat(l.alamat);
+    setEditHt(l.riwayatHt);
+    setEditDm(l.riwayatDm);
+    setEditKemandirian(l.tingkatKemandirian);
+    setEditMental(l.gangguanMentalEmosional || "");
+    setEditError("");
+    setIsEditModalOpen(true);
+  };
+
+  // Handle Edit Submit
+  const handleEditLansiaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditError("");
+    if (!selectedLansiaId) return;
+
+    if (!editNama.trim() || !editNik.trim() || !editRtRw.trim() || !editAlamat.trim()) {
+      setEditError("Mohon isi nama lengkap, NIK, RT/RW, dan alamat.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await lansiaApi.update(posyanduId, selectedLansiaId, {
+        nama: editNama,
+        nik: editNik,
+        noBpjs: editBpjs || undefined,
+        tanggalLahir: editTglLahir,
+        jenisKelamin: editJk,
+        rtRw: editRtRw,
+        alamat: editAlamat,
+        riwayatHt: editHt,
+        riwayatDm: editDm,
+        tingkatKemandirian: editKemandirian,
+        gangguanMentalEmosional: editMental || undefined,
+      });
+      fetchLansias();
+      setIsEditModalOpen(false);
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : "Gagal mengedit data lansia.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle Delete Lansia
+  const handleDeleteLansia = async () => {
+    if (!selectedLansiaId) return;
+    setIsSaving(true);
+    try {
+      await lansiaApi.delete(posyanduId, selectedLansiaId);
+      fetchLansias();
+      setIsDeleteModalOpen(false);
+      setSelectedLansiaId(null);
+      setView("list");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Gagal menghapus data lansia.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Handler Submit Tambah Lansia (via API)
   const handleAddLansiaSubmit = async (e: React.FormEvent) => {
@@ -510,15 +596,31 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
           {/* Profile & Form Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Profil Lansia Card */}
-            <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 flex flex-col justify-between h-fit space-y-6">
+            <div className="bg-white rounded-card shadow-soft-card border border-hairline p-6 flex flex-col justify-between h-fit space-y-6">
               <div>
-                <div className="w-12 h-12 rounded-xl bg-saas-primary/10 flex items-center justify-center text-saas-primary mb-4">
-                  <Heart className="w-6 h-6" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                    <Heart className="w-6 h-6" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEditModal(activeLansia)}
+                      className="px-3 py-1.5 border border-hairline text-saas-dark rounded-pill text-xs font-semibold hover:bg-surface-soft transition-all"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setIsDeleteModalOpen(true)}
+                      className="px-3 py-1.5 border border-red-200 text-trend-dangerText rounded-pill text-xs font-semibold hover:bg-red-50 transition-all"
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </div>
                 <h3 className="text-xl font-bold text-saas-dark tracking-tight">{activeLansia.nama}</h3>
-                <p className="text-xs text-saas-muted font-semibold mt-1">NIK: {activeLansia.nik}</p>
+                <p className="text-xs text-saas-muted font-mono mt-1">NIK: {activeLansia.nik}</p>
                 {activeLansia.noBpjs && (
-                  <p className="text-xs text-saas-muted font-semibold mt-0.5">BPJS: {activeLansia.noBpjs}</p>
+                  <p className="text-xs text-saas-muted font-mono mt-0.5">BPJS: {activeLansia.noBpjs}</p>
                 )}
               </div>
 
@@ -962,6 +1064,199 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
           </form>
         </div>
       )}
+
+      {/* MODAL EDIT LANSIA */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Profil Lansia"
+      >
+        <form onSubmit={handleEditLansiaSubmit} className="space-y-4">
+          {editError && (
+            <div className="p-3 bg-red-50 text-trend-dangerText border border-red-100 rounded-lg text-xs font-bold">
+              {editError}
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-saas-dark">Nama Lengkap Lansia</label>
+            <input
+              type="text"
+              required
+              value={editNama}
+              onChange={(e) => setEditNama(e.target.value)}
+              className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-saas-dark">NIK (16 digit)</label>
+              <input
+                type="text"
+                required
+                maxLength={16}
+                value={editNik}
+                onChange={(e) => setEditNik(e.target.value)}
+                className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-saas-dark">No. BPJS (Opsional)</label>
+              <input
+                type="text"
+                value={editBpjs}
+                onChange={(e) => setEditBpjs(e.target.value)}
+                className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-saas-dark">Tanggal Lahir</label>
+              <input
+                type="date"
+                required
+                value={editTglLahir}
+                onChange={(e) => setEditTglLahir(e.target.value)}
+                className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-saas-dark">Jenis Kelamin</label>
+              <div className="flex gap-4 pt-2">
+                <label className="flex items-center gap-2 text-xs font-semibold text-saas-dark cursor-pointer">
+                  <input
+                    type="radio"
+                    name="editJkLansia"
+                    checked={editJk === "L"}
+                    onChange={() => setEditJk("L")}
+                  />
+                  Laki-laki
+                </label>
+                <label className="flex items-center gap-2 text-xs font-semibold text-saas-dark cursor-pointer">
+                  <input
+                    type="radio"
+                    name="editJkLansia"
+                    checked={editJk === "P"}
+                    onChange={() => setEditJk("P")}
+                  />
+                  Perempuan
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-saas-dark">RT / RW</label>
+              <input
+                type="text"
+                required
+                value={editRtRw}
+                onChange={(e) => setEditRtRw(e.target.value)}
+                className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-saas-dark">Tingkat Kemandirian</label>
+              <select
+                value={editKemandirian}
+                onChange={(e) => setEditKemandirian(e.target.value as any)}
+                className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              >
+                <option value="A">Kategori A (Mandiri)</option>
+                <option value="B">Kategori B (Bantuan Sebagian)</option>
+                <option value="C">Kategori C (Ketergantungan Total)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-saas-dark">Riwayat Penyakit</label>
+            <div className="flex gap-6 pt-1">
+              <label className="flex items-center gap-2 text-xs font-semibold text-saas-dark cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editHt}
+                  onChange={(e) => setEditHt(e.target.checked)}
+                />
+                Hipertensi (HT)
+              </label>
+              <label className="flex items-center gap-2 text-xs font-semibold text-saas-dark cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editDm}
+                  onChange={(e) => setEditDm(e.target.checked)}
+                />
+                Diabetes Mellitus (DM)
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-saas-dark">Alamat / Dusun</label>
+            <input
+              type="text"
+              required
+              value={editAlamat}
+              onChange={(e) => setEditAlamat(e.target.value)}
+              className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-4 py-2 border border-hairline rounded-pill text-xs font-semibold text-saas-dark hover:bg-surface-soft"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="px-4 py-2 bg-saas-primary text-white rounded-pill text-xs font-semibold hover:bg-saas-primary-active disabled:opacity-50"
+            >
+              {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL KONFIRMASI HAPUS LANSIA */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Hapus Profil Lansia"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-saas-dark font-medium">
+            Apakah Anda yakin ingin menghapus data profil lansia <span className="font-bold text-trend-dangerText">{activeLansia?.nama}</span>?
+          </p>
+          <p className="text-xs text-saas-muted">
+            Seluruh riwayat pemeriksaan medis lansia ini juga akan dihapus secara permanen dari sistem.
+          </p>
+          <div className="flex justify-end gap-2 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="px-4 py-2 border border-hairline rounded-pill text-xs font-semibold text-saas-dark hover:bg-surface-soft"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteLansia}
+              disabled={isSaving}
+              className="px-4 py-2 bg-trend-dangerText text-white rounded-pill text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
+            >
+              {isSaving ? "Menghapus..." : "Ya, Hapus Permanen"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

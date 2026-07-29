@@ -36,99 +36,100 @@ function StatBubble({
   value,
   className,
   delay = 0,
+  accentColor = "bg-emerald-500/10 text-emerald-600",
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   className?: string;
   delay?: number;
+  accentColor?: string;
 }) {
   return (
     <div
-      className={`absolute bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-xl border border-white/60 flex items-center gap-3 animate-float ${className}`}
+      className={`absolute bg-surface-elevated/90 backdrop-blur-md rounded-xl p-3.5 shadow-elevated border border-white/10 flex items-center gap-3 animate-float ${className}`}
       style={{ animationDelay: `${delay}s` }}
     >
-      <div className="w-9 h-9 rounded-xl bg-saas-primary/10 flex items-center justify-center text-saas-primary shrink-0">
+      <div className={`w-9 h-9 rounded-full ${accentColor} flex items-center justify-center shrink-0`}>
         {icon}
       </div>
       <div>
-        <p className="text-[10px] text-saas-muted font-semibold uppercase tracking-wider leading-none">
+        <p className="text-[11px] text-saas-muted-soft font-medium uppercase tracking-wider leading-none">
           {label}
         </p>
-        <p className="text-sm font-bold text-saas-dark mt-0.5">{value}</p>
+        <p className="text-sm font-semibold text-white font-mono mt-1">{value}</p>
       </div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// LEFT PANEL — Brand & Illustration
+// LEFT PANEL — Coinbase Hero Band Dark Style
 // ─────────────────────────────────────────────────────────────
 
 function LeftPanel() {
   return (
-    <div className="hidden md:flex w-[45%] shrink-0 bg-saas-primary rounded-3xl p-10 flex-col justify-between relative overflow-hidden">
-      {/* Decorative circles */}
-      <div className="absolute -top-20 -left-20 w-64 h-64 bg-white/5 rounded-full" />
-      <div className="absolute -bottom-32 -right-16 w-80 h-80 bg-white/5 rounded-full" />
-      <div className="absolute top-1/2 -right-10 w-32 h-32 bg-white/5 rounded-full" />
+    <div className="hidden md:flex w-[48%] shrink-0 bg-surface-dark rounded-[20px] p-10 flex-col justify-between relative overflow-hidden text-white">
+      {/* Subtle Coinbase grid lines */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
-      {/* Logo */}
+      {/* Brand Header */}
       <div className="relative z-10 flex items-center gap-3">
-        <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center border border-white/30 backdrop-blur-sm">
-          <HeartPulse className="w-6 h-6 text-white stroke-[2.5]" />
+        <div className="w-10 h-10 bg-saas-primary rounded-full flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
+          <HeartPulse className="w-5 h-5 stroke-[2.5]" />
         </div>
         <div>
-          <p className="text-white font-bold text-lg leading-none">PosyanduKita</p>
-          <p className="text-white/60 text-[10px] font-semibold uppercase tracking-widest mt-0.5">
-            Sistem Informasi
-          </p>
+          <p className="text-white font-bold text-base tracking-tight leading-none">PosyanduKita</p>
+          <span className="inline-block mt-1 px-2 py-0.5 bg-white/10 text-emerald-400 rounded-pill text-[10px] font-mono tracking-wide font-medium">
+            HEALTH PLATFORM
+          </span>
         </div>
       </div>
 
-      {/* Center content */}
-      <div className="relative z-10 flex-1 flex flex-col justify-center py-12">
-        <h2 className="text-white text-3xl font-extrabold leading-tight mb-4">
+      {/* Center Hero Copy (Coinbase Display style) */}
+      <div className="relative z-10 my-auto py-6">
+        <h2 className="text-white text-3xl lg:text-4xl font-normal leading-[1.1] tracking-tight mb-4 font-sans">
           Digitalisasi<br />
-          Pelayanan<br />
-          Posyandu
+          Pelayanan Posyandu<br />
+          <span className="text-saas-primary font-medium">Terintegrasi.</span>
         </h2>
-        <p className="text-white/70 text-sm font-medium leading-relaxed max-w-[240px]">
-          Catat tumbuh kembang balita & kesehatan lansia secara digital, akurat, dan efisien.
+        <p className="text-saas-muted-soft text-sm font-normal leading-relaxed max-w-[280px]">
+          Pencatatan tumbuh kembang balita & kesehatan lansia berbasis data akurat dan real-time.
         </p>
 
-        {/* Floating Stat Cards */}
-        <div className="relative h-48 mt-8">
+        {/* Product UI Mockup Card Layering (Coinbase signature depth pattern) */}
+        <div className="relative h-52 mt-8">
           <StatBubble
-            icon={<Baby className="w-4 h-4" />}
-            label="Balita Terdaftar"
-            value="Terdata rapi"
-            className="left-0 top-0"
+            icon={<Baby className="w-4 h-4 text-emerald-400" />}
+            label="Balita Terdata"
+            value="100% Valid"
+            accentColor="bg-emerald-500/10 text-emerald-400"
+            className="left-0 top-0 w-44"
             delay={0}
           />
           <StatBubble
-            icon={<Heart className="w-4 h-4" />}
+            icon={<Heart className="w-4 h-4 text-sky-400" />}
             label="Pemeriksaan"
-            value="Real-time"
-            className="right-0 top-14"
+            value="Real-Time"
+            accentColor="bg-sky-500/10 text-sky-400"
+            className="right-0 top-12 w-44"
             delay={1.5}
           />
           <StatBubble
-            icon={<Users className="w-4 h-4" />}
-            label="Lansia"
-            value="Terpantau"
-            className="left-4 bottom-0"
+            icon={<Users className="w-4 h-4 text-amber-400" />}
+            label="Lansia Terpantau"
+            value="Berkala"
+            accentColor="bg-amber-500/10 text-amber-400"
+            className="left-6 bottom-2 w-44"
             delay={3}
           />
         </div>
       </div>
 
-      {/* Decorative bottom shapes */}
-      <div className="relative z-10 flex gap-2 opacity-20">
-        <div className="w-10 h-10 border-2 border-white rounded-full" />
-        <div className="w-10 h-10 border-2 border-white rounded-lg rotate-45" />
-        <div className="w-10 h-10 border-2 border-white rounded-full" />
-        <div className="w-10 h-10 border-2 border-white rounded-lg rotate-12" />
+      {/* Footer minimal tag */}
+      <div className="relative z-10 flex items-center justify-between border-t border-white/10 pt-4 text-[12px] text-saas-muted-soft">
+        <span className="font-mono text-emerald-400 font-medium">● SYSTEM ACTIVE</span>
+        <span>Standard ISO Health Digital</span>
       </div>
     </div>
   );
@@ -162,16 +163,19 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
   return (
     <div className="w-full max-w-sm mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-extrabold text-saas-dark tracking-tight">Masuk</h1>
-        <p className="text-sm text-saas-muted mt-1 font-medium">
-          Selamat datang kembali, Kader Posyandu!
+        <span className="inline-block px-2.5 py-1 bg-teal-50 text-saas-primary rounded-pill text-[11px] font-semibold tracking-wide uppercase mb-3">
+          Portal Kader
+        </span>
+        <h1 className="text-3xl font-normal text-saas-dark tracking-tight">Masuk</h1>
+        <p className="text-sm text-saas-muted mt-1 font-normal">
+          Kelola data kesehatan Posyandu Anda secara terpusat.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Email */}
         <div>
-          <label className="block text-xs font-bold text-saas-muted uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-semibold text-saas-dark mb-1.5">
             Email
           </label>
           <div className="relative">
@@ -184,15 +188,15 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="kader@posyandu.id"
-              className="w-full pl-10 pr-4 py-2.5 bg-canvas border border-gray-200 rounded-input text-sm text-saas-dark placeholder-saas-muted/60 focus:outline-none focus:border-saas-primary focus:ring-1 focus:ring-saas-primary/30 focus:bg-white transition-all"
+              className="w-full pl-10 pr-4 py-3 bg-white border border-hairline rounded-input text-sm text-saas-dark placeholder-saas-muted-soft focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
             />
           </div>
         </div>
 
         {/* Password */}
         <div>
-          <label className="block text-xs font-bold text-saas-muted uppercase tracking-wider mb-1.5">
-            Password
+          <label className="block text-xs font-semibold text-saas-dark mb-1.5">
+            Kata Sandi
           </label>
           <div className="relative">
             <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-saas-muted" />
@@ -204,7 +208,7 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full pl-10 pr-10 py-2.5 bg-canvas border border-gray-200 rounded-input text-sm text-saas-dark placeholder-saas-muted/60 focus:outline-none focus:border-saas-primary focus:ring-1 focus:ring-saas-primary/30 focus:bg-white transition-all"
+              className="w-full pl-10 pr-10 py-3 bg-white border border-hairline rounded-input text-sm text-saas-dark placeholder-saas-muted-soft focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
             />
             <button
               type="button"
@@ -218,17 +222,17 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
 
         {/* Error */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-semibold">
+          <div className="p-3.5 bg-trend-dangerBg border border-red-200 rounded-input text-xs text-trend-dangerText font-medium">
             {error}
           </div>
         )}
 
-        {/* Submit */}
+        {/* Coinbase Signature Pill Button */}
         <button
           id="btn-login-submit"
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 bg-saas-primary text-white font-bold rounded-input shadow-lg shadow-teal-500/20 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+          className="w-full py-3.5 bg-saas-primary hover:bg-saas-primary-active text-white text-sm font-semibold rounded-pill transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 shadow-sm"
         >
           {isLoading ? (
             <>
@@ -236,21 +240,21 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
               Memproses...
             </>
           ) : (
-            "MASUK"
+            "Masuk ke Portal"
           )}
         </button>
       </form>
 
       {/* Switch to Register */}
-      <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-        <p className="text-sm text-saas-muted font-medium">
-          Belum punya posyandu terdaftar?{" "}
+      <div className="mt-8 pt-6 border-t border-hairline text-center">
+        <p className="text-sm text-saas-muted">
+          Belum mendaftarkan Posyandu?{" "}
           <button
             id="btn-switch-to-register"
             onClick={onSwitch}
-            className="text-saas-primary font-bold hover:underline transition-all"
+            className="text-saas-primary font-semibold hover:underline transition-all"
           >
-            Daftarkan Posyandu
+            Daftar Posyandu Baru
           </button>
         </p>
       </div>
@@ -319,11 +323,14 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
     <div className="w-full max-w-sm mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-saas-dark tracking-tight">
+        <span className="inline-block px-2.5 py-1 bg-teal-50 text-saas-primary rounded-pill text-[11px] font-semibold tracking-wide uppercase mb-3">
+          Registrasi Baru
+        </span>
+        <h1 className="text-3xl font-normal text-saas-dark tracking-tight">
           Daftarkan Posyandu
         </h1>
-        <p className="text-sm text-saas-muted mt-1 font-medium">
-          Buat akun posyandu baru dalam 2 langkah mudah
+        <p className="text-sm text-saas-muted mt-1 font-normal">
+          Buat ekosistem digital Posyandu Anda dalam 2 langkah.
         </p>
       </div>
 
@@ -391,7 +398,7 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
           />
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-semibold">
+            <div className="p-3.5 bg-trend-dangerBg border border-red-200 rounded-input text-xs text-trend-dangerText font-medium">
               {error}
             </div>
           )}
@@ -399,9 +406,9 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
           <button
             id="btn-register-step1"
             type="submit"
-            className="w-full py-3 bg-saas-primary text-white font-bold rounded-input shadow-lg shadow-teal-500/20 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2"
+            className="w-full py-3.5 bg-saas-primary hover:bg-saas-primary-active text-white text-sm font-semibold rounded-pill transition-all flex items-center justify-center gap-2 mt-4 shadow-sm"
           >
-            Selanjutnya <ArrowRight className="w-4 h-4" />
+            Langkah Selanjutnya <ArrowRight className="w-4 h-4" />
           </button>
         </form>
       )}
@@ -427,7 +434,7 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
             placeholder="kader@posyandu.id"
           />
           <div>
-            <label className="block text-xs font-bold text-saas-muted uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-semibold text-saas-dark mb-1.5">
               Password
             </label>
             <div className="relative">
@@ -439,7 +446,7 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min. 8 karakter"
-                className="w-full pl-10 pr-10 py-2.5 bg-canvas border border-gray-200 rounded-input text-sm text-saas-dark placeholder-saas-muted/60 focus:outline-none focus:border-saas-primary focus:ring-1 focus:ring-saas-primary/30 focus:bg-white transition-all"
+                className="w-full pl-10 pr-10 py-3 bg-white border border-hairline rounded-input text-sm text-saas-dark placeholder-saas-muted-soft focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
               />
               <button
                 type="button"
@@ -461,17 +468,17 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
           />
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-semibold">
+            <div className="p-3.5 bg-trend-dangerBg border border-red-200 rounded-input text-xs text-trend-dangerText font-medium">
               {error}
             </div>
           )}
 
-          <div className="flex gap-3 mt-2">
+          <div className="flex gap-3 mt-4">
             <button
               id="btn-register-back"
               type="button"
               onClick={() => { setStep(1); setError(null); }}
-              className="flex-1 py-3 border border-gray-200 text-saas-dark font-bold rounded-input hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 border border-hairline text-saas-dark text-sm font-semibold rounded-pill hover:bg-surface-soft transition-all flex items-center justify-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" /> Kembali
             </button>
@@ -479,12 +486,12 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
               id="btn-register-submit"
               type="submit"
               disabled={isLoading}
-              className="flex-1 py-3 bg-saas-primary text-white font-bold rounded-input shadow-lg shadow-teal-500/20 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 bg-saas-primary hover:bg-saas-primary-active text-white text-sm font-semibold rounded-pill transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
             >
               {isLoading ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Membuat...</>
               ) : (
-                "DAFTAR"
+                "Selesaikan"
               )}
             </button>
           </div>
@@ -533,7 +540,7 @@ function InputField({
     <div>
       <label
         htmlFor={id}
-        className="block text-xs font-bold text-saas-muted uppercase tracking-wider mb-1.5"
+        className="block text-xs font-semibold text-saas-dark mb-1.5"
       >
         {label}
       </label>
@@ -546,7 +553,7 @@ function InputField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full pl-10 pr-4 py-2.5 bg-canvas border border-gray-200 rounded-input text-sm text-saas-dark placeholder-saas-muted/60 focus:outline-none focus:border-saas-primary focus:ring-1 focus:ring-saas-primary/30 focus:bg-white transition-all"
+          className="w-full pl-10 pr-4 py-3 bg-white border border-hairline rounded-input text-sm text-saas-dark placeholder-saas-muted-soft focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
         />
       </div>
     </div>
