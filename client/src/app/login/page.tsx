@@ -37,7 +37,7 @@ function StatBubble({
   value,
   className,
   delay = 0,
-  accentColor = "bg-emerald-500/10 text-emerald-600",
+  accentColor = "bg-teal-50 text-teal-600",
 }: {
   icon: React.ReactNode;
   label: string;
@@ -48,17 +48,17 @@ function StatBubble({
 }) {
   return (
     <div
-      className={`absolute bg-surface-elevated/90 backdrop-blur-md rounded-xl p-3.5 shadow-elevated border border-white/10 flex items-center gap-3 animate-float ${className}`}
+      className={`absolute bg-white/95 backdrop-blur-md rounded-xl p-3.5 shadow-soft-card border border-teal-100/50 flex items-center gap-3 animate-float ${className}`}
       style={{ animationDelay: `${delay}s` }}
     >
       <div className={`w-9 h-9 rounded-full ${accentColor} flex items-center justify-center shrink-0`}>
         {icon}
       </div>
       <div>
-        <p className="text-[11px] text-saas-muted-soft font-medium uppercase tracking-wider leading-none">
+        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider leading-none">
           {label}
         </p>
-        <p className="text-sm font-semibold text-white font-mono mt-1">{value}</p>
+        <p className="text-xs font-semibold text-teal-900 mt-1">{value}</p>
       </div>
     </div>
   );
@@ -70,57 +70,57 @@ function StatBubble({
 
 function LeftPanel() {
   return (
-    <div className="hidden md:flex w-[48%] shrink-0 bg-surface-dark rounded-[20px] p-10 flex-col justify-between relative overflow-hidden text-white">
-      {/* Subtle Coinbase grid lines */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+    <div className="hidden md:flex w-[48%] shrink-0 bg-gradient-to-br from-teal-50 via-teal-100/60 to-emerald-50 rounded-[20px] p-10 flex-col justify-between relative overflow-hidden text-slate-800 border border-teal-100/30">
+      {/* Subtle decorative grid lines */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0d948806_1px,transparent_1px),linear-gradient(to_bottom,#0d948806_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
       {/* Brand Header */}
       <div className="relative z-10 flex items-center gap-3">
-        <div className="w-10 h-10 bg-saas-primary rounded-full flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
+        <div className="w-10 h-10 bg-saas-primary rounded-full flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
           <HeartPulse className="w-5 h-5 stroke-[2.5]" />
         </div>
         <div>
-          <p className="text-white font-bold text-base tracking-tight leading-none">PosyanduKita</p>
-          <span className="inline-block mt-1 px-2 py-0.5 bg-white/10 text-emerald-400 rounded-pill text-[10px] font-mono tracking-wide font-medium">
-            HEALTH PLATFORM
+          <p className="text-teal-900 font-extrabold text-base tracking-tight leading-none">PosyanduKita</p>
+          <span className="inline-block mt-1 px-2.5 py-0.5 bg-teal-600/10 text-teal-800 rounded-pill text-[9px] tracking-wider font-bold">
+            APLIKASI KADER POSYANDU
           </span>
         </div>
       </div>
 
-      {/* Center Hero Copy (Coinbase Display style) */}
+      {/* Center Hero Copy */}
       <div className="relative z-10 my-auto py-6">
-        <h2 className="text-white text-3xl lg:text-4xl font-normal leading-[1.1] tracking-tight mb-4 font-sans">
-          Digitalisasi<br />
-          Pelayanan Posyandu<br />
-          <span className="text-saas-primary font-medium">Terintegrasi.</span>
+        <h2 className="text-teal-950 text-3xl lg:text-[34px] font-bold leading-[1.25] tracking-tight mb-4 font-sans">
+          Pencatatan Posyandu<br />
+          Kini Lebih<br />
+          <span className="text-saas-primary">Mudah & Cepat!</span>
         </h2>
-        <p className="text-saas-muted-soft text-sm font-normal leading-relaxed max-w-[280px]">
-          Pencatatan tumbuh kembang balita & kesehatan lansia berbasis data akurat dan real-time.
+        <p className="text-slate-600 text-sm font-medium leading-relaxed max-w-[290px]">
+          Membantu Ibu & Kader mencatat tumbuh kembang balita serta kesehatan lansia secara otomatis, aman, dan rapi.
         </p>
 
-        {/* Product UI Mockup Card Layering (Coinbase signature depth pattern) */}
+        {/* Product UI Mockup Card Layering */}
         <div className="relative h-52 mt-8">
           <StatBubble
-            icon={<Baby className="w-4 h-4 text-emerald-400" />}
-            label="Balita Terdata"
-            value="100% Valid"
-            accentColor="bg-emerald-500/10 text-emerald-400"
+            icon={<Baby className="w-4 h-4 text-teal-600" />}
+            label="Data Balita"
+            value="Tercatat Rapi"
+            accentColor="bg-teal-50 text-teal-600"
             className="left-0 top-0 w-44"
             delay={0}
           />
           <StatBubble
-            icon={<Heart className="w-4 h-4 text-sky-400" />}
-            label="Pemeriksaan"
-            value="Real-Time"
-            accentColor="bg-sky-500/10 text-sky-400"
+            icon={<Heart className="w-4 h-4 text-emerald-600" />}
+            label="Tumbuh Kembang"
+            value="Grafik Otomatis"
+            accentColor="bg-emerald-50 text-emerald-600"
             className="right-0 top-12 w-44"
             delay={1.5}
           />
           <StatBubble
-            icon={<Users className="w-4 h-4 text-amber-400" />}
-            label="Lansia Terpantau"
-            value="Berkala"
-            accentColor="bg-amber-500/10 text-amber-400"
+            icon={<Users className="w-4 h-4 text-sky-600" />}
+            label="Kesehatan Lansia"
+            value="Mudah Dipantau"
+            accentColor="bg-sky-50 text-sky-600"
             className="left-6 bottom-2 w-44"
             delay={3}
           />
@@ -128,9 +128,9 @@ function LeftPanel() {
       </div>
 
       {/* Footer minimal tag */}
-      <div className="relative z-10 flex items-center justify-between border-t border-white/10 pt-4 text-[12px] text-saas-muted-soft">
-        <span className="font-mono text-emerald-400 font-medium">● SYSTEM ACTIVE</span>
-        <span>Standard ISO Health Digital</span>
+      <div className="relative z-10 flex items-center justify-between border-t border-teal-200/50 pt-4 text-[11px] text-slate-500">
+        <span className="font-bold text-emerald-600">● SISTEM AKTIF</span>
+        <span>Sistem Input Posyandu</span>
       </div>
     </div>
   );
@@ -155,7 +155,7 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
     try {
       await login(email, password);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Login gagal, coba lagi.");
+      setError(err instanceof Error ? err.message : "Gagal masuk. Silakan periksa kembali email dan kata sandi Anda.");
     } finally {
       setIsLoading(false);
     }
@@ -164,23 +164,23 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
   return (
     <div className="w-full max-w-sm mx-auto">
       <div className="mb-8">
-        <span className="inline-block px-2.5 py-1 bg-teal-50 text-saas-primary rounded-pill text-[11px] font-semibold tracking-wide uppercase mb-3">
-          Portal Kader
+        <span className="inline-block px-3 py-1 bg-teal-50 text-saas-primary rounded-pill text-[11px] font-bold tracking-wider uppercase mb-3">
+          MASUK APLIKASI
         </span>
-        <h1 className="text-3xl font-normal text-saas-dark tracking-tight">Masuk</h1>
-        <p className="text-sm text-saas-muted mt-1 font-normal">
-          Kelola data kesehatan Posyandu Anda secara terpusat.
+        <h1 className="text-3xl font-extrabold text-teal-950 tracking-tight">Selamat Datang!</h1>
+        <p className="text-sm text-slate-500 mt-2 font-normal leading-relaxed">
+          Silakan masukkan alamat email dan kata sandi Anda untuk mulai mengelola data Posyandu.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Email */}
         <div>
-          <label className="block text-xs font-semibold text-saas-dark mb-1.5">
-            Email
+          <label className="block text-xs font-bold text-teal-950 mb-1.5">
+            Alamat Email Anda
           </label>
           <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-saas-muted" />
+            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               id="login-email"
               type="email"
@@ -188,19 +188,19 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="kader@posyandu.id"
-              className="w-full pl-10 pr-4 py-3 bg-white border border-hairline rounded-input text-sm text-saas-dark placeholder-saas-muted-soft focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
+              placeholder="contoh: nama.kader@gmail.com"
+              className="w-full pl-10 pr-4 py-3 bg-white border border-hairline rounded-input text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
             />
           </div>
         </div>
 
         {/* Password */}
         <div>
-          <label className="block text-xs font-semibold text-saas-dark mb-1.5">
+          <label className="block text-xs font-bold text-teal-950 mb-1.5">
             Kata Sandi
           </label>
           <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-saas-muted" />
+            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               id="login-password"
               type={showPassword ? "text" : "password"}
@@ -208,13 +208,13 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full pl-10 pr-10 py-3 bg-white border border-hairline rounded-input text-sm text-saas-dark placeholder-saas-muted-soft focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
+              placeholder="Masukkan kata sandi Anda"
+              className="w-full pl-10 pr-10 py-3 bg-white border border-hairline rounded-input text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-saas-muted hover:text-saas-dark transition-colors"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -223,39 +223,39 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
 
         {/* Error */}
         {error && (
-          <div className="p-3.5 bg-trend-dangerBg border border-red-200 rounded-input text-xs text-trend-dangerText font-medium">
-            {error}
+          <div className="p-3.5 bg-red-50 border border-red-200 rounded-input text-xs text-red-700 font-semibold leading-relaxed">
+            ⚠️ {error}
           </div>
         )}
 
-        {/* Coinbase Signature Pill Button */}
+        {/* Submit Button */}
         <button
           id="btn-login-submit"
           type="submit"
           disabled={isLoading}
-          className="w-full py-3.5 bg-saas-primary hover:bg-saas-primary-active text-white text-sm font-semibold rounded-pill transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 shadow-sm"
+          className="w-full py-3.5 bg-saas-primary hover:bg-saas-primary-active text-white text-sm font-bold rounded-pill transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 shadow-sm"
         >
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Memproses...
+              Memeriksa Akun...
             </>
           ) : (
-            "Masuk ke Portal"
+            "Masuk ke Aplikasi"
           )}
         </button>
       </form>
 
       {/* Switch to Register */}
       <div className="mt-8 pt-6 border-t border-hairline text-center">
-        <p className="text-sm text-saas-muted">
-          Belum mendaftarkan Posyandu?{" "}
+        <p className="text-sm text-slate-500">
+          Posyandu Anda belum terdaftar?{" "}
           <button
             id="btn-switch-to-register"
             onClick={onSwitch}
-            className="text-saas-primary font-semibold hover:underline transition-all"
+            className="text-saas-primary font-bold hover:underline transition-all"
           >
-            Daftar Posyandu Baru
+            Daftarkan Posyandu Baru
           </button>
         </p>
       </div>
@@ -290,7 +290,7 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
     e.preventDefault();
     setError(null);
     if (!namaPosyandu.trim() || !desa.trim() || !kecamatan.trim() || !alamat.trim()) {
-      setError("Semua field posyandu wajib diisi.");
+      setError("Silakan isi semua data Posyandu terlebih dahulu.");
       return;
     }
     setStep(2);
@@ -300,22 +300,22 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
     e.preventDefault();
     setError(null);
     if (!namaKader.trim() || !email.trim() || !password) {
-      setError("Semua field akun wajib diisi.");
+      setError("Silakan isi semua data akun pengelola.");
       return;
     }
     if (password.length < 8) {
-      setError("Password minimal 8 karakter.");
+      setError("Kata sandi harus minimal 8 karakter agar aman.");
       return;
     }
     if (password !== confirmPassword) {
-      setError("Konfirmasi password tidak cocok.");
+      setError("Isian kata sandi kedua tidak cocok dengan yang pertama.");
       return;
     }
     setIsLoading(true);
     try {
       await registerPosyandu({ namaPosyandu, desa, kecamatan, alamat, namaKader, email, password });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Registrasi gagal.");
+      setError(err instanceof Error ? err.message : "Gagal mendaftar. Silakan periksa kembali data Anda.");
       setIsLoading(false);
     }
   };
@@ -324,14 +324,14 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
     <div className="w-full max-w-sm mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <span className="inline-block px-2.5 py-1 bg-teal-50 text-saas-primary rounded-pill text-[11px] font-semibold tracking-wide uppercase mb-3">
-          Registrasi Baru
+        <span className="inline-block px-3 py-1 bg-teal-50 text-saas-primary rounded-pill text-[11px] font-bold tracking-wider uppercase mb-3">
+          DAFTAR POSYANDU BARU
         </span>
-        <h1 className="text-3xl font-normal text-saas-dark tracking-tight">
-          Daftarkan Posyandu
+        <h1 className="text-3xl font-extrabold text-teal-950 tracking-tight">
+          Pendaftaran
         </h1>
-        <p className="text-sm text-saas-muted mt-1 font-normal">
-          Buat ekosistem digital Posyandu Anda dalam 2 langkah.
+        <p className="text-sm text-slate-500 mt-2 font-normal leading-relaxed">
+          Ikuti 2 langkah mudah berikut untuk mendaftarkan Posyandu Anda ke dalam sistem digital.
         </p>
       </div>
 
@@ -342,8 +342,8 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                 step >= s
-                  ? "bg-saas-primary text-white shadow-md shadow-teal-500/30"
-                  : "bg-gray-100 text-saas-muted"
+                  ? "bg-saas-primary text-white shadow-md shadow-teal-500/20"
+                  : "bg-slate-100 text-slate-400"
               }`}
             >
               {s}
@@ -351,14 +351,14 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
             {s < 2 && (
               <div
                 className={`h-0.5 w-14 rounded-full transition-all ${
-                  step > s ? "bg-saas-primary" : "bg-gray-200"
+                  step > s ? "bg-saas-primary" : "bg-slate-200"
                 }`}
               />
             )}
           </div>
         ))}
-        <span className="text-xs text-saas-muted font-semibold ml-2">
-          {step === 1 ? "Data Posyandu" : "Akun Pengelola"}
+        <span className="text-xs text-slate-600 font-bold ml-2">
+          {step === 1 ? "Langkah 1: Data Posyandu" : "Langkah 2: Akun Kader"}
         </span>
       </div>
 
@@ -371,7 +371,7 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
             label="Nama Posyandu"
             value={namaPosyandu}
             onChange={setNamaPosyandu}
-            placeholder="contoh: Posyandu Sri Lestari"
+            placeholder="contoh: Posyandu Dahlia Indah"
           />
           <InputField
             id="reg-desa"
@@ -379,7 +379,7 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
             label="Desa / Kelurahan"
             value={desa}
             onChange={setDesa}
-            placeholder="contoh: Karanggayam"
+            placeholder="contoh: Desa Karanggayam"
           />
           <InputField
             id="reg-kecamatan"
@@ -387,29 +387,29 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
             label="Kecamatan"
             value={kecamatan}
             onChange={setKecamatan}
-            placeholder="contoh: Salaman"
+            placeholder="contoh: Kecamatan Karanggayam"
           />
           <InputField
             id="reg-alamat"
             icon={<MapPin className="w-4 h-4" />}
-            label="Alamat Lengkap"
+            label="Alamat Lengkap (RT/RW & Dusun)"
             value={alamat}
             onChange={setAlamat}
-            placeholder="contoh: Jl. Raya No. 1, RT 02/RW 03"
+            placeholder="contoh: RT 02 / RW 03, Dusun Cilongok"
           />
 
           {error && (
-            <div className="p-3.5 bg-trend-dangerBg border border-red-200 rounded-input text-xs text-trend-dangerText font-medium">
-              {error}
+            <div className="p-3.5 bg-red-50 border border-red-200 rounded-input text-xs text-red-700 font-semibold leading-relaxed">
+              ⚠️ {error}
             </div>
           )}
 
           <button
             id="btn-register-step1"
             type="submit"
-            className="w-full py-3.5 bg-saas-primary hover:bg-saas-primary-active text-white text-sm font-semibold rounded-pill transition-all flex items-center justify-center gap-2 mt-4 shadow-sm"
+            className="w-full py-3.5 bg-saas-primary hover:bg-saas-primary-active text-white text-sm font-bold rounded-pill transition-all flex items-center justify-center gap-2 mt-4 shadow-sm"
           >
-            Langkah Selanjutnya <ArrowRight className="w-4 h-4" />
+            Lanjut ke Langkah 2 <ArrowRight className="w-4 h-4" />
           </button>
         </form>
       )}
@@ -420,39 +420,39 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
           <InputField
             id="reg-nama-kader"
             icon={<User className="w-4 h-4" />}
-            label="Nama Pengelola (Anda)"
+            label="Nama Lengkap Kader (Anda)"
             value={namaKader}
             onChange={setNamaKader}
-            placeholder="contoh: Ibu Aminah"
+            placeholder="contoh: Ibu Siti Aminah"
           />
           <InputField
             id="reg-email"
             icon={<Mail className="w-4 h-4" />}
-            label="Email"
+            label="Alamat Email Pengelola"
             value={email}
             onChange={setEmail}
             type="email"
-            placeholder="kader@posyandu.id"
+            placeholder="contoh: siti.aminah@gmail.com"
           />
           <div>
-            <label className="block text-xs font-semibold text-saas-dark mb-1.5">
-              Password
+            <label className="block text-xs font-bold text-teal-950 mb-1.5">
+              Kata Sandi Akun
             </label>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-saas-muted" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 id="reg-password"
                 type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 8 karakter"
-                className="w-full pl-10 pr-10 py-3 bg-white border border-hairline rounded-input text-sm text-saas-dark placeholder-saas-muted-soft focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
+                placeholder="Buat kata sandi minimal 8 karakter"
+                className="w-full pl-10 pr-10 py-3 bg-white border border-hairline rounded-input text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-saas-muted hover:text-saas-dark transition-colors"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -461,16 +461,16 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
           <InputField
             id="reg-confirm-password"
             icon={<Lock className="w-4 h-4" />}
-            label="Konfirmasi Password"
+            label="Ulangi Kata Sandi"
             value={confirmPassword}
             onChange={setConfirmPassword}
             type="password"
-            placeholder="Ulangi password"
+            placeholder="Ketik ulang kata sandi yang sama"
           />
 
           {error && (
-            <div className="p-3.5 bg-trend-dangerBg border border-red-200 rounded-input text-xs text-trend-dangerText font-medium">
-              {error}
+            <div className="p-3.5 bg-red-50 border border-red-200 rounded-input text-xs text-red-700 font-semibold leading-relaxed">
+              ⚠️ {error}
             </div>
           )}
 
@@ -479,7 +479,7 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
               id="btn-register-back"
               type="button"
               onClick={() => { setStep(1); setError(null); }}
-              className="flex-1 py-3.5 border border-hairline text-saas-dark text-sm font-semibold rounded-pill hover:bg-surface-soft transition-all flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 border border-hairline text-slate-700 text-sm font-bold rounded-pill hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" /> Kembali
             </button>
@@ -487,12 +487,12 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
               id="btn-register-submit"
               type="submit"
               disabled={isLoading}
-              className="flex-1 py-3.5 bg-saas-primary hover:bg-saas-primary-active text-white text-sm font-semibold rounded-pill transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+              className="flex-1 py-3.5 bg-saas-primary hover:bg-saas-primary-active text-white text-sm font-bold rounded-pill transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
             >
               {isLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Membuat...</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Menyimpan Data...</>
               ) : (
-                "Selesaikan"
+                "Simpan & Selesai"
               )}
             </button>
           </div>
@@ -500,15 +500,15 @@ function RegisterForm({ onSwitch }: { onSwitch: () => void }) {
       )}
 
       {/* Switch to Login */}
-      <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-        <p className="text-sm text-saas-muted font-medium">
+      <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+        <p className="text-sm text-slate-500 font-medium">
           Sudah punya akun?{" "}
           <button
             id="btn-switch-to-login"
             onClick={onSwitch}
             className="text-saas-primary font-bold hover:underline transition-all"
           >
-            Masuk di sini
+            Masuk ke aplikasi
           </button>
         </p>
       </div>
@@ -541,12 +541,12 @@ function InputField({
     <div>
       <label
         htmlFor={id}
-        className="block text-xs font-semibold text-saas-dark mb-1.5"
+        className="block text-xs font-bold text-teal-950 mb-1.5"
       >
         {label}
       </label>
       <div className="relative">
-        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-saas-muted">{icon}</span>
+        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>
         <input
           id={id}
           type={type}
@@ -554,7 +554,7 @@ function InputField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full pl-10 pr-4 py-3 bg-white border border-hairline rounded-input text-sm text-saas-dark placeholder-saas-muted-soft focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
+          className="w-full pl-10 pr-4 py-3 bg-white border border-hairline rounded-input text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
         />
       </div>
     </div>
@@ -598,14 +598,14 @@ export default function LoginPage() {
         .animate-float { animation: float 4s ease-in-out infinite; }
       `}</style>
 
-      <div className="min-h-screen bg-canvas flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50/50 via-white to-emerald-50/40 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         {/* Ambient glow */}
         <div className="pointer-events-none fixed inset-0 overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-saas-primary/6 rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-saas-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s' }} />
         </div>
 
         {/* Card */}
-        <div className="relative w-full max-w-4xl bg-white rounded-[28px] p-3 flex shadow-2xl shadow-black/10 min-h-[600px] overflow-hidden border border-gray-100">
+        <div className="relative w-full max-w-4xl bg-white rounded-[28px] p-3 flex shadow-xl shadow-teal-900/5 min-h-[600px] overflow-hidden border border-teal-100/30">
 
           {/* Left colored panel */}
           <LeftPanel />
@@ -614,10 +614,10 @@ export default function LoginPage() {
           <div className="flex-1 flex flex-col justify-center px-8 py-10 min-w-0">
             {/* Mobile logo */}
             <div className="md:hidden flex items-center gap-2.5 mb-8">
-              <div className="w-9 h-9 rounded-xl bg-saas-primary flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-saas-primary flex items-center justify-center shadow-md shadow-teal-500/20">
                 <HeartPulse className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold text-saas-dark text-base">PosyanduKita</span>
+              <span className="font-extrabold text-teal-950 text-base">PosyanduKita</span>
             </div>
 
             {/* Form switch animation */}
