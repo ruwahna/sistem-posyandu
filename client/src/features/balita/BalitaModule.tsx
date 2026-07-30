@@ -44,6 +44,7 @@ export interface Balita {
   pemeriksaan: PemeriksaanBalita[];
 }
 
+import { TableSkeleton, DetailViewSkeleton } from "../../components/Skeleton";
 import { balitaApi } from "../../lib/api";
 
 // Initial Mock Data
@@ -437,8 +438,11 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
           </div>
 
           {/* Table Container */}
-          <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 overflow-hidden">
-            <div className="overflow-x-auto">
+          {isLoading ? (
+            <TableSkeleton rows={6} columns={6} />
+          ) : (
+            <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
@@ -511,6 +515,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
               </table>
             </div>
           </div>
+          )}
         </div>
       )}
 

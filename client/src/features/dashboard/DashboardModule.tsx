@@ -54,7 +54,10 @@ const mockPasiens: Pasien[] = [
   { id: "l4", nama: "Mbah Harjo", tipe: "Lansia", detailInfo: "RT 01 / RW 02, Dusun Karanggayam" },
 ];
 
+import { DashboardSkeleton, Skeleton } from "../../components/Skeleton";
+
 export default function DashboardModule({ searchQuery, onNavigate, posyanduId }: DashboardModuleProps) {
+
   const [activeTab, setActiveTab] = useState<"Semua" | "Balita" | "Lansia">("Semua");
 
   // ── API state ──────────────────────────────────────────────
@@ -211,6 +214,10 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
 
     setTimeout(() => setToastSuccess(""), 4000);
   };
+
+  if (isSummaryLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="space-y-8">

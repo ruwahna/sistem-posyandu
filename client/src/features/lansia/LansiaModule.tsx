@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Modal from "../../components/Modal";
+import { TableSkeleton, DetailViewSkeleton } from "../../components/Skeleton";
 import { lansiaApi } from "../../lib/api";
 import {
   ArrowLeft,
@@ -501,82 +502,86 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
           </div>
 
           {/* Table Container */}
-          <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
-                    <th className="pb-3">Nama Lansia</th>
-                    <th className="pb-3">Usia (Tahun)</th>
-                    <th className="pb-3">RT/RW</th>
-                    <th className="pb-3">Penyakit bawaan</th>
-                    <th className="pb-3">Kemandirian</th>
-                    <th className="pb-3 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredLansias.length > 0 ? (
-                    filteredLansias.map((item) => {
-                      const ageYears = calculateAgeInYears(item.tanggalLahir);
-                      return (
-                        <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
-                          <td className="py-4">
-                            <p className="font-bold text-saas-dark">{item.nama}</p>
-                            <p className="text-[11px] text-saas-muted font-medium mt-0.5">NIK: {item.nik}</p>
-                          </td>
-                          <td className="py-4 font-bold text-saas-dark">{ageYears} Tahun</td>
-                          <td className="py-4 text-saas-muted font-semibold">{item.rtRw}</td>
-                          <td className="py-4">
-                            <div className="flex gap-1.5">
-                              {item.riwayatHt && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-trend-dangerText">HT</span>
-                              )}
-                              {item.riwayatDm && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-orange-600">DM</span>
-                              )}
-                              {!item.riwayatHt && !item.riwayatDm && (
-                                <span className="text-xs text-saas-muted font-semibold">-</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-4">
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                                item.tingkatKemandirian === "A"
-                                  ? "bg-trend-successBg text-trend-successText"
-                                  : item.tingkatKemandirian === "B"
-                                  ? "bg-yellow-50 text-yellow-600"
-                                  : "bg-trend-dangerBg text-trend-dangerText"
-                              }`}
-                            >
-                              Kategori {item.tingkatKemandirian}
-                            </span>
-                          </td>
-                          <td className="py-4 text-right">
-                            <button
-                              onClick={() => {
-                                setSelectedLansiaId(item.id);
-                                setView("detail");
-                              }}
-                              className="px-3 py-1.5 bg-gray-50 hover:bg-saas-primary/10 hover:text-saas-primary border border-gray-100 rounded-input text-xs font-bold text-saas-dark transition-all inline-flex items-center gap-1"
-                            >
-                              Detail Data <ChevronRight className="w-3 h-3" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-xs text-saas-muted font-medium">
-                        Tidak ada data lansia yang cocok.
-                      </td>
+          {isLoading ? (
+            <TableSkeleton rows={6} columns={6} />
+          ) : (
+            <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
+                      <th className="pb-3">Nama Lansia</th>
+                      <th className="pb-3">Usia (Tahun)</th>
+                      <th className="pb-3">RT/RW</th>
+                      <th className="pb-3">Penyakit bawaan</th>
+                      <th className="pb-3">Kemandirian</th>
+                      <th className="pb-3 text-right">Aksi</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filteredLansias.length > 0 ? (
+                      filteredLansias.map((item) => {
+                        const ageYears = calculateAgeInYears(item.tanggalLahir);
+                        return (
+                          <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
+                            <td className="py-4">
+                              <p className="font-bold text-saas-dark">{item.nama}</p>
+                              <p className="text-[11px] text-saas-muted font-medium mt-0.5">NIK: {item.nik}</p>
+                            </td>
+                            <td className="py-4 font-bold text-saas-dark">{ageYears} Tahun</td>
+                            <td className="py-4 text-saas-muted font-semibold">{item.rtRw}</td>
+                            <td className="py-4">
+                              <div className="flex gap-1.5">
+                                {item.riwayatHt && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-trend-dangerText">HT</span>
+                                )}
+                                {item.riwayatDm && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-orange-600">DM</span>
+                                )}
+                                {!item.riwayatHt && !item.riwayatDm && (
+                                  <span className="text-xs text-saas-muted font-semibold">-</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-4">
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                                  item.tingkatKemandirian === "A"
+                                    ? "bg-trend-successBg text-trend-successText"
+                                    : item.tingkatKemandirian === "B"
+                                    ? "bg-yellow-50 text-yellow-600"
+                                    : "bg-trend-dangerBg text-trend-dangerText"
+                                }`}
+                              >
+                                Kategori {item.tingkatKemandirian}
+                              </span>
+                            </td>
+                            <td className="py-4 text-right">
+                              <button
+                                onClick={() => {
+                                  setSelectedLansiaId(item.id);
+                                  setView("detail");
+                                }}
+                                className="px-3 py-1.5 bg-gray-50 hover:bg-saas-primary/10 hover:text-saas-primary border border-gray-100 rounded-input text-xs font-bold text-saas-dark transition-all inline-flex items-center gap-1"
+                              >
+                                Detail Data <ChevronRight className="w-3 h-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-xs text-saas-muted font-medium">
+                          Tidak ada data lansia yang cocok.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
