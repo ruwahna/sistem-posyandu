@@ -141,21 +141,31 @@ export const createPemeriksaanBalita = async (req: Request, res: Response): Prom
       beratBadan,
       tinggiBadan,
       lingkarKepala,
+      lingkarLengan,
       statusBbU,
       statusTbU,
       statusBbTb,
+      statusKms,
       vitaminA,
+      asiEksklusif,
+      obatCacing,
+      statusImunisasi,
     } = req.body;
 
     const data = await balitaService.createPemeriksaan(balitaId, {
       tanggalPeriksa: new Date(tanggalPeriksa),
-      beratBadan,
-      tinggiBadan,
-      lingkarKepala,
+      beratBadan: Number(beratBadan),
+      tinggiBadan: Number(tinggiBadan),
+      lingkarKepala: lingkarKepala ? Number(lingkarKepala) : undefined,
+      lingkarLengan: lingkarLengan ? Number(lingkarLengan) : undefined,
       statusBbU,
       statusTbU,
       statusBbTb,
-      vitaminA,
+      statusKms,
+      vitaminA: !!vitaminA,
+      asiEksklusif: asiEksklusif !== undefined ? !!asiEksklusif : undefined,
+      obatCacing: obatCacing !== undefined ? !!obatCacing : undefined,
+      statusImunisasi,
     });
 
     res.status(201).json({ success: true, message: 'Pemeriksaan balita berhasil ditambahkan', data });

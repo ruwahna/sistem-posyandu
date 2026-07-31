@@ -1,4 +1,5 @@
 import prisma from '../lib/prisma';
+import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb } from '../lib/zScoreCalculator';
 
 // ─────────────────────────────────────────────────────────────
 // HELPERS
@@ -233,10 +234,15 @@ export const balitaService = {
       beratBadan: number;
       tinggiBadan: number;
       lingkarKepala?: number;
-      statusBbU: 'SK' | 'K' | 'N' | 'L';
-      statusTbU: 'SP' | 'P' | 'N' | 'T';
-      statusBbTb: 'SK' | 'K' | 'N' | 'G';
+      lingkarLengan?: number;
+      statusBbU?: 'SK' | 'K' | 'N' | 'L';
+      statusTbU?: 'SP' | 'P' | 'N' | 'T';
+      statusBbTb?: 'SK' | 'K' | 'N' | 'G';
+      statusKms?: string;
       vitaminA: boolean;
+      asiEksklusif?: boolean;
+      obatCacing?: boolean;
+      statusImunisasi?: string;
     }
   ) {
     const balita = await prisma.balita.findUnique({ where: { id: balitaId } });
@@ -245,8 +251,20 @@ export const balitaService = {
     // FR-16, BR-05: Hitung usia bulan otomatis saat periksa
     const usiaBulan = hitungUsiaBulan(balita.tanggalLahir, data.tanggalPeriksa);
 
+    // Hitung status gizi secara otomatis (Z-Score)
+    const statusBbU = hitungStatusBbU(Number(data.beratBadan), usiaBulan, balita.jenisKelamin);
+    const statusTbU = hitungStatusTbU(Number(data.tinggiBadan), usiaBulan, balita.jenisKelamin);
+    const statusBbTb = hitungStatusBbTb(Number(data.beratBadan), Number(data.tinggiBadan), balita.jenisKelamin);
+
     return prisma.pemeriksaanBalita.create({
-      data: { ...data, balitaId, usiaBulan },
+      data: {
+        ...data,
+        statusBbU,
+        statusTbU,
+        statusBbTb,
+        balitaId,
+        usiaBulan,
+      },
     });
   },
 
@@ -350,6 +368,10 @@ export const lansiaService = {
       tekananDarahDiastol: number;
       gulaDarahSewaktu: number;
       lingkarPerut: number;
+      kolesterol?: number;
+      asamUrat?: number;
+      keluhan?: string;
+      tindakan?: string;
     }
   ) {
     const lansia = await prisma.lansia.findUnique({ where: { id: lansiaId } });

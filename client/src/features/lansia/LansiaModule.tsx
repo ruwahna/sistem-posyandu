@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   BrainCircuit
 } from "lucide-react";
+import { hitungIMT } from "../../lib/zScoreCalculator";
 
 // Tipe Data
 export interface PemeriksaanLansia {
@@ -33,6 +34,10 @@ export interface PemeriksaanLansia {
   tekananDarahDiastol: number; // mmHg
   gulaDarahSewaktu: number; // mg/dL
   lingkarPerut: number; // cm
+  kolesterol?: number;
+  asamUrat?: number;
+  keluhan?: string;
+  tindakan?: string;
 }
 
 export interface Lansia {
@@ -230,6 +235,10 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
   const [examDiastol, setExamDiastol] = useState("");
   const [examGds, setExamGds] = useState("");
   const [examLp, setExamLp] = useState("");
+  const [examCholesterol, setExamCholesterol] = useState("");
+  const [examUricAcid, setExamUricAcid] = useState("");
+  const [examKeluhan, setExamKeluhan] = useState("");
+  const [examTindakan, setExamTindakan] = useState("");
   const [examWarning, setExamWarning] = useState("");
   const [examError, setExamError] = useState("");
 
@@ -378,6 +387,8 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
     const diastol = parseInt(examDiastol);
     const gds = parseFloat(examGds);
     const lp = parseFloat(examLp);
+    const kol = examCholesterol ? parseFloat(examCholesterol) : undefined;
+    const urat = examUricAcid ? parseFloat(examUricAcid) : undefined;
 
     if (isNaN(bb) || bb <= 0 || isNaN(tb) || tb <= 0 || isNaN(sistol) || isNaN(diastol) || isNaN(gds) || isNaN(lp)) {
       setExamError("Mohon isi semua data pemeriksaan dengan angka positif yang valid.");
@@ -396,7 +407,11 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
         tekananDarahDiastol: diastol,
         gulaDarahSewaktu: gds,
         lingkarPerut: lp,
-      });
+        kolesterol: kol,
+        asamUrat: urat,
+        keluhan: examKeluhan || undefined,
+        tindakan: examTindakan || undefined,
+      } as any);
       // Refresh lansia detail
       const res = await lansiaApi.getById(posyanduId, activeLansia.id);
       if (res.success) {
@@ -411,7 +426,8 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
         setLansias((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
       }
       setExamBB(""); setExamTB(""); setExamSistol(""); setExamDiastol("");
-      setExamGds(""); setExamLp(""); setExamWarning("");
+      setExamGds(""); setExamLp(""); setExamCholesterol(""); setExamUricAcid("");
+      setExamKeluhan(""); setExamTindakan(""); setExamWarning("");
     } catch (err: unknown) {
       setExamError(err instanceof Error ? err.message : "Gagal menyimpan pemeriksaan.");
     } finally {
@@ -705,7 +721,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   {/* Tanggal */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-saas-muted">Tanggal Periksa</label>
@@ -740,6 +756,21 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                       value={examTB}
                       onChange={(e) => setExamTB(e.target.value)}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                    />
+                  </div>
+
+                  {/* IMT - Calculated Live */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-teal-600">IMT (Otomatis)</label>
+                    <input
+                      type="text"
+                      disabled
+                      value={
+                        parseFloat(examBB) > 0 && parseFloat(examTB) > 0
+                          ? hitungIMT(parseFloat(examBB), parseFloat(examTB))
+                          : "-"
+                      }
+                      className="w-full p-2.5 bg-teal-50/50 border border-teal-150 rounded-input text-xs font-bold text-teal-700 cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -800,6 +831,59 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-50 pt-4">
+                  {/* Kolesterol */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-saas-muted">Kolesterol (mg/dL - opsional)</label>
+                    <input
+                      type="number"
+                      placeholder="cth: 180"
+                      value={examCholesterol}
+                      onChange={(e) => setExamCholesterol(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                    />
+                  </div>
+
+                  {/* Asam Urat */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-saas-muted">Asam Urat (mg/dL - opsional)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="cth: 6.2"
+                      value={examUricAcid}
+                      onChange={(e) => setExamUricAcid(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-50 pt-4">
+                  {/* Keluhan */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-saas-muted">Keluhan / Riwayat Penyakit Saat Ini</label>
+                    <textarea
+                      placeholder="Tulis keluhan atau sakit yang dirasakan lansia saat ini..."
+                      rows={2}
+                      value={examKeluhan}
+                      onChange={(e) => setExamKeluhan(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 resize-none"
+                    />
+                  </div>
+
+                  {/* Tindakan */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-saas-muted">Tindakan / Rujukan / Pemberian Obat</label>
+                    <textarea
+                      placeholder="Tulis tindakan medis, rujukan puskesmas, atau obat/kapsul yang diberikan..."
+                      rows={2}
+                      value={examTindakan}
+                      onChange={(e) => setExamTindakan(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 resize-none"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex justify-end pt-2">
                   <button
                     type="submit"
@@ -828,9 +912,14 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <th className="pb-3">Tanggal Periksa</th>
                     <th className="pb-3">Berat (kg)</th>
                     <th className="pb-3">Tinggi (cm)</th>
-                    <th className="pb-3">Tekanan Darah (Sistol/Diastol)</th>
-                    <th className="pb-3">Gula Darah (GDS)</th>
+                    <th className="pb-3">IMT</th>
+                    <th className="pb-3">Tekanan Darah</th>
+                    <th className="pb-3">GDS</th>
+                    <th className="pb-3">Kolesterol</th>
+                    <th className="pb-3">Asam Urat</th>
                     <th className="pb-3">Lingkar Perut</th>
+                    <th className="pb-3">Keluhan</th>
+                    <th className="pb-3">Tindakan</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -840,6 +929,9 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                         <td className="py-4 font-bold">{exam.tanggalPeriksa}</td>
                         <td className="py-4 font-bold">{exam.beratBadan} kg</td>
                         <td className="py-4 font-bold">{exam.tinggiBadan} cm</td>
+                        <td className="py-4 font-bold text-teal-600">
+                          {hitungIMT(Number(exam.beratBadan), Number(exam.tinggiBadan))}
+                        </td>
                         <td className="py-4 font-bold">
                           <span
                             className={`px-2 py-0.5 rounded-full ${
@@ -862,12 +954,24 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                             {exam.gulaDarahSewaktu} mg/dL
                           </span>
                         </td>
+                        <td className="py-4 font-bold text-saas-muted">
+                          {exam.kolesterol ? `${exam.kolesterol} mg/dL` : "-"}
+                        </td>
+                        <td className="py-4 font-bold text-saas-muted">
+                          {exam.asamUrat ? `${exam.asamUrat} mg/dL` : "-"}
+                        </td>
                         <td className="py-4 font-bold">{exam.lingkarPerut} cm</td>
+                        <td className="py-4 text-saas-muted max-w-[150px] truncate" title={exam.keluhan}>
+                          {exam.keluhan || "-"}
+                        </td>
+                        <td className="py-4 text-saas-muted max-w-[150px] truncate" title={exam.tindakan}>
+                          {exam.tindakan || "-"}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-xs text-saas-muted font-medium">
+                      <td colSpan={11} className="py-8 text-center text-xs text-saas-muted font-medium">
                         Belum ada riwayat pemeriksaan lansia. Silakan input pada form di atas.
                       </td>
                     </tr>

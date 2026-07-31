@@ -3,7 +3,7 @@
  * All requests automatically attach the JWT token from localStorage.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 // ─────────────────────────────────────────────────────────────
 // TOKEN MANAGEMENT
@@ -93,10 +93,15 @@ export interface PemeriksaanBalita {
   beratBadan: number;
   tinggiBadan: number;
   lingkarKepala?: number;
+  lingkarLengan?: number;
   statusBbU: string;
   statusTbU: string;
   statusBbTb: string;
+  statusKms?: string;
   vitaminA: boolean;
+  asiEksklusif?: boolean;
+  obatCacing?: boolean;
+  statusImunisasi?: string;
 }
 
 export interface Lansia {
@@ -125,6 +130,10 @@ export interface PemeriksaanLansia {
   tekananDarahDiastol: number;
   gulaDarahSewaktu: number;
   lingkarPerut: number;
+  kolesterol?: number;
+  asamUrat?: number;
+  keluhan?: string;
+  tindakan?: string;
 }
 
 // ─────────────────────────────────────────────────────────────

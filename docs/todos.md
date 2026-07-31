@@ -120,6 +120,7 @@ Fase akhir sebelum aplikasi siap digunakan secara langsung.
 ---
 
 ## 📈 Rencana Pengembangan Selanjutnya (Fase 2 / Pasca-MVP)
+- [ ] Migrasi data **Skrining Kesehatan Mental & Kognitif Lansia** (Kemandirian dan Gangguan Mental Emosional) dari model master statis (`Lansia`) ke tabel pemeriksaan dinamis (`PemeriksaanLansia`) agar dapat dilacak perkembangannya secara berkala (bulanan).
 - [ ] Implementasi **Modul Ibu Hamil** (Identitas, HPHT, taksiran kelahiran, lingkar lengan LILA, dan tensi bulanan).
 - [ ] Integrasi **Grafik Pertumbuhan WHO** interaktif (grafik garis melengkung hijau/kuning/merah untuk BB/U dan TB/U).
 - [ ] Export laporan format **Excel (.xlsx)** dan **PDF** asli yang siap diserahkan ke Puskesmas kecamatan.

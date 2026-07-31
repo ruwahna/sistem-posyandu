@@ -86,10 +86,15 @@ model PemeriksaanBalita {
   beratBadan     Decimal     @map("berat_badan") @db.Decimal(5, 2)
   tinggiBadan    Decimal     @map("tinggi_badan") @db.Decimal(5, 2)
   lingkarKepala  Decimal?    @map("lingkar_kepala") @db.Decimal(5, 2)
+  lingkarLengan  Decimal?    @map("lingkar_lengan") @db.Decimal(5, 2)
   statusBbU      StatusBbU   @map("status_bb_u")
   statusTbU      StatusTbU   @map("status_tb_u")
   statusBbTb     StatusBbTb  @map("status_bb_tb")
+  statusKms      String?     @map("status_kms")
   vitaminA       Boolean     @map("vitamin_a")
+  asiEksklusif   Boolean?    @map("asi_eksklusif")
+  obatCacing     Boolean?    @map("obat_cacing")
+  statusImunisasi String?    @map("status_imunisasi")
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
@@ -136,6 +141,10 @@ model PemeriksaanLansia {
   tekananDarahDiastol Int      @map("tekanan_darah_diastol")
   gulaDarahSewaktu    Decimal  @map("gula_darah_sewaktu") @db.Decimal(6, 2)
   lingkarPerut        Decimal  @map("lingkar_perut") @db.Decimal(5, 2)
+  kolesterol          Decimal? @map("kolesterol") @db.Decimal(6, 2)
+  asamUrat            Decimal? @map("asam_urat") @db.Decimal(5, 2)
+  keluhan             String?  @map("keluhan") @db.Text
+  tindakan            String?  @map("tindakan") @db.Text
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 

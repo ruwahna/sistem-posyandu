@@ -161,16 +161,21 @@ export const createPemeriksaanLansia = async (req: Request, res: Response): Prom
     const {
       tanggalPeriksa, beratBadan, tinggiBadan,
       tekananDarahSistol, tekananDarahDiastol, gulaDarahSewaktu, lingkarPerut,
+      kolesterol, asamUrat, keluhan, tindakan,
     } = req.body;
 
     const data = await lansiaService.createPemeriksaan(lansiaId, {
       tanggalPeriksa: new Date(tanggalPeriksa),
-      beratBadan,
-      tinggiBadan,
-      tekananDarahSistol,
-      tekananDarahDiastol,
-      gulaDarahSewaktu,
-      lingkarPerut,
+      beratBadan: Number(beratBadan),
+      tinggiBadan: Number(tinggiBadan),
+      tekananDarahSistol: Number(tekananDarahSistol),
+      tekananDarahDiastol: Number(tekananDarahDiastol),
+      gulaDarahSewaktu: Number(gulaDarahSewaktu),
+      lingkarPerut: Number(lingkarPerut),
+      kolesterol: kolesterol ? Number(kolesterol) : undefined,
+      asamUrat: asamUrat ? Number(asamUrat) : undefined,
+      keluhan,
+      tindakan,
     });
 
     res.status(201).json({ success: true, message: 'Pemeriksaan lansia berhasil ditambahkan', data });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Baby,
   Heart,
@@ -12,6 +12,8 @@ import {
   SlidersHorizontal,
   UserCheck2
 } from "lucide-react";
+import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
+import { balitaApi, lansiaApi, Balita, Lansia } from "../../lib/api";
 
 // Reusable Modal Component
 import Modal from "../../components/Modal";
@@ -24,19 +26,11 @@ interface Pasien {
   subInfo: string; // Age or RT/RW
   detail1: string; // Mother's name for child, BPJS for senior
   detail2: string; // Address
+  tanggalLahir?: string;
+  jenisKelamin?: "L" | "P";
 }
 
-// Initial Mock Patients Database
-const initialPasiens: Pasien[] = [
-  { id: "b1", nama: "Andi Pratama", tipe: "Balita", subInfo: "Usia 12 Bulan", detail1: "Siti Rahmawati", detail2: "RT 01 / RW 02, Karanggayam" },
-  { id: "b2", nama: "Citra Lestari", tipe: "Balita", subInfo: "Usia 24 Bulan", detail1: "Endah Lestari", detail2: "RT 02 / RW 02, Karanggayam" },
-  { id: "b3", nama: "Aisyah Putri", tipe: "Balita", subInfo: "Usia 6 Bulan", detail1: "Aminah Purwati", detail2: "RT 03 / RW 02, Karanggayam" },
-  { id: "b4", nama: "Budi Raharjo", tipe: "Balita", subInfo: "Usia 47 Bulan", detail1: "Purwati Ningsih", detail2: "RT 01 / RW 02, Karanggayam" },
-  { id: "l1", nama: "Mbah Karto", tipe: "Lansia", subInfo: "Usia 72 Tahun", detail1: "BPJS: 0001827364521", detail2: "RT 02 / RW 02, Karanggayam" },
-  { id: "l2", nama: "Mbah Sumi", tipe: "Lansia", subInfo: "Usia 65 Tahun", detail1: "BPJS: 0001928374561", detail2: "RT 03 / RW 02, Karanggayam" },
-  { id: "l3", nama: "Budi Santoso", tipe: "Lansia", subInfo: "Usia 58 Tahun", detail1: "BPJS: Tidak Ada", detail2: "RT 01 / RW 02, Karanggayam" },
-  { id: "l4", nama: "Mbah Harjo", tipe: "Lansia", subInfo: "Usia 78 Tahun", detail1: "BPJS: 0001229988776", detail2: "RT 01 / RW 02, Karanggayam" },
-];
+
 
 // Session Log (Today's entered checkups)
 interface SessionLog {
@@ -70,8 +64,12 @@ function calculateAgeInYears(birthDateStr: string, refDateStr: string = "2026-07
   return age <= 0 ? 0 : age;
 }
 
-export default function PelayananModule() {
-  const [pasiens, setPasiens] = useState<Pasien[]>(initialPasiens);
+interface PelayananModuleProps {
+  posyanduId: string;
+}
+
+export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
+  const [pasiens, setPasiens] = useState<Pasien[]>([]);
   const [query, setQuery] = useState("");
   const [selectedPasien, setSelectedPasien] = useState<Pasien | null>(null);
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<"Semua" | "Balita" | "Lansia">("Semua");
@@ -104,10 +102,42 @@ export default function PelayananModule() {
   const [lError, setLError] = useState("");
 
   // Session Log State
-  const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([
-    { id: "s-1", nama: "Andi Pratama", tipe: "Balita", waktu: "09:30 WIB", summary: "BB: 9.5kg, TB: 74.2cm, Vit A", status: "Selesai (Normal)" },
-    { id: "s-2", nama: "Mbah Karto", tipe: "Lansia", waktu: "09:45 WIB", summary: "TD: 140/90, GDS: 180, LP: 92cm", status: "Selesai (Rawan)" },
-  ]);
+  const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
+
+  const fetchPatients = () => {
+    Promise.all([
+      balitaApi.getAll(posyanduId),
+      lansiaApi.getAll(posyanduId)
+    ])
+      .then(([balitaRes, lansiaRes]) => {
+        const balitas: Pasien[] = (balitaRes.data || []).map((b: Balita) => ({
+          id: b.id,
+          nama: b.nama,
+          tipe: "Balita",
+          subInfo: `Usia ${b.usiaBulan || calculateAgeInMonths(b.tanggalLahir, "2026-07-28")} Bulan`,
+          detail1: b.namaIbu,
+          detail2: b.alamat,
+          tanggalLahir: b.tanggalLahir,
+          jenisKelamin: b.jenisKelamin,
+        }));
+        const lansias: Pasien[] = (lansiaRes.data || []).map((l: Lansia) => ({
+          id: l.id,
+          nama: l.nama,
+          tipe: "Lansia",
+          subInfo: `Usia ${l.usiaTahun || calculateAgeInYears(l.tanggalLahir, "2026-07-28")} Tahun`,
+          detail1: `BPJS: ${l.noBpjs || "Tidak Ada"}`,
+          detail2: l.alamat,
+          tanggalLahir: l.tanggalLahir,
+          jenisKelamin: l.jenisKelamin,
+        }));
+        setPasiens([...balitas, ...lansias]);
+      })
+      .catch(console.error);
+  };
+
+  useEffect(() => {
+    fetchPatients();
+  }, [posyanduId]);
 
   // Form Fields - Common (Checkup)
   const [examDate, setExamDate] = useState("2026-07-28");
@@ -120,12 +150,39 @@ export default function PelayananModule() {
   const [examTBU, setExamTBU] = useState("Normal");
   const [examBBTB, setExamBBTB] = useState("Normal");
   const [examVitA, setExamVitA] = useState(false);
+  const [examLiLA, setExamLiLA] = useState("");
+  const [examKms, setExamKms] = useState("N");
+  const [examAsi, setExamAsi] = useState(false);
+  const [examCacing, setExamCacing] = useState(false);
+  const [examImunisasi, setExamImunisasi] = useState("");
 
   // Form Fields - Lansia (Checkup)
   const [examSistol, setExamSistol] = useState("");
   const [examDiastol, setExamDiastol] = useState("");
   const [examGds, setExamGds] = useState("");
   const [examLp, setExamLp] = useState("");
+  const [examCholesterol, setExamCholesterol] = useState("");
+  const [examUricAcid, setExamUricAcid] = useState("");
+  const [examKeluhan, setExamKeluhan] = useState("");
+  const [examTindakan, setExamTindakan] = useState("");
+
+  // Otomatisasi Status Gizi Balita (Z-Score)
+  useEffect(() => {
+    if (!selectedPasien || selectedPasien.tipe !== "Balita" || !selectedPasien.tanggalLahir) return;
+    const bb = parseFloat(examBB);
+    const tb = parseFloat(examTB);
+    const usia = calculateAgeInMonths(selectedPasien.tanggalLahir, examDate);
+    const jk = selectedPasien.jenisKelamin || "L";
+    if (!isNaN(bb) && bb > 0) {
+      setExamBBU(hitungStatusBbU(bb, usia, jk));
+    }
+    if (!isNaN(tb) && tb > 0) {
+      setExamTBU(hitungStatusTbU(tb, usia, jk));
+    }
+    if (!isNaN(bb) && bb > 0 && !isNaN(tb) && tb > 0) {
+      setExamBBTB(hitungStatusBbTb(bb, tb, jk));
+    }
+  }, [examBB, examTB, examDate, selectedPasien]);
 
   // Error & Feedback (Checkup)
   const [formError, setFormError] = useState("");
@@ -159,7 +216,6 @@ export default function PelayananModule() {
     }
   };
 
-  // Submit Handler (Checkup)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
@@ -179,20 +235,23 @@ export default function PelayananModule() {
 
     if (selectedPasien.tipe === "Balita") {
       const lk = examLK ? parseFloat(examLK) : undefined;
-      summaryText += `${lk ? `, LK: ${lk}cm` : ""}${examVitA ? ", Vitamin A" : ""}`;
+      const lila = examLiLA ? parseFloat(examLiLA) : undefined;
+      summaryText += `${lk ? `, LK: ${lk}cm` : ""}${lila ? `, LiLA: ${lila}cm` : ""}${examVitA ? ", Vit A" : ""}${examAsi ? ", ASI Eksklusif" : ""}${examCacing ? ", Obat Cacing" : ""}${examImunisasi ? `, Imunisasi: ${examImunisasi}` : ""}`;
       statusText = `Selesai (${examBBU})`;
     } else {
       const sis = parseInt(examSistol);
       const dia = parseInt(examDiastol);
       const gds = parseInt(examGds);
       const lp = parseInt(examLp);
+      const kol = examCholesterol ? parseInt(examCholesterol) : undefined;
+      const urat = examUricAcid ? parseFloat(examUricAcid) : undefined;
 
       if (isNaN(sis) || isNaN(dia) || isNaN(gds) || isNaN(lp)) {
         setFormError("Silakan isi data Tekanan Darah, GDS, dan Lingkar Perut lansia secara lengkap.");
         return;
       }
-      summaryText += `, TD: ${sis}/${dia}, GDS: ${gds}, LP: ${lp}cm`;
-      statusText = sis >= 140 || gds >= 200 ? "Selesai (Rawan)" : "Selesai (Normal)";
+      summaryText += `, TD: ${sis}/${dia}, GDS: ${gds}, LP: ${lp}cm${kol ? `, Kolesterol: ${kol}` : ""}${urat ? `, Asam Urat: ${urat}` : ""}`;
+      statusText = sis >= 140 || gds >= 200 || (kol && kol >= 200) ? "Selesai (Rawan)" : "Selesai (Normal)";
     }
 
     const timeNow = new Date();
@@ -217,6 +276,15 @@ export default function PelayananModule() {
     setExamDiastol("");
     setExamGds("");
     setExamLp("");
+    setExamLiLA("");
+    setExamCholesterol("");
+    setExamUricAcid("");
+    setExamKeluhan("");
+    setExamTindakan("");
+    setExamKms("N");
+    setExamAsi(false);
+    setExamCacing(false);
+    setExamImunisasi("");
     setExamBBU("Normal");
     setExamTBU("Normal");
     setExamBBTB("Normal");
@@ -228,7 +296,7 @@ export default function PelayananModule() {
   };
 
   // Submit Handler (Register Balita)
-  const handleRegisterBalita = (e: React.FormEvent) => {
+  const handleRegisterBalita = async (e: React.FormEvent) => {
     e.preventDefault();
     setBError("");
 
@@ -242,32 +310,49 @@ export default function PelayananModule() {
       return;
     }
 
-    const ageMonths = calculateAgeInMonths(bTglLahir);
-    const newPasien: Pasien = {
-      id: `b_${Date.now()}`,
-      nama: bNama,
-      tipe: "Balita",
-      subInfo: `Usia ${ageMonths} Bulan`,
-      detail1: bNamaIbu,
-      detail2: bAlamat,
-    };
+    try {
+      const res = await balitaApi.create(posyanduId, {
+        nama: bNama,
+        nik: bNik || undefined,
+        tanggalLahir: bTglLahir,
+        jenisKelamin: bJk,
+        namaIbu: bNamaIbu,
+        alamat: bAlamat,
+      });
 
-    setPasiens([newPasien, ...pasiens]);
-    setSelectedPasien(newPasien);
-    setShowAddBalitaModal(false);
-    setSuccessToast(`${bNama} berhasil didaftarkan & dipilih.`);
+      if (res.success && res.data) {
+        const ageMonths = calculateAgeInMonths(res.data.tanggalLahir);
+        const newPasien: Pasien = {
+          id: res.data.id,
+          nama: res.data.nama,
+          tipe: "Balita",
+          subInfo: `Usia ${ageMonths} Bulan`,
+          detail1: res.data.namaIbu,
+          detail2: res.data.alamat,
+          tanggalLahir: res.data.tanggalLahir,
+          jenisKelamin: res.data.jenisKelamin,
+        };
 
-    setBNama("");
-    setBNik("");
-    setBTglLahir("2025-01-01");
-    setBJk("L");
-    setBNamaIbu("");
-    setBAlamat("RT 01 / RW 02, Karanggayam");
-    setTimeout(() => setSuccessToast(""), 4000);
+        setPasiens((prev) => [newPasien, ...prev]);
+        setSelectedPasien(newPasien);
+        setShowAddBalitaModal(false);
+        setSuccessToast(`${bNama} berhasil didaftarkan & dipilih.`);
+
+        setBNama("");
+        setBNik("");
+        setBTglLahir("2025-01-01");
+        setBJk("L");
+        setBNamaIbu("");
+        setBAlamat("RT 01 / RW 02, Karanggayam");
+        setTimeout(() => setSuccessToast(""), 4000);
+      }
+    } catch (err: any) {
+      setBError(err.message || "Gagal mendaftarkan balita.");
+    }
   };
 
   // Submit Handler (Register Lansia)
-  const handleRegisterLansia = (e: React.FormEvent) => {
+  const handleRegisterLansia = async (e: React.FormEvent) => {
     e.preventDefault();
     setLError("");
 
@@ -281,33 +366,55 @@ export default function PelayananModule() {
       return;
     }
 
-    const ageYears = calculateAgeInYears(lTglLahir);
-    const newPasien: Pasien = {
-      id: `l_${Date.now()}`,
-      nama: lNama,
-      tipe: "Lansia",
-      subInfo: `Usia ${ageYears} Tahun`,
-      detail1: lBpjs ? `BPJS: ${lBpjs}` : "BPJS: Tidak Ada",
-      detail2: `${lRtRw}, ${lAlamat}`,
-    };
+    try {
+      const res = await lansiaApi.create(posyanduId, {
+        nama: lNama,
+        nik: lNik,
+        noBpjs: lBpjs || undefined,
+        tanggalLahir: lTglLahir,
+        jenisKelamin: lJk,
+        rtRw: lRtRw,
+        alamat: lAlamat,
+        riwayatHt: lHt,
+        riwayatDm: lDm,
+        tingkatKemandirian: lKemandirian,
+        gangguanMentalEmosional: lMental || undefined,
+      });
 
-    setPasiens([newPasien, ...pasiens]);
-    setSelectedPasien(newPasien);
-    setShowAddLansiaModal(false);
-    setSuccessToast(`Lansia ${lNama} berhasil didaftarkan & dipilih.`);
+      if (res.success && res.data) {
+        const ageYears = calculateAgeInYears(res.data.tanggalLahir);
+        const newPasien: Pasien = {
+          id: res.data.id,
+          nama: res.data.nama,
+          tipe: "Lansia",
+          subInfo: `Usia ${ageYears} Tahun`,
+          detail1: res.data.noBpjs ? `BPJS: ${res.data.noBpjs}` : "BPJS: Tidak Ada",
+          detail2: `${res.data.rtRw}, ${res.data.alamat}`,
+          tanggalLahir: res.data.tanggalLahir,
+          jenisKelamin: res.data.jenisKelamin,
+        };
 
-    setLNama("");
-    setLNik("");
-    setLBpjs("");
-    setLTglLahir("1960-01-01");
-    setLJk("L");
-    setLRtRw("");
-    setLAlamat("Desa Karanggayam");
-    setLHt(false);
-    setLDm(false);
-    setLKemandirian("A");
-    setLMental("");
-    setTimeout(() => setSuccessToast(""), 4000);
+        setPasiens((prev) => [newPasien, ...prev]);
+        setSelectedPasien(newPasien);
+        setShowAddLansiaModal(false);
+        setSuccessToast(`Lansia ${lNama} berhasil didaftarkan & dipilih.`);
+
+        setLNama("");
+        setLNik("");
+        setLBpjs("");
+        setLTglLahir("1960-01-01");
+        setLJk("L");
+        setLRtRw("");
+        setLAlamat("Desa Karanggayam");
+        setLHt(false);
+        setLDm(false);
+        setLKemandirian("A");
+        setLMental("");
+        setTimeout(() => setSuccessToast(""), 4000);
+      }
+    } catch (err: any) {
+      setLError(err.message || "Gagal mendaftarkan lansia.");
+    }
   };
 
   return (
@@ -482,7 +589,7 @@ export default function PelayananModule() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className={`grid grid-cols-1 ${selectedPasien.tipe === "Lansia" ? "sm:grid-cols-4" : "sm:grid-cols-3"} gap-4`}>
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-saas-muted">Tanggal Periksa</label>
                       <input
@@ -519,24 +626,80 @@ export default function PelayananModule() {
                         className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                       />
                     </div>
+
+                    {selectedPasien.tipe === "Lansia" && (
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-teal-600">IMT (Otomatis)</label>
+                        <input
+                          type="text"
+                          disabled
+                          value={
+                            parseFloat(examBB) > 0 && parseFloat(examTB) > 0
+                              ? hitungIMT(parseFloat(examBB), parseFloat(examTB))
+                              : "-"
+                          }
+                          className="w-full p-2.5 bg-teal-50/50 border border-teal-150 rounded-input text-xs font-bold text-teal-700 cursor-not-allowed"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {selectedPasien.tipe === "Balita" && (
                     <div className="space-y-4 border-t border-gray-50 pt-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-saas-muted">Lingkar Kepala (cm - opsional)</label>
+                          <label className="text-xs font-bold text-saas-muted">Lingkar Kepala (cm)</label>
                           <input
                             type="number"
                             step="0.1"
-                            placeholder="Contoh: 45"
+                            placeholder="Cth: 45"
                             value={examLK}
                             onChange={(e) => setExamLK(e.target.value)}
                             className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                           />
                         </div>
 
-                        <div className="flex items-center pb-2 pl-2">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-saas-muted">Lingkar Lengan (LiLA - cm)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            placeholder="Cth: 12.5"
+                            value={examLiLA}
+                            onChange={(e) => setExamLiLA(e.target.value)}
+                            className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-saas-muted">Status KMS</label>
+                          <select
+                            value={examKms}
+                            onChange={(e) => setExamKms(e.target.value)}
+                            className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                          >
+                            <option value="N">N (Berat Naik)</option>
+                            <option value="T">T (Berat Tetap/Turun)</option>
+                            <option value="2T">2T (2x Tidak Naik)</option>
+                            <option value="B">B (Baru Pertama Kali)</option>
+                            <option value="O">O (Bulan Lalu Absen)</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-saas-muted">Imunisasi</label>
+                          <input
+                            type="text"
+                            placeholder="Cth: BCG, Polio 1"
+                            value={examImunisasi}
+                            onChange={(e) => setExamImunisasi(e.target.value)}
+                            className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="flex items-center pt-2 pb-2 pl-2">
                           <label className="flex items-center gap-2 cursor-pointer select-none">
                             <input
                               type="checkbox"
@@ -547,15 +710,39 @@ export default function PelayananModule() {
                             <span className="text-xs font-bold text-saas-dark">Pemberian Vitamin A</span>
                           </label>
                         </div>
+
+                        <div className="flex items-center pt-2 pb-2 pl-2">
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={examAsi}
+                              onChange={(e) => setExamAsi(e.target.checked)}
+                              className="w-4.5 h-4.5 text-saas-primary focus:ring-saas-primary/30"
+                            />
+                            <span className="text-xs font-bold text-saas-dark">ASI Eksklusif</span>
+                          </label>
+                        </div>
+
+                        <div className="flex items-center pt-2 pb-2 pl-2">
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={examCacing}
+                              onChange={(e) => setExamCacing(e.target.checked)}
+                              className="w-4.5 h-4.5 text-saas-primary focus:ring-saas-primary/30"
+                            />
+                            <span className="text-xs font-bold text-saas-dark">Obat Cacing</span>
+                          </label>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-saas-muted">Status BB/U</label>
+                          <label className="text-xs font-bold text-saas-muted">Status BB/U (Otomatis)</label>
                           <select
                             value={examBBU}
-                            onChange={(e) => setExamBBU(e.target.value)}
-                            className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                            disabled
+                            className="w-full p-2.5 bg-gray-150 border border-gray-150 rounded-input text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
                           >
                             <option value="Normal">Normal</option>
                             <option value="Kurang">Kurang</option>
@@ -565,11 +752,11 @@ export default function PelayananModule() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-saas-muted">Status TB/U</label>
+                          <label className="text-xs font-bold text-saas-muted">Status TB/U (Otomatis)</label>
                           <select
                             value={examTBU}
-                            onChange={(e) => setExamTBU(e.target.value)}
-                            className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                            disabled
+                            className="w-full p-2.5 bg-gray-150 border border-gray-150 rounded-input text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
                           >
                             <option value="Normal">Normal</option>
                             <option value="Pendek">Pendek</option>
@@ -579,11 +766,11 @@ export default function PelayananModule() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-saas-muted">Status BB/TB</label>
+                          <label className="text-xs font-bold text-saas-muted">Status BB/TB (Otomatis)</label>
                           <select
                             value={examBBTB}
-                            onChange={(e) => setExamBBTB(e.target.value)}
-                            className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                            disabled
+                            className="w-full p-2.5 bg-gray-150 border border-gray-150 rounded-input text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
                           >
                             <option value="Normal">Normal</option>
                             <option value="Kurus">Kurus</option>
@@ -597,12 +784,12 @@ export default function PelayananModule() {
 
                   {selectedPasien.tipe === "Lansia" && (
                     <div className="space-y-4 border-t border-gray-50 pt-4">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-saas-muted">Tekanan Darah Sistol (mmHg)</label>
+                          <label className="text-xs font-bold text-saas-muted">Sistol (mmHg)</label>
                           <input
                             type="number"
-                            placeholder="TD Atas, cth: 130"
+                            placeholder="cth: 120"
                             value={examSistol}
                             onChange={(e) => {
                               setExamSistol(e.target.value);
@@ -613,23 +800,21 @@ export default function PelayananModule() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-saas-muted">Tekanan Darah Diastol (mmHg)</label>
+                          <label className="text-xs font-bold text-saas-muted">Diastol (mmHg)</label>
                           <input
                             type="number"
-                            placeholder="TD Bawah, cth: 80"
+                            placeholder="cth: 80"
                             value={examDiastol}
                             onChange={(e) => setExamDiastol(e.target.value)}
                             className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                           />
                         </div>
-                      </div>
 
-                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-saas-muted">Gula Darah Sewaktu (GDS - mg/dL)</label>
+                          <label className="text-xs font-bold text-saas-muted">GDS (mg/dL)</label>
                           <input
                             type="number"
-                            placeholder="Contoh: 140"
+                            placeholder="cth: 120"
                             value={examGds}
                             onChange={(e) => {
                               setExamGds(e.target.value);
@@ -643,10 +828,59 @@ export default function PelayananModule() {
                           <label className="text-xs font-bold text-saas-muted">Lingkar Perut (cm)</label>
                           <input
                             type="number"
-                            placeholder="Contoh: 85"
+                            placeholder="cth: 90"
                             value={examLp}
                             onChange={(e) => setExamLp(e.target.value)}
                             className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-saas-muted">Kolesterol (mg/dL)</label>
+                          <input
+                            type="number"
+                            placeholder="cth: 180"
+                            value={examCholesterol}
+                            onChange={(e) => setExamCholesterol(e.target.value)}
+                            className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-saas-muted">Asam Urat (mg/dL)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            placeholder="cth: 6.2"
+                            value={examUricAcid}
+                            onChange={(e) => setExamUricAcid(e.target.value)}
+                            className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-saas-muted">Keluhan Saat Ini</label>
+                          <textarea
+                            placeholder="Tulis keluhan lansia saat ini..."
+                            rows={2}
+                            value={examKeluhan}
+                            onChange={(e) => setExamKeluhan(e.target.value)}
+                            className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 resize-none"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-saas-muted">Tindakan / Rujukan</label>
+                          <textarea
+                            placeholder="Tulis tindakan medis atau rujukan..."
+                            rows={2}
+                            value={examTindakan}
+                            onChange={(e) => setExamTindakan(e.target.value)}
+                            className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 resize-none"
                           />
                         </div>
                       </div>

@@ -18,6 +18,7 @@ import {
   Trash2,
   ChevronRight
 } from "lucide-react";
+import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb } from "../../lib/zScoreCalculator";
 
 // Tipe Data
 export interface PemeriksaanBalita {
@@ -27,10 +28,15 @@ export interface PemeriksaanBalita {
   beratBadan: number; // kg
   tinggiBadan: number; // cm
   lingkarKepala?: number; // cm
+  lingkarLengan?: number; // cm
   statusBBU: "Sangat Kurang" | "Kurang" | "Normal" | "Lebih";
   statusTBU: "Sangat Pendek" | "Pendek" | "Normal" | "Tinggi";
   statusBBTB: "Sangat Kurus" | "Kurus" | "Normal" | "Gemuk";
+  statusKms?: string;
   vitaminA: boolean;
+  asiEksklusif?: boolean;
+  obatCacing?: boolean;
+  statusImunisasi?: string;
 }
 
 export interface Balita {
@@ -194,10 +200,32 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   const [examTBU, setExamTBU] = useState<PemeriksaanBalita["statusTBU"]>("Normal");
   const [examBBTB, setExamBBTB] = useState<PemeriksaanBalita["statusBBTB"]>("Normal");
   const [examVitA, setExamVitA] = useState(false);
+  const [examLiLA, setExamLiLA] = useState("");
+  const [examKms, setExamKms] = useState("N");
+  const [examAsi, setExamAsi] = useState(false);
+  const [examCacing, setExamCacing] = useState(false);
+  const [examImunisasi, setExamImunisasi] = useState("");
   const [examWarning, setExamWarning] = useState("");
   const [examError, setExamError] = useState("");
 
   const activeBalita = balitas.find((b) => b.id === selectedBalitaId);
+
+  // Otomatisasi Status Gizi Balita (Z-Score)
+  useEffect(() => {
+    if (!activeBalita) return;
+    const bb = parseFloat(examBB);
+    const tb = parseFloat(examTB);
+    const usia = calculateAgeInMonths(activeBalita.tanggalLahir, new Date(examDate));
+    if (!isNaN(bb) && bb > 0) {
+      setExamBBU(hitungStatusBbU(bb, usia, activeBalita.jenisKelamin));
+    }
+    if (!isNaN(tb) && tb > 0) {
+      setExamTBU(hitungStatusTbU(tb, usia, activeBalita.jenisKelamin));
+    }
+    if (!isNaN(bb) && bb > 0 && !isNaN(tb) && tb > 0) {
+      setExamBBTB(hitungStatusBbTb(bb, tb, activeBalita.jenisKelamin));
+    }
+  }, [examBB, examTB, examDate, activeBalita]);
 
   // Populate Edit Form
   const openEditModal = (b: Balita) => {
@@ -343,11 +371,16 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
         beratBadan: bb,
         tinggiBadan: tb,
         lingkarKepala: lk,
+        lingkarLengan: examLiLA ? parseFloat(examLiLA) : undefined,
         statusBbU: examBBU,
         statusTbU: examTBU,
         statusBbTb: examBBTB,
+        statusKms: examKms,
         vitaminA: examVitA,
-      } as unknown as import("../../lib/api").PemeriksaanBalita);
+        asiEksklusif: examAsi,
+        obatCacing: examCacing,
+        statusImunisasi: examImunisasi || undefined,
+      } as any);
       // Refresh balita detail
       const res = await balitaApi.getById(posyanduId, activeBalita.id);
       if (res.success) {
@@ -362,9 +395,10 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
         };
         setBalitas((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
       }
-      setExamBB(""); setExamTB(""); setExamLK("");
+      setExamBB(""); setExamTB(""); setExamLK(""); setExamLiLA("");
       setExamBBU("Normal"); setExamTBU("Normal"); setExamBBTB("Normal");
-      setExamVitA(false); setExamWarning("");
+      setExamVitA(false); setExamAsi(false); setExamCacing(false); setExamImunisasi("");
+      setExamKms("N"); setExamWarning("");
     } catch (err: unknown) {
       setExamError(err instanceof Error ? err.message : "Gagal menyimpan pemeriksaan.");
     } finally {
@@ -654,7 +688,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   {/* Lingkar Kepala */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-saas-muted">Lingkar Kepala (cm - opsional)</label>
@@ -668,8 +702,51 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     />
                   </div>
 
-                  {/* Vitamin A */}
-                  <div className="space-y-1.5 flex flex-col justify-end pb-3">
+                  {/* Lingkar Lengan (LiLA) */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-saas-muted">Lingkar Lengan / LiLA (cm)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Contoh: 12.5"
+                      value={examLiLA}
+                      onChange={(e) => setExamLiLA(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                    />
+                  </div>
+
+                  {/* Status KMS */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-saas-muted">Indikator KMS</label>
+                    <select
+                      value={examKms}
+                      onChange={(e) => setExamKms(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                    >
+                      <option value="N">N (Berat Naik)</option>
+                      <option value="T">T (Berat Tetap/Turun)</option>
+                      <option value="2T">2T (2x Tidak Naik)</option>
+                      <option value="B">B (Baru Pertama Kali)</option>
+                      <option value="O">O (Bulan Lalu Absen)</option>
+                    </select>
+                  </div>
+
+                  {/* Status Imunisasi */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-saas-muted">Status Imunisasi</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: BCG, Polio 1"
+                      value={examImunisasi}
+                      onChange={(e) => setExamImunisasi(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-50 pt-3">
+                  {/* Checkboxes: Vitamin A, ASI Eksklusif, Obat Cacing */}
+                  <div className="space-y-1.5 flex items-center pt-2">
                     <label className="flex items-center gap-2 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -680,16 +757,40 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                       <span className="text-xs font-bold text-saas-dark">Pemberian Vitamin A</span>
                     </label>
                   </div>
+
+                  <div className="space-y-1.5 flex items-center pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={examAsi}
+                        onChange={(e) => setExamAsi(e.target.checked)}
+                        className="w-4.5 h-4.5 text-saas-primary border-gray-250 rounded focus:ring-saas-primary/30"
+                      />
+                      <span className="text-xs font-bold text-saas-dark">ASI Eksklusif (0-6 bln)</span>
+                    </label>
+                  </div>
+
+                  <div className="space-y-1.5 flex items-center pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={examCacing}
+                        onChange={(e) => setExamCacing(e.target.checked)}
+                        className="w-4.5 h-4.5 text-saas-primary border-gray-250 rounded focus:ring-saas-primary/30"
+                      />
+                      <span className="text-xs font-bold text-saas-dark">Pemberian Obat Cacing</span>
+                    </label>
+                  </div>
                 </div>
 
                 {/* Dropdown Penetapan Status Gizi (WHO Kategori) */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-50 pt-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Status Berat/Usia (BB/U)</label>
+                    <label className="text-xs font-bold text-saas-muted">Status Berat/Usia (BB/U) - Otomatis</label>
                     <select
                       value={examBBU}
-                      onChange={(e) => setExamBBU(e.target.value as any)}
-                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                      disabled
+                      className="w-full p-2.5 bg-gray-100 border border-gray-150 rounded-input text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
                     >
                       <option value="Normal">Normal</option>
                       <option value="Kurang">Kurang</option>
@@ -699,11 +800,11 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Status Tinggi/Usia (TB/U)</label>
+                    <label className="text-xs font-bold text-saas-muted">Status Tinggi/Usia (TB/U) - Otomatis</label>
                     <select
                       value={examTBU}
-                      onChange={(e) => setExamTBU(e.target.value as any)}
-                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                      disabled
+                      className="w-full p-2.5 bg-gray-100 border border-gray-150 rounded-input text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
                     >
                       <option value="Normal">Normal</option>
                       <option value="Pendek">Pendek</option>
@@ -713,11 +814,11 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Status Berat/Tinggi (BB/TB)</label>
+                    <label className="text-xs font-bold text-saas-muted">Status Berat/Tinggi (BB/TB) - Otomatis</label>
                     <select
                       value={examBBTB}
-                      onChange={(e) => setExamBBTB(e.target.value as any)}
-                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                      disabled
+                      className="w-full p-2.5 bg-gray-100 border border-gray-150 rounded-input text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
                     >
                       <option value="Normal">Normal</option>
                       <option value="Kurus">Kurus</option>
@@ -756,11 +857,16 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     <th className="pb-3">Usia Bulan</th>
                     <th className="pb-3">Berat (kg)</th>
                     <th className="pb-3">Tinggi (cm)</th>
-                    <th className="pb-3">Lingkar Kepala</th>
-                    <th className="pb-3">Status BB/U</th>
-                    <th className="pb-3">Status TB/U</th>
-                    <th className="pb-3">Status BB/TB</th>
+                    <th className="pb-3">LKA</th>
+                    <th className="pb-3">LiLA</th>
+                    <th className="pb-3">BB/U</th>
+                    <th className="pb-3">TB/U</th>
+                    <th className="pb-3">BB/TB</th>
+                    <th className="pb-3">KMS</th>
                     <th className="pb-3">Vit A</th>
+                    <th className="pb-3">ASI Eksk.</th>
+                    <th className="pb-3">Obat Cacing</th>
+                    <th className="pb-3">Imunisasi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -772,6 +878,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                         <td className="py-4 font-bold">{exam.beratBadan} kg</td>
                         <td className="py-4 font-bold">{exam.tinggiBadan} cm</td>
                         <td className="py-4 text-saas-muted">{exam.lingkarKepala ? `${exam.lingkarKepala} cm` : "-"}</td>
+                        <td className="py-4 text-saas-muted">{exam.lingkarLengan ? `${exam.lingkarLengan} cm` : "-"}</td>
                         <td className="py-4">
                           <span
                             className={`px-2 py-0.5 rounded-full font-bold ${
@@ -805,12 +912,16 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                             {exam.statusBBTB}
                           </span>
                         </td>
-                        <td className="py-4 font-semibold text-saas-muted">{exam.vitaminA ? "Diberikan" : "Tidak"}</td>
+                        <td className="py-4 font-bold text-teal-600">{exam.statusKms || "-"}</td>
+                        <td className="py-4 font-semibold text-saas-muted">{exam.vitaminA ? "Ya" : "Tidak"}</td>
+                        <td className="py-4 font-semibold text-saas-muted">{exam.asiEksklusif ? "Ya" : "Tidak"}</td>
+                        <td className="py-4 font-semibold text-saas-muted">{exam.obatCacing ? "Ya" : "Tidak"}</td>
+                        <td className="py-4 font-semibold text-saas-muted">{exam.statusImunisasi || "-"}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={9} className="py-8 text-center text-xs text-saas-muted font-medium">
+                      <td colSpan={14} className="py-8 text-center text-xs text-saas-muted font-medium">
                         Belum ada riwayat pemeriksaan. Silakan input pada form di atas.
                       </td>
                     </tr>

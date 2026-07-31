@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { dashboardApi, DashboardSummary } from "../../lib/api";
+import { dashboardApi, DashboardSummary, balitaApi, lansiaApi } from "../../lib/api";
 import Modal from "../../components/Modal";
 import {
   ArrowUpRight,
@@ -18,6 +18,7 @@ import {
   X,
   UserCheck2
 } from "lucide-react";
+import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
 
 interface DashboardModuleProps {
   searchQuery: string;
@@ -35,24 +36,15 @@ interface Kunjungan {
   waktu: string;
 }
 
-// Mock patients list for selection inside modal
+// Patient interface for modal selection
 interface Pasien {
   id: string;
   nama: string;
   tipe: "Balita" | "Lansia";
   detailInfo: string; // "12 Bulan" or "RT 02"
+  tanggalLahir?: string;
+  jenisKelamin?: "L" | "P";
 }
-
-const mockPasiens: Pasien[] = [
-  { id: "b1", nama: "Andi Pratama", tipe: "Balita", detailInfo: "Usia 12 Bulan, Ibu: Siti" },
-  { id: "b2", nama: "Citra Lestari", tipe: "Balita", detailInfo: "Usia 24 Bulan, Ibu: Endah" },
-  { id: "b3", nama: "Aisyah Putri", tipe: "Balita", detailInfo: "Usia 6 Bulan, Ibu: Aminah" },
-  { id: "b4", nama: "Budi Raharjo", tipe: "Balita", detailInfo: "Usia 47 Bulan, Ibu: Purwati" },
-  { id: "l1", nama: "Mbah Karto", tipe: "Lansia", detailInfo: "RT 02 / RW 02, Dusun Karanggayam" },
-  { id: "l2", nama: "Mbah Sumi", tipe: "Lansia", detailInfo: "RT 03 / RW 02, Dusun Karanggayam" },
-  { id: "l3", nama: "Budi Santoso", tipe: "Lansia", detailInfo: "RT 01 / RW 02, Dusun Karanggayam" },
-  { id: "l4", nama: "Mbah Harjo", tipe: "Lansia", detailInfo: "RT 01 / RW 02, Dusun Karanggayam" },
-];
 
 import { DashboardSkeleton, Skeleton } from "../../components/Skeleton";
 
@@ -63,9 +55,9 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   // ── API state ──────────────────────────────────────────────
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
+  const [dbPasiens, setDbPasiens] = useState<Pasien[]>([]);
 
-  useEffect(() => {
-    setIsSummaryLoading(true);
+  const fetchSummary = () => {
     dashboardApi
       .getSummary(posyanduId)
       .then((res) => {
@@ -73,6 +65,38 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       })
       .catch(console.error)
       .finally(() => setIsSummaryLoading(false));
+  };
+
+  useEffect(() => {
+    setIsSummaryLoading(true);
+    fetchSummary();
+  }, [posyanduId]);
+
+  useEffect(() => {
+    Promise.all([
+      balitaApi.getAll(posyanduId),
+      lansiaApi.getAll(posyanduId)
+    ])
+      .then(([balitaRes, lansiaRes]) => {
+        const balitas: Pasien[] = (balitaRes.data || []).map((b) => ({
+          id: b.id,
+          nama: b.nama,
+          tipe: "Balita",
+          detailInfo: `Usia ${b.usiaBulan || calculateAgeInMonths(b.tanggalLahir)} Bulan, Ibu: ${b.namaIbu}`,
+          tanggalLahir: b.tanggalLahir,
+          jenisKelamin: b.jenisKelamin,
+        }));
+        const lansias: Pasien[] = (lansiaRes.data || []).map((l) => ({
+          id: l.id,
+          nama: l.nama,
+          tipe: "Lansia",
+          detailInfo: `RT/RW ${l.rtRw || "-"}`,
+          tanggalLahir: l.tanggalLahir,
+          jenisKelamin: l.jenisKelamin,
+        }));
+        setDbPasiens([...balitas, ...lansias]);
+      })
+      .catch(console.error);
   }, [posyanduId]);
 
   // Build kunjungan list from API data (recent pemeriksaan)
@@ -95,7 +119,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       statusType: "success" as const,
       waktu: new Date(p.tanggalPeriksa).toLocaleDateString("id-ID"),
     })),
-  ].sort(() => Math.random() - 0.5); // merge both lists
+  ].sort((a, b) => b.waktu.localeCompare(a.waktu)); // sort by date
 
   // Real-time additions from quick-exam modal go here
   const [localKunjungans, setLocalKunjungans] = useState<Kunjungan[]>([]);
@@ -117,12 +141,47 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   const [examTBU, setExamTBU] = useState("Normal");
   const [examBBTB, setExamBBTB] = useState("Normal");
   const [examVitA, setExamVitA] = useState(false);
+  const [examLiLA, setExamLiLA] = useState("");
+  const [examKms, setExamKms] = useState("N");
+  const [examAsi, setExamAsi] = useState(false);
+  const [examCacing, setExamCacing] = useState(false);
+  const [examImunisasi, setExamImunisasi] = useState("");
 
   // Form Fields - Lansia
   const [examSistol, setExamSistol] = useState("");
   const [examDiastol, setExamDiastol] = useState("");
   const [examGds, setExamGds] = useState("");
   const [examLp, setExamLp] = useState("");
+  const [examCholesterol, setExamCholesterol] = useState("");
+  const [examUricAcid, setExamUricAcid] = useState("");
+  const [examKeluhan, setExamKeluhan] = useState("");
+  const [examTindakan, setExamTindakan] = useState("");
+
+  // Helper Hitung Usia (Bulan)
+  const calculateAgeInMonths = (birthDateStr: string, refDate: Date = new Date()): number => {
+    const birth = new Date(birthDateStr);
+    let months = (refDate.getFullYear() - birth.getFullYear()) * 12;
+    months -= birth.getMonth();
+    months += refDate.getMonth();
+    return months <= 0 ? 0 : months;
+  };
+
+  useEffect(() => {
+    if (!selectedPasien || selectedPasien.tipe !== "Balita" || !selectedPasien.tanggalLahir) return;
+    const bb = parseFloat(examBB);
+    const tb = parseFloat(examTB);
+    const usia = calculateAgeInMonths(selectedPasien.tanggalLahir, new Date(examDate));
+    const jk = selectedPasien.jenisKelamin || "L";
+    if (!isNaN(bb) && bb > 0) {
+      setExamBBU(hitungStatusBbU(bb, usia, jk as "L" | "P"));
+    }
+    if (!isNaN(tb) && tb > 0) {
+      setExamTBU(hitungStatusTbU(tb, usia, jk as "L" | "P"));
+    }
+    if (!isNaN(bb) && bb > 0 && !isNaN(tb) && tb > 0) {
+      setExamBBTB(hitungStatusBbTb(bb, tb, jk as "L" | "P"));
+    }
+  }, [examBB, examTB, examDate, selectedPasien]);
 
   // Warning & Success State
   const [modalError, setModalError] = useState("");
@@ -137,7 +196,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   });
 
   // Filter Pasien in Modal
-  const filteredPasiens = mockPasiens.filter((p) =>
+  const filteredPasiens = dbPasiens.filter((p) =>
     p.nama.toLowerCase().includes(modalSearch.toLowerCase())
   );
 
@@ -157,7 +216,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   };
 
   // Submit Quick Exam
-  const handleQuickExamSubmit = (e: React.FormEvent) => {
+  const handleQuickExamSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError("");
 
@@ -171,48 +230,82 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       return;
     }
 
-    if (selectedPasien.tipe === "Lansia") {
-      const sis = parseInt(examSistol);
-      const dia = parseInt(examDiastol);
-      const gds = parseInt(examGds);
-      const lp = parseInt(examLp);
+    try {
+      if (selectedPasien.tipe === "Balita") {
+        const age = calculateAgeInMonths(selectedPasien.tanggalLahir || examDate, new Date(examDate));
+        const data = {
+          tanggalPeriksa: examDate,
+          usiaBulan: age,
+          beratBadan: bb,
+          tinggiBadan: tb,
+          lingkarKepala: examLK ? parseFloat(examLK) : undefined,
+          lingkarLengan: examLiLA ? parseFloat(examLiLA) : undefined,
+          statusBbU: examBBU,
+          statusTbU: examTBU,
+          statusBbTb: examBBTB,
+          statusKms: examKms,
+          vitaminA: examVitA,
+          asiEksklusif: examAsi,
+          obatCacing: examCacing,
+          statusImunisasi: examImunisasi || undefined,
+        };
+        await balitaApi.createPemeriksaan(posyanduId, selectedPasien.id, data);
+      } else {
+        const sis = parseInt(examSistol);
+        const dia = parseInt(examDiastol);
+        const gds = parseInt(examGds);
+        const lp = parseInt(examLp);
 
-      if (isNaN(sis) || isNaN(dia) || isNaN(gds) || isNaN(lp)) {
-        setModalError("Kolom tekanan darah, GDS, dan lingkar perut wajib diisi.");
-        return;
+        if (isNaN(sis) || isNaN(dia) || isNaN(gds) || isNaN(lp)) {
+          setModalError("Kolom tekanan darah, GDS, dan lingkar perut wajib diisi.");
+          return;
+        }
+
+        const data = {
+          tanggalPeriksa: examDate,
+          beratBadan: bb,
+          tinggiBadan: tb,
+          tekananDarahSistol: sis,
+          tekananDarahDiastol: dia,
+          gulaDarahSewaktu: gds,
+          lingkarPerut: lp,
+          kolesterol: examCholesterol ? parseInt(examCholesterol) : undefined,
+          asamUrat: examUricAcid ? parseFloat(examUricAcid) : undefined,
+          keluhan: examKeluhan || undefined,
+          tindakan: examTindakan || undefined,
+        };
+        await lansiaApi.createPemeriksaan(posyanduId, selectedPasien.id, data);
       }
+
+      setToastSuccess(`Pemeriksaan untuk ${selectedPasien.nama} berhasil dicatat.`);
+      fetchSummary();
+
+      // Close & Reset
+      setIsOpenModal(false);
+      setSelectedPasien(null);
+      setModalSearch("");
+      setExamBB("");
+      setExamTB("");
+      setExamLK("");
+      setExamSistol("");
+      setExamDiastol("");
+      setExamGds("");
+      setExamLp("");
+      setExamLiLA("");
+      setExamCholesterol("");
+      setExamUricAcid("");
+      setExamKeluhan("");
+      setExamTindakan("");
+      setExamKms("N");
+      setExamAsi(false);
+      setExamCacing(false);
+      setExamImunisasi("");
+      setModalWarning("");
+
+      setTimeout(() => setToastSuccess(""), 4000);
+    } catch (err: any) {
+      setModalError(err.message || "Gagal menyimpan pemeriksaan.");
     }
-
-    // Add locally to dashboard table (optimistic update)
-    const timeNow = new Date();
-    const timeStr = `${String(timeNow.getHours()).padStart(2, "0")}:${String(timeNow.getMinutes()).padStart(2, "0")} WIB`;
-    const newKunjungan: Kunjungan = {
-      id: `quick-${Date.now()}`,
-      nama: selectedPasien.nama,
-      tipe: selectedPasien.tipe,
-      detail: selectedPasien.tipe === "Balita" ? "Baru di-input" : "-",
-      status: "Selesai Periksa",
-      statusType: "success",
-      waktu: timeStr,
-    };
-
-    setLocalKunjungans((prev) => [newKunjungan, ...prev]);
-    setToastSuccess(`Pemeriksaan untuk ${selectedPasien.nama} berhasil dicatat.`);
-    
-    // Close & Reset
-    setIsOpenModal(false);
-    setSelectedPasien(null);
-    setModalSearch("");
-    setExamBB("");
-    setExamTB("");
-    setExamLK("");
-    setExamSistol("");
-    setExamDiastol("");
-    setExamGds("");
-    setExamLp("");
-    setModalWarning("");
-
-    setTimeout(() => setToastSuccess(""), 4000);
   };
 
   if (isSummaryLoading) {
@@ -684,7 +777,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-50 pt-3">
+                <div className={`grid grid-cols-1 ${selectedPasien.tipe === "Lansia" ? "sm:grid-cols-4" : "sm:grid-cols-3"} gap-4 border-t border-gray-50 pt-3`}>
                   {/* Tanggal */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-saas-muted uppercase">Tanggal Periksa</label>
@@ -724,12 +817,29 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                       className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
                   </div>
+
+                  {/* IMT - Calculated Live */}
+                  {selectedPasien.tipe === "Lansia" && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-teal-600 uppercase">IMT (Otomatis)</label>
+                      <input
+                        type="text"
+                        disabled
+                        value={
+                          parseFloat(examBB) > 0 && parseFloat(examTB) > 0
+                            ? hitungIMT(parseFloat(examBB), parseFloat(examTB))
+                            : "-"
+                        }
+                        className="w-full p-2 bg-teal-50/50 border border-teal-150 rounded-lg text-xs font-bold text-teal-700 cursor-not-allowed"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Balita Specific Inputs */}
                 {selectedPasien.tipe === "Balita" && (
                   <div className="space-y-4 border-t border-gray-50 pt-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                       {/* Lingkar Kepala */}
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Lingkar Kepala (cm)</label>
@@ -743,8 +853,51 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         />
                       </div>
 
-                      {/* Vit A */}
-                      <div className="flex items-center pb-2 pl-2">
+                      {/* Lingkar Lengan (LiLA) */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Lingkar Lengan (cm)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="Cth: 12.5"
+                          value={examLiLA}
+                          onChange={(e) => setExamLiLA(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        />
+                      </div>
+
+                      {/* Status KMS */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Indikator KMS</label>
+                        <select
+                          value={examKms}
+                          onChange={(e) => setExamKms(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        >
+                          <option value="N">N (Berat Naik)</option>
+                          <option value="T">T (Berat Tetap/Turun)</option>
+                          <option value="2T">2T (2x Tidak Naik)</option>
+                          <option value="B">B (Baru Pertama Kali)</option>
+                          <option value="O">O (Bulan Lalu Absen)</option>
+                        </select>
+                      </div>
+
+                      {/* Status Imunisasi */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Imunisasi</label>
+                        <input
+                          type="text"
+                          placeholder="Cth: BCG, Polio 1"
+                          value={examImunisasi}
+                          onChange={(e) => setExamImunisasi(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                      {/* Checkboxes: Vitamin A, ASI Eksklusif, Obat Cacing */}
+                      <div className="flex items-center pt-2">
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input
                             type="checkbox"
@@ -755,16 +908,40 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                           <span className="text-xs font-bold text-saas-dark">Pemberian Vitamin A</span>
                         </label>
                       </div>
+
+                      <div className="flex items-center pt-2">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={examAsi}
+                            onChange={(e) => setExamAsi(e.target.checked)}
+                            className="w-4.5 h-4.5 text-saas-primary focus:ring-saas-primary/30"
+                          />
+                          <span className="text-xs font-bold text-saas-dark">ASI Eksklusif</span>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center pt-2">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={examCacing}
+                            onChange={(e) => setExamCacing(e.target.checked)}
+                            className="w-4.5 h-4.5 text-saas-primary focus:ring-saas-primary/30"
+                          />
+                          <span className="text-xs font-bold text-saas-dark">Obat Cacing</span>
+                        </label>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-                      {/* WHO Statuses */}
+                      {/* WHO Statuses (Calculated) */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-saas-muted uppercase">Status BB/U</label>
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Status BB/U (Otomatis)</label>
                         <select
                           value={examBBU}
-                          onChange={(e) => setExamBBU(e.target.value)}
-                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                          disabled
+                          className="w-full p-2 bg-gray-150 border border-gray-150 rounded-lg text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
                         >
                           <option value="Normal">Normal</option>
                           <option value="Kurang">Kurang</option>
@@ -774,11 +951,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-saas-muted uppercase">Status TB/U</label>
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Status TB/U (Otomatis)</label>
                         <select
                           value={examTBU}
-                          onChange={(e) => setExamTBU(e.target.value)}
-                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                          disabled
+                          className="w-full p-2 bg-gray-150 border border-gray-150 rounded-lg text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
                         >
                           <option value="Normal">Normal</option>
                           <option value="Pendek">Pendek</option>
@@ -788,11 +965,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-saas-muted uppercase">Status BB/TB</label>
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Status BB/TB (Otomatis)</label>
                         <select
                           value={examBBTB}
-                          onChange={(e) => setExamBBTB(e.target.value)}
-                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                          disabled
+                          className="w-full p-2 bg-gray-150 border border-gray-150 rounded-lg text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
                         >
                           <option value="Normal">Normal</option>
                           <option value="Kurus">Kurus</option>
@@ -807,7 +984,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                 {/* Lansia Specific Inputs */}
                 {selectedPasien.tipe === "Lansia" && (
                   <div className="space-y-4 border-t border-gray-50 pt-3">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                       {/* Sistol */}
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Sistol (mmHg)</label>
@@ -834,12 +1011,10 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
                       {/* GDS */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-saas-muted uppercase">Gula Darah (GDS - mg/dL)</label>
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">GDS (mg/dL)</label>
                         <input
                           type="number"
                           placeholder="Cth: 120"
@@ -858,6 +1033,59 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                           value={examLp}
                           onChange={(e) => setExamLp(e.target.value)}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Kolesterol */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Kolesterol (mg/dL)</label>
+                        <input
+                          type="number"
+                          placeholder="cth: 180"
+                          value={examCholesterol}
+                          onChange={(e) => setExamCholesterol(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        />
+                      </div>
+
+                      {/* Asam Urat */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Asam Urat (mg/dL)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="cth: 6.2"
+                          value={examUricAcid}
+                          onChange={(e) => setExamUricAcid(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Keluhan */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Keluhan Saat Ini</label>
+                        <textarea
+                          placeholder="Tulis keluhan atau sakit yang dirasakan..."
+                          rows={2}
+                          value={examKeluhan}
+                          onChange={(e) => setExamKeluhan(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50 resize-none"
+                        />
+                      </div>
+
+                      {/* Tindakan */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-saas-muted uppercase">Tindakan / Rujukan</label>
+                        <textarea
+                          placeholder="Tulis rujukan, obat, atau tindakan..."
+                          rows={2}
+                          value={examTindakan}
+                          onChange={(e) => setExamTindakan(e.target.value)}
+                          className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50 resize-none"
                         />
                       </div>
                     </div>

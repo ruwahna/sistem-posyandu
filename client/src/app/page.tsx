@@ -67,7 +67,7 @@ export default function Home() {
           />
         );
       case "Pelayanan":
-        return <PelayananModule />;
+        return <PelayananModule posyanduId={posyanduId} />;
       case "Balita":
         return <BalitaModule posyanduId={posyanduId} />;
       case "Lansia":

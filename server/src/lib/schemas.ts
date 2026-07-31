@@ -64,11 +64,16 @@ export const createPemeriksaanBalitaSchema = z.object({
   }, 'Tanggal periksa tidak valid atau melebihi hari ini'), // BR-01
   beratBadan: z.number().positive('Berat badan harus angka positif'), // BR-03
   tinggiBadan: z.number().positive('Tinggi badan harus angka positif'), // BR-03
-  lingkarKepala: z.number().positive('Lingkar kepala harus angka positif').optional(),
+  lingkarKepala: z.number().positive('Lingkar kepala harus angka positif').optional().nullable(),
+  lingkarLengan: z.number().positive('Lingkar lengan harus angka positif').optional().nullable(),
   statusBbU: statusBbUEnum,
   statusTbU: statusTbUEnum,
   statusBbTb: statusBbTbEnum,
+  statusKms: z.string().optional().nullable(),
   vitaminA: z.boolean(),
+  asiEksklusif: z.boolean().optional().nullable(),
+  obatCacing: z.boolean().optional().nullable(),
+  statusImunisasi: z.string().optional().nullable(),
 });
 
 export const updatePemeriksaanBalitaSchema = createPemeriksaanBalitaSchema.partial();
@@ -111,6 +116,10 @@ export const createPemeriksaanLansiaSchema = z.object({
   tekananDarahDiastol: z.number().int().positive('Tekanan darah diastol harus angka positif'),
   gulaDarahSewaktu: z.number().positive('GDS harus angka positif'),
   lingkarPerut: z.number().positive('Lingkar perut harus angka positif'),
+  kolesterol: z.number().positive('Kolesterol harus angka positif').optional().nullable(),
+  asamUrat: z.number().positive('Asam urat harus angka positif').optional().nullable(),
+  keluhan: z.string().optional().nullable(),
+  tindakan: z.string().optional().nullable(),
 });
 
 export const updatePemeriksaanLansiaSchema = createPemeriksaanLansiaSchema.partial();
