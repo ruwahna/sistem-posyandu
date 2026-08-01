@@ -4,26 +4,44 @@ Roadmap ini merangkum langkah-langkah konkret yang perlu diimplementasikan untuk
 
 ---
 
-## 🛠️ 1. Modul Riwayat Perkembangan Bulanan
+## 🛠️ 1. Modul Riwayat & Ekspor Laporan
 
-Modul Riwayat saat ini belum terintegrasi sepenuhnya dengan backend dan database. Kader membutuhkan data komprehensif untuk melihat riwayat pertumbuhan dari waktu ke waktu secara perorangan maupun kolektif.
+Modul Riwayat telah terintegrasi untuk query data riwayat dan ekspor CSV. Namun beberapa fitur penunjang ekspor dan analisis tingkat lanjut belum sepenuhnya selesai.
 
-### Tugas yang Harus Dilakukan:
+### Status Implementasi:
 - [x] **Backend API Riwayat Perkembangan**:
-  - Membuat endpoint `GET /api/posyandu/:posyanduId/riwayat` yang menerima filter `tipe` (Balita/Lansia), `search`, dan rentang `bulan/tahun`.
-  - Mengembalikan data agrerat perkembangan bulanan untuk keperluan statistik kader posyandu.
+  - Endpoint `GET /api/posyandu/:posyanduId/riwayat` yang menerima filter `tipe` (Balita/Lansia), `search`, dan rentang `bulan/tahun`.
 - [x] **Visualisasi Grafik Pertumbuhan (Frontend)**:
-  - Mengintegrasikan library charting (seperti Chart.js atau Recharts) pada modul Riwayat.
-  - Menampilkan grafik perkembangan individual (misal: kurva tinggi & berat badan balita dibandingkan dengan garis median standar WHO).
-- [x] **Fitur Ekspor Laporan**:
-  - Menyediakan endpoint backend `/api/posyandu/:posyanduId/export` untuk men-generate file **Excel (.xlsx)** atau **PDF**.
-  - Laporan harus siap cetak untuk diserahkan ke Puskesmas kecamatan sesuai template standar Kemenkes.
+  - Tampilan grafik tren perkembangan balita & lansia.
+- [x] **Ekspor Format CSV**:
+  - Endpoint `/api/posyandu/:posyanduId/riwayat/export` untuk men-generate file data riwayat.
+- [ ] **Ekspor Format PDF & Excel (.xlsx) Siap Cetak**:
+  - Men-generate file **PDF** terformat rapi sesuai template Laporan Posyandu Kemenkes/Puskesmas.
+  - Men-generate spreadsheet **Excel (.xlsx)** dengan format tabel register fisik yang sesuai standar Puskesmas.
 
 ---
 
-## 🕒 2. Modul Pencatatan Sesi Hari Ini
+## 📝 2. Sinkronisasi Field Baru dari Document Improvement & Register Fisik
 
-Sesi Posyandu berjalan sebulan sekali. Kader memerlukan kontrol untuk membuka sesi posyandu hari ini, merekam siapa saja yang hadir, dan melihat performa sesi (misal: "80% balita terdaftar telah hadir hari ini").
+Sesuai pembaruan pada `project-brief-posyandu.md` dan `srs-posyandu.md`, skema database Prisma dan Form Input Frontend perlu disesuaikan untuk menampung field tambahan dari register fisik:
+
+### Task Backend (Prisma Schema & Service):
+- [ ] Update `schema.prisma`:
+  - `Balita`: Tambah `noUrut`.
+  - `PemeriksaanBalita`: Tambah `lingkarLenganAtas`, `indikatorKms`, `asiEksklusif`, `obatCacing`, `statusImunisasi`.
+  - `Lansia`: Tambah `noUrut`, `kelompokUmur`.
+  - `PemeriksaanLansia`: Tambah `imt`, `kolesterol`, `asamUrat`, `kemandirianBulanan`, `mentalEmosionalBulanan`, `keluhan`, `pemberianObat`, `rujukan`.
+- [ ] Update Zod Validator & Controller (`balita`, `lansia`, `riwayat`).
+
+### Task Frontend (React/UI):
+- [ ] Form Tambah/Edit Balita & Form Pemeriksaan Balita: Input field `noUrut`, `LiLA`, `ASI Eksklusif`, `Obat Cacing`, `Status Imunisasi`, dan Pilihan `KMS`.
+- [ ] Form Tambah/Edit Lansia & Form Pemeriksaan Lansia: Input field `noUrut`, `IMT` (auto-calculate), `Kolesterol`, `Asam Urat`, `Kemandirian Bulanan`, `Keluhan`, `Pemberian Obat`, dan Toggle `Rujukan`.
+
+---
+
+## 🕒 3. Modul Pencatatan Sesi Hari Ini
+
+Sesi Posyandu berjalan sebulan sekali. Kader memerlukan kontrol untuk membuka sesi posyandu hari ini, merekam siapa saja yang hadir, dan melihat performa sesi.
 
 ### Tugas yang Harus Dilakukan:
 - [ ] **Skema Database Sesi (`SesiPosyandu`)**:
@@ -42,9 +60,9 @@ Sesi Posyandu berjalan sebulan sekali. Kader memerlukan kontrol untuk membuka se
   ```
 - [ ] **Backend Service Kontrol Sesi**:
   - Membuat API untuk membuka sesi (`POST /api/posyandu/:posyanduId/sesi/mulai`) dan menutup sesi (`POST /api/posyandu/:posyanduId/sesi/selesai`).
-  - Menolak input pemeriksaan bulanan jika tidak ada sesi posyandu yang sedang aktif hari ini (mencegah salah input di luar hari posyandu).
+  - Menolak input pemeriksaan bulanan jika tidak ada sesi posyandu yang sedang aktif hari ini.
 - [ ] **Rangkuman Sesi di UI**:
-  - Menampilkan statistik sesi berjalan di modul Pelayanan (misal: Total hadir, rata-rata waktu tunggu warga, dan grafik status gizi hari ini).
+  - Menampilkan statistik sesi berjalan di modul Pelayanan (misal: Total hadir dan grafik status gizi hari ini).
 
 ---
 ## 🚫 Out of Scope (Di Luar Cakupan)

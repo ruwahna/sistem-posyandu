@@ -105,7 +105,7 @@ manual di buku register kertas untuk 2 modul: Balita dan Lansia.
 
 | ID | Kebutuhan |
 |---|---|
-| FR-11 | Kader/Admin dapat menambah data Balita: nama, NIK (opsional), tanggal lahir, jenis kelamin, nama ibu, alamat |
+| FR-11 | Kader/Admin dapat menambah data Balita: no_urut, nama, NIK, tanggal lahir, jenis kelamin, nama ibu, alamat |
 | FR-12 | Kader/Admin dapat mengubah data identitas Balita |
 | FR-13 | Kader/Admin dapat menghapus data Balita |
 | FR-14 | Sistem menampilkan daftar Balita per Posyandu, dengan pencarian nama dan filter kelompok usia |
@@ -116,9 +116,9 @@ manual di buku register kertas untuk 2 modul: Balita dan Lansia.
 
 | ID | Kebutuhan |
 |---|---|
-| FR-17 | Kader dapat menambah entri pemeriksaan baru untuk seorang Balita: tanggal periksa, berat badan, tinggi badan, lingkar kepala (opsional) |
-| FR-18 | Kader memilih/menetapkan status gizi BB/U, TB/U, dan BB/TB untuk setiap entri pemeriksaan, dari daftar kategori standar |
-| FR-19 | Kader mencatat status pemberian Vitamin A (ya/tidak) pada entri pemeriksaan |
+| FR-17 | Kader dapat menambah entri pemeriksaan baru untuk seorang Balita: tanggal periksa, berat badan (BB), tinggi/panjang badan (TB), lingkar kepala (LKA, opsional), lingkar lengan atas (LiLA, opsional) |
+| FR-18 | Kader/Sistem menentukan status gizi BB/U, TB/U, dan BB/TB dari daftar indikator standar (WHO/Kemenkes) |
+| FR-19 | Kader mencatat status Vitamin A, ASI Eksklusif, Obat Cacing, Status Imunisasi Dasar, dan Indikator Grafik KMS (N, T, 2T, B1/B6, O) pada entri pemeriksaan |
 | FR-20 | Sistem menampilkan seluruh riwayat pemeriksaan seorang Balita terurut dari yang terbaru |
 | FR-21 | Kader/Admin dapat mengubah atau menghapus entri pemeriksaan yang salah input |
 
@@ -126,7 +126,7 @@ manual di buku register kertas untuk 2 modul: Balita dan Lansia.
 
 | ID | Kebutuhan |
 |---|---|
-| FR-22 | Kader/Admin dapat menambah data Lansia: nama, NIK, nomor BPJS, tanggal lahir, jenis kelamin, RT/RW, alamat |
+| FR-22 | Kader/Admin dapat menambah data Lansia: no_urut, nama, NIK, nomor BPJS, tanggal lahir, jenis kelamin, RT/RW, alamat |
 | FR-23 | Kader/Admin mencatat riwayat penyakit Lansia: HT (ya/tidak), DM (ya/tidak) |
 | FR-24 | Kader/Admin mencatat tingkat kemandirian Lansia (kategori A/B/C) |
 | FR-25 | Kader/Admin mencatat catatan gangguan mental emosional (teks bebas atau skala sederhana) |
@@ -138,7 +138,7 @@ manual di buku register kertas untuk 2 modul: Balita dan Lansia.
 
 | ID | Kebutuhan |
 |---|---|
-| FR-29 | Kader dapat menambah entri pemeriksaan baru untuk seorang Lansia: tanggal periksa, berat badan, tinggi badan, tekanan darah (sistol/diastol), gula darah sewaktu, lingkar perut |
+| FR-29 | Kader dapat menambah entri pemeriksaan baru untuk seorang Lansia: tanggal periksa, BB, TB, IMT, tekanan darah (sistol/diastol), GDS, lingkar perut, kolesterol, asam urat, evaluasi kemandirian, skrining mental emosional, keluhan/penyakit, obat/kapsul, dan rujukan |
 | FR-30 | Sistem menampilkan seluruh riwayat pemeriksaan seorang Lansia terurut dari yang terbaru |
 | FR-31 | Kader/Admin dapat mengubah atau menghapus entri pemeriksaan yang salah input |
 
@@ -185,6 +185,7 @@ Posyandu (1) ────< (N) Lansia (1) ────< (N) PemeriksaanLansia
 |---|---|---|
 | id | UUID/PK | |
 | posyandu_id | FK | |
+| no_urut | integer | nullable |
 | nama | string | |
 | nik | string | nullable |
 | tanggal_lahir | date | |
@@ -202,23 +203,30 @@ Posyandu (1) ────< (N) Lansia (1) ────< (N) PemeriksaanLansia
 | berat_badan | decimal | kg |
 | tinggi_badan | decimal | cm |
 | lingkar_kepala | decimal | nullable, cm |
+| lingkar_lengan_atas | decimal | nullable, cm |
 | status_bb_u | enum | SK/K/N/L |
 | status_tb_u | enum | SP/P/N/T |
 | status_bb_tb | enum | SK/K/N/G |
+| indikator_kms | enum | N/T/2T/B1/B6/O |
+| asi_eksklusif | boolean | nullable |
 | vitamin_a | boolean | |
+| obat_cacing | boolean | nullable |
+| status_imunisasi | string | nullable |
 
 ### 5.4 Tabel: Lansia
 | Kolom | Tipe | Keterangan |
 |---|---|---|
 | id | UUID/PK | |
 | posyandu_id | FK | |
+| no_urut | integer | nullable |
 | nama | string | |
 | nik | string | |
 | no_bpjs | string | nullable |
-| rt_rw | string | |
+| rt_rw | string | nullable |
 | tanggal_lahir | date | |
 | jenis_kelamin | enum(L/P) | |
 | alamat | string | |
+| kelompok_umur | enum | 45-59 / 60-69 / >=70 |
 | riwayat_ht | boolean | |
 | riwayat_dm | boolean | |
 | tingkat_kemandirian | enum(A/B/C) | |
@@ -232,10 +240,18 @@ Posyandu (1) ────< (N) Lansia (1) ────< (N) PemeriksaanLansia
 | tanggal_periksa | date | |
 | berat_badan | decimal | kg |
 | tinggi_badan | decimal | cm |
+| imt | decimal | nullable |
 | tekanan_darah_sistol | integer | mmHg |
 | tekanan_darah_diastol | integer | mmHg |
 | gula_darah_sewaktu | decimal | mg/dL |
 | lingkar_perut | decimal | cm |
+| kolesterol | decimal | nullable, mg/dL |
+| asam_urat | decimal | nullable, mg/dL |
+| kemandirian_bulanan | enum(A/B/C) | nullable |
+| mental_emosional_bulanan | text | nullable |
+| keluhan | text | nullable |
+| pemberian_obat | text | nullable |
+| rujukan | boolean | nullable |
 
 ---
 
