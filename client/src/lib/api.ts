@@ -287,3 +287,66 @@ export const lansiaApi = {
       method: 'DELETE',
     }),
 };
+
+// ─────────────────────────────────────────────────────────────
+// RIWAYAT API
+// ─────────────────────────────────────────────────────────────
+
+export interface ItemRiwayat {
+  id: string;
+  nama: string;
+  tipe: 'Balita' | 'Lansia';
+  tanggal: string;
+  petugas: string;
+  parameter: string;
+  status: string;
+  statusType: 'success' | 'warning' | 'info';
+}
+
+export const riwayatApi = {
+  getAll: (
+    posyanduId: string,
+    params?: { tipe?: string; search?: string; status?: string; bulan?: string; tahun?: string }
+  ) => {
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v && v !== 'semua') cleanParams[k] = v;
+      });
+    }
+    const q = new URLSearchParams(cleanParams).toString();
+    return request<ApiResponse<ItemRiwayat[]>>(`/api/posyandu/${posyanduId}/riwayat${q ? `?${q}` : ''}`);
+  },
+
+  downloadExcel: async (
+    posyanduId: string,
+    params?: { tipe?: string; search?: string; status?: string; bulan?: string; tahun?: string }
+  ) => {
+    const token = getToken();
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v && v !== 'semua') cleanParams[k] = v;
+      });
+    }
+    const q = new URLSearchParams(cleanParams).toString();
+    const res = await fetch(`${BASE_URL}/api/posyandu/${posyanduId}/export${q ? `?${q}` : ''}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!res.ok) throw new Error('Gagal mengunduh file Excel');
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Laporan_Posyandu_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+};
+

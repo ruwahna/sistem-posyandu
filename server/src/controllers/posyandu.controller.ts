@@ -19,7 +19,8 @@ export const getAllPosyandu = async (req: Request, res: Response): Promise<void>
  */
 export const getPosyanduById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const data = await posyanduService.findById(req.params.id);
+    const id = req.params.id as string;
+    const data = await posyanduService.findById(id);
     if (!data) {
       res.status(404).json({ success: false, message: 'Posyandu tidak ditemukan' });
       return;
@@ -49,7 +50,8 @@ export const createPosyandu = async (req: Request, res: Response): Promise<void>
  */
 export const updatePosyandu = async (req: Request, res: Response): Promise<void> => {
   try {
-    const data = await posyanduService.update(req.params.id, req.body);
+    const id = req.params.id as string;
+    const data = await posyanduService.update(id, req.body);
     res.json({ success: true, message: 'Posyandu berhasil diperbarui', data });
   } catch (err) {
     throw err;
@@ -62,7 +64,8 @@ export const updatePosyandu = async (req: Request, res: Response): Promise<void>
  */
 export const deletePosyandu = async (req: Request, res: Response): Promise<void> => {
   try {
-    await posyanduService.delete(req.params.id);
+    const id = req.params.id as string;
+    await posyanduService.delete(id);
     res.json({ success: true, message: 'Posyandu berhasil dihapus' });
   } catch (err: unknown) {
     if (err instanceof Error && err.message.includes('tidak dapat dihapus')) {

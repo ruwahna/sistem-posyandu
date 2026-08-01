@@ -73,7 +73,7 @@ export default function Home() {
       case "Lansia":
         return <LansiaModule posyanduId={posyanduId} />;
       case "Riwayat":
-        return <RiwayatModule />;
+        return <RiwayatModule posyanduId={posyanduId} />;
       case "Manajemen Akun":
         return <ManajemenAkunModule />;
       case "Pengaturan":

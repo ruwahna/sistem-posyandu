@@ -7,7 +7,7 @@ import { dashboardService } from '../services';
  */
 export const getDashboardSummary = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { posyanduId } = req.params;
+    const posyanduId = req.params.posyanduId as string;
 
     // Isolasi tenant: kader hanya bisa akses posyandu miliknya (NFR-05)
     if (req.user?.role !== 'OWNER' && req.user?.posyanduId !== posyanduId) {

@@ -9,13 +9,13 @@ Roadmap ini merangkum langkah-langkah konkret yang perlu diimplementasikan untuk
 Modul Riwayat saat ini belum terintegrasi sepenuhnya dengan backend dan database. Kader membutuhkan data komprehensif untuk melihat riwayat pertumbuhan dari waktu ke waktu secara perorangan maupun kolektif.
 
 ### Tugas yang Harus Dilakukan:
-- [ ] **Backend API Riwayat Perkembangan**:
+- [x] **Backend API Riwayat Perkembangan**:
   - Membuat endpoint `GET /api/posyandu/:posyanduId/riwayat` yang menerima filter `tipe` (Balita/Lansia), `search`, dan rentang `bulan/tahun`.
   - Mengembalikan data agrerat perkembangan bulanan untuk keperluan statistik kader posyandu.
-- [ ] **Visualisasi Grafik Pertumbuhan (Frontend)**:
+- [x] **Visualisasi Grafik Pertumbuhan (Frontend)**:
   - Mengintegrasikan library charting (seperti Chart.js atau Recharts) pada modul Riwayat.
   - Menampilkan grafik perkembangan individual (misal: kurva tinggi & berat badan balita dibandingkan dengan garis median standar WHO).
-- [ ] **Fitur Ekspor Laporan**:
+- [x] **Fitur Ekspor Laporan**:
   - Menyediakan endpoint backend `/api/posyandu/:posyanduId/export` untuk men-generate file **Excel (.xlsx)** atau **PDF**.
   - Laporan harus siap cetak untuk diserahkan ke Puskesmas kecamatan sesuai template standar Kemenkes.
 

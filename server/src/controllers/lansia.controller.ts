@@ -11,7 +11,7 @@ import { lansiaService, kelompokUmurLansia } from '../services';
  */
 export const getAllLansia = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { posyanduId } = req.params;
+    const posyanduId = req.params.posyanduId as string;
     const { search, kelompokUmur, ht, dm } = req.query as {
       search?: string;
       kelompokUmur?: string;
@@ -35,7 +35,8 @@ export const getAllLansia = async (req: Request, res: Response): Promise<void> =
  */
 export const getLansiaById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { posyanduId, id } = req.params;
+    const posyanduId = req.params.posyanduId as string;
+    const id = req.params.id as string;
     const lansia = await lansiaService.findById(id, posyanduId);
 
     if (!lansia) {
@@ -66,7 +67,7 @@ export const getLansiaById = async (req: Request, res: Response): Promise<void> 
  */
 export const createLansia = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { posyanduId } = req.params;
+    const posyanduId = req.params.posyanduId as string;
     const {
       nama, nik, noBpjs, rtRw, tanggalLahir, jenisKelamin,
       alamat, riwayatHt, riwayatDm, tingkatKemandirian, gangguanMentalEmosional,
@@ -98,7 +99,8 @@ export const createLansia = async (req: Request, res: Response): Promise<void> =
  */
 export const updateLansia = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { posyanduId, id } = req.params;
+    const posyanduId = req.params.posyanduId as string;
+    const id = req.params.id as string;
     const { tanggalLahir, ...rest } = req.body;
 
     const data = await lansiaService.update(id, posyanduId, {
@@ -122,7 +124,8 @@ export const updateLansia = async (req: Request, res: Response): Promise<void> =
  */
 export const deleteLansia = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { posyanduId, id } = req.params;
+    const posyanduId = req.params.posyanduId as string;
+    const id = req.params.id as string;
     await lansiaService.delete(id, posyanduId);
     res.json({ success: true, message: 'Data lansia berhasil dihapus' });
   } catch (err: unknown) {
@@ -144,7 +147,8 @@ export const deleteLansia = async (req: Request, res: Response): Promise<void> =
  */
 export const getAllPemeriksaanLansia = async (req: Request, res: Response): Promise<void> => {
   try {
-    const data = await lansiaService.findAllPemeriksaan(req.params.lansiaId);
+    const lansiaId = req.params.lansiaId as string;
+    const data = await lansiaService.findAllPemeriksaan(lansiaId);
     res.json({ success: true, data });
   } catch (err) {
     throw err;
@@ -157,7 +161,7 @@ export const getAllPemeriksaanLansia = async (req: Request, res: Response): Prom
  */
 export const createPemeriksaanLansia = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { lansiaId } = req.params;
+    const lansiaId = req.params.lansiaId as string;
     const {
       tanggalPeriksa, beratBadan, tinggiBadan,
       tekananDarahSistol, tekananDarahDiastol, gulaDarahSewaktu, lingkarPerut,
@@ -194,7 +198,7 @@ export const createPemeriksaanLansia = async (req: Request, res: Response): Prom
  */
 export const updatePemeriksaanLansia = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { tanggalPeriksa, ...rest } = req.body;
 
     const data = await lansiaService.updatePemeriksaan(id, {
@@ -214,7 +218,8 @@ export const updatePemeriksaanLansia = async (req: Request, res: Response): Prom
  */
 export const deletePemeriksaanLansia = async (req: Request, res: Response): Promise<void> => {
   try {
-    await lansiaService.deletePemeriksaan(req.params.id);
+    const id = req.params.id as string;
+    await lansiaService.deletePemeriksaan(id);
     res.json({ success: true, message: 'Pemeriksaan lansia berhasil dihapus' });
   } catch (err) {
     throw err;

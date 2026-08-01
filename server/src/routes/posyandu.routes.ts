@@ -12,6 +12,14 @@ import { createPosyanduSchema, updatePosyanduSchema } from '../lib/schemas';
 
 const router = Router();
 
+import { getRiwayat, exportRiwayatExcel } from '../controllers/riwayat.controller';
+
+// GET /api/posyandu/:posyanduId/riwayat  — Riwayat pemeriksaan bulanan
+router.get('/:posyanduId/riwayat', authenticate, getRiwayat);
+
+// GET /api/posyandu/:posyanduId/export   — Export Excel laporan riwayat
+router.get('/:posyanduId/export', authenticate, exportRiwayatExcel);
+
 // GET /api/posyandu  — siapa saja yang sudah login bisa lihat daftar posyandu
 router.get('/', authenticate, getAllPosyandu);
 

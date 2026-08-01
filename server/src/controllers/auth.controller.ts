@@ -104,7 +104,7 @@ export const registerPosyandu = async (req: Request, res: Response): Promise<voi
     const token = jwt.sign(
       { userId: result.kader.id, posyanduId: result.posyandu.id, role: 'OWNER' },
       secret,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any }
     );
 
     res.status(201).json({
@@ -151,7 +151,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const token = jwt.sign(
       { userId: kader.id, posyanduId: kader.posyanduId, role: kader.role },
       secret,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any }
     );
 
     res.json({

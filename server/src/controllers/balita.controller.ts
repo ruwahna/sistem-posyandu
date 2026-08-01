@@ -11,7 +11,7 @@ import { balitaService, hitungUsiaBulan, kelompokUsiaBulan } from '../services';
  */
 export const getAllBalita = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { posyanduId } = req.params;
+    const posyanduId = req.params.posyanduId as string;
     const { search, kelompokUsia } = req.query as { search?: string; kelompokUsia?: string };
 
     const data = await balitaService.findAll(posyanduId, search, kelompokUsia);
@@ -27,7 +27,8 @@ export const getAllBalita = async (req: Request, res: Response): Promise<void> =
  */
 export const getBalitaById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { posyanduId, id } = req.params;
+    const posyanduId = req.params.posyanduId as string;
+    const id = req.params.id as string;
     const balita = await balitaService.findById(id, posyanduId);
 
     if (!balita) {
@@ -56,7 +57,7 @@ export const getBalitaById = async (req: Request, res: Response): Promise<void> 
  */
 export const createBalita = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { posyanduId } = req.params;
+    const posyanduId = req.params.posyanduId as string;
     const { nama, nik, tanggalLahir, jenisKelamin, namaIbu, alamat } = req.body;
 
     const data = await balitaService.create(posyanduId, {
@@ -80,7 +81,8 @@ export const createBalita = async (req: Request, res: Response): Promise<void> =
  */
 export const updateBalita = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { posyanduId, id } = req.params;
+    const posyanduId = req.params.posyanduId as string;
+    const id = req.params.id as string;
     const { tanggalLahir, ...rest } = req.body;
 
     const data = await balitaService.update(id, posyanduId, {
@@ -100,7 +102,8 @@ export const updateBalita = async (req: Request, res: Response): Promise<void> =
  */
 export const deleteBalita = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { posyanduId, id } = req.params;
+    const posyanduId = req.params.posyanduId as string;
+    const id = req.params.id as string;
     await balitaService.delete(id, posyanduId);
     res.json({ success: true, message: 'Data balita berhasil dihapus' });
   } catch (err: unknown) {
@@ -122,7 +125,8 @@ export const deleteBalita = async (req: Request, res: Response): Promise<void> =
  */
 export const getAllPemeriksaanBalita = async (req: Request, res: Response): Promise<void> => {
   try {
-    const data = await balitaService.findAllPemeriksaan(req.params.balitaId);
+    const balitaId = req.params.balitaId as string;
+    const data = await balitaService.findAllPemeriksaan(balitaId);
     res.json({ success: true, data });
   } catch (err) {
     throw err;
@@ -135,7 +139,7 @@ export const getAllPemeriksaanBalita = async (req: Request, res: Response): Prom
  */
 export const createPemeriksaanBalita = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { balitaId } = req.params;
+    const balitaId = req.params.balitaId as string;
     const {
       tanggalPeriksa,
       beratBadan,
@@ -184,7 +188,7 @@ export const createPemeriksaanBalita = async (req: Request, res: Response): Prom
  */
 export const updatePemeriksaanBalita = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { tanggalPeriksa, ...rest } = req.body;
 
     const data = await balitaService.updatePemeriksaan(id, {
@@ -204,7 +208,8 @@ export const updatePemeriksaanBalita = async (req: Request, res: Response): Prom
  */
 export const deletePemeriksaanBalita = async (req: Request, res: Response): Promise<void> => {
   try {
-    await balitaService.deletePemeriksaan(req.params.id);
+    const id = req.params.id as string;
+    await balitaService.deletePemeriksaan(id);
     res.json({ success: true, message: 'Pemeriksaan balita berhasil dihapus' });
   } catch (err) {
     throw err;
