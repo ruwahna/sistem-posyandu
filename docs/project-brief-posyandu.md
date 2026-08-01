@@ -246,31 +246,52 @@ User (akun kader)
 ### Posyandu
 - Nama Posyandu, Desa/Kelurahan, Kecamatan, Alamat
 
-### Balita — Identitas
-- Nama Lengkap, NIK (opsional), Tanggal Lahir, Jenis Kelamin, Nama Ibu,
-  Alamat
+### Balita — Identitas (Data Master — Diinput Sekali)
+- No. Urut, Nama Lengkap, NIK Balita, Nama Ibu / Orang Tua, Tanggal Lahir (Kategori usia otomatis: 0–6 bln, 7–12 bln, 13–24 bln, 25–60 bln), Jenis Kelamin (L/P), Alamat / Domisili
 
-### Balita — Riwayat Pemeriksaan (per bulan) **[BARU: tabel terpisah]**
-- Tanggal Pemeriksaan
-- Usia saat periksa (dihitung otomatis dari tanggal lahir, kategori
-  0–6/7–12/13–24/25–60 bln)
-- Berat Badan, Tinggi Badan, Lingkar Kepala (opsional)
-- Status Gizi: BB/U, TB/U, BB/TB (pilih dari daftar kategori standar)
-- Vitamin A (diberikan / tidak)
+### Balita — Riwayat Pemeriksaan Bulanan (Dinamis per Kunjungan) **[BARU: tabel terpisah]**
+- Tanggal Kunjungan / Bulan Pemeriksaan
+- Usia saat periksa (dihitung otomatis dalam bulan)
+- **Hasil Antropometri (Pertumbuhan):**
+  - Berat Badan (BB) dalam kg
+  - Tinggi/Panjang Badan (TB) dalam cm
+  - Lingkar Kepala (LKA) dalam cm (opsional)
+  - Lingkar Lengan Atas (LiLA) dalam cm (opsional)
+- **Status Gizi (Validasi Indikator Standar WHO/Kemenkes):**
+  - **BB/U** (Berat Badan menurut Umur): Sangat Kurang / Kurang / Normal / Risiko Lebih
+  - **TB/U** (Tinggi Badan menurut Umur): Sangat Pendek / Pendek / Normal / Tinggi
+  - **BB/TB** (Berat Badan menurut Tinggi Badan): Gizi Buruk / Gizi Kurang / Normal / Obesitas
+- **Indikator Grafik KMS:** N (Naik), T (Tetap/Turun/Tidak naik), 2T (Dua kali berturut-turut tidak naik), B1/B6 (Baru pertama datang / Baru 6 bulan), O (Bulan lalu tidak datang)
+- **Intervensi & Vitamin:** Vitamin A (Februari & Agustus), ASI Eksklusif (Ya/Tidak), Obat Cacing, Status Imunisasi Dasar
 
-### Lansia — Identitas
-- Nama, NIK, Nomor BPJS **[BARU]**, Tanggal Lahir, Jenis Kelamin, RT/RW
-  **[BARU]**, Alamat
-- Riwayat Penyakit: HT (ya/tidak), DM (ya/tidak) **[BARU]**
-- Tingkat Kemandirian (A/B/C) **[BARU]**
-- Catatan Gangguan Mental Emosional **[BARU]**
+---
 
-### Lansia — Riwayat Pemeriksaan (per bulan) **[BARU: tabel terpisah]**
-- Tanggal Pemeriksaan
-- Berat Badan, Tinggi Badan
-- Tekanan Darah (sistol/diastol)
-- Gula Darah Sewaktu (GDS)
-- Lingkar Perut (LP)
+### Lansia — Identitas (Data Master — Diinput Sekali)
+- No. Urut, Nama Lansia, NIK, No. BPJS, Kelompok Umur (45–59 tahun, 60–69 tahun, ≥70 tahun), Jenis Kelamin (L/P), Tanggal Lahir, Alamat / Domisili (RT/RW, Dusun/Desa)
+- **Kondisi Awal / Skrining:**
+  - Riwayat Penyakit: HT / Hipertensi (ya/tidak), DM / Diabetes Melitus (ya/tidak)
+  - Tingkat Kemandirian (Kategori A/B/C)
+  - Gangguan Mental Emosional (hasil skrining)
+
+### Lansia — Riwayat Pemeriksaan Bulanan (Dinamis per Kunjungan) **[BARU: tabel terpisah]**
+- Tanggal Kunjungan / Bulan Pemeriksaan
+- **Hasil Pemeriksaan Fisik:**
+  - Berat Badan (BB) dalam kg
+  - Tinggi Badan (TB) dalam cm
+  - Indeks Massa Tubuh (IMT)
+  - Tekanan Darah (TD) — Sistole & Diastole (mmHg)
+  - Lingkar Perut (LP) dalam cm
+- **Hasil Pemeriksaan Laboratorium Sederhana:**
+  - Gula Darah Sewaktu (GDS)
+  - Kolesterol (opsional/jika ada)
+  - Asam Urat (opsional/jika ada)
+- **Skrining Kesehatan Mental & Kognitif (Bulanan / Evaluasi Periodik):**
+  - Kemandirian (Aktivitas Harian)
+  - Gangguan Mental Emosional
+- **Keterangan / Tindakan:**
+  - Penyakit / Keluhan yang diderita
+  - Pemberian Kapsul / Obat (Kolom KET)
+  - Rujukan (jika perlu)
 
 ---
 
@@ -281,23 +302,26 @@ Posyandu
 ├── id, nama, desa, kecamatan, alamat
 
 Balita
-├── id, posyandu_id, nama, nik, tanggal_lahir, jenis_kelamin,
+├── id, posyandu_id, no_urut, nama, nik, tanggal_lahir, jenis_kelamin,
 │   nama_ibu, alamat
 
 PemeriksaanBalita  ← [BARU]
 ├── id, balita_id, tanggal_periksa, usia_bulan,
-│   berat_badan, tinggi_badan, lingkar_kepala,
-│   status_bb_u, status_tb_u, status_bb_tb, vitamin_a
+│   berat_badan, tinggi_badan, lingkar_kepala, lingkar_lengan_atas,
+│   status_bb_u, status_tb_u, status_bb_tb, indikator_kms,
+│   asi_eksklusif, vitamin_a, obat_cacing, status_imunisasi
 
 Lansia
-├── id, posyandu_id, nama, nik, no_bpjs, rt_rw, tanggal_lahir,
-│   jenis_kelamin, alamat, riwayat_ht, riwayat_dm,
+├── id, posyandu_id, no_urut, nama, nik, no_bpjs, rt_rw, tanggal_lahir,
+│   jenis_kelamin, alamat, kelompok_umur, riwayat_ht, riwayat_dm,
 │   tingkat_kemandirian, gangguan_mental_emosional
 
 PemeriksaanLansia  ← [BARU]
 ├── id, lansia_id, tanggal_periksa,
-│   berat_badan, tinggi_badan, tekanan_darah_sistol,
-│   tekanan_darah_diastol, gula_darah_sewaktu, lingkar_perut
+│   berat_badan, tinggi_badan, imt, tekanan_darah_sistol,
+│   tekanan_darah_diastol, gula_darah_sewaktu, lingkar_perut,
+│   kolesterol, asam_urat, kemandirian_bulanan, mental_emosional_bulanan,
+│   keluhan, pemberian_obat, rujukan
 ```
 
 > Tabel `IbuHamil` & `PemeriksaanIbuHamil` disiapkan strukturnya di fase
