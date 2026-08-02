@@ -611,7 +611,7 @@ export default function LoginPage() {
           <LeftPanel />
 
           {/* Right form panel */}
-          <div className="flex-1 flex flex-col justify-center px-8 py-10 min-w-0">
+          <div className="flex-1 flex flex-col justify-center px-4 sm:px-8 py-6 sm:py-10 min-w-0">
             {/* Mobile logo */}
             <div className="md:hidden flex items-center gap-2.5 mb-8">
               <div className="w-9 h-9 rounded-xl bg-saas-primary flex items-center justify-center shadow-md shadow-teal-500/20">

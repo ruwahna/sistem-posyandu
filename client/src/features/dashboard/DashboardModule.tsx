@@ -323,124 +323,124 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-hairline pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-hairline pb-4 sm:pb-6">
         <div>
-          <span className="inline-block px-2.5 py-0.5 bg-teal-50 text-saas-primary rounded-pill text-[11px] font-semibold tracking-wide uppercase mb-1">
+          <span className="inline-block px-2.5 py-0.5 bg-teal-50 text-saas-primary rounded-pill text-[10px] sm:text-[11px] font-semibold tracking-wide uppercase mb-1">
             Ringkasan Real-Time
           </span>
-          <h2 className="text-3xl font-normal text-saas-dark tracking-tight">Dashboard Overview</h2>
-          <p className="text-sm text-saas-muted mt-1 font-normal">
+          <h2 className="text-2xl sm:text-3xl font-bold sm:font-normal text-saas-dark tracking-tight">Dashboard Overview</h2>
+          <p className="text-xs sm:text-sm text-saas-muted mt-0.5 sm:mt-1 font-normal">
             Pantau pertumbuhan anak dan kondisi kesehatan lansia secara terpusat.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={() => setIsOpenModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-saas-primary hover:bg-saas-primary-active text-white text-xs font-semibold rounded-pill transition-all shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-saas-primary hover:bg-saas-primary-active text-white text-xs font-semibold rounded-pill transition-all shadow-md shadow-teal-500/10"
           >
             <Plus className="w-4 h-4" /> Catat Pemeriksaan
           </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 border border-hairline rounded-pill bg-white text-xs font-semibold text-saas-dark hover:bg-surface-soft transition-all">
-            <Download className="w-3.5 h-3.5 text-saas-muted" /> Export Data
+          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 border border-hairline rounded-pill bg-white text-xs font-semibold text-saas-dark hover:bg-surface-soft transition-all">
+            <Download className="w-3.5 h-3.5 text-saas-muted" /> Export
           </button>
         </div>
       </div>
 
-      {/* 4 Summary KPI Cards Grid — Unified Coinbase Feature Card Layout with Unique Brand Palettes */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* 4 Summary KPI Cards Grid — Unified Coinbase Feature Card Layout (2x2 di Mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {/* Card 1: Toska / Mint (Total Balita) */}
-        <div className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-card p-6 relative overflow-hidden flex flex-col justify-between h-44 shadow-soft-card group text-white">
+        <div className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-card p-3.5 sm:p-6 relative overflow-hidden flex flex-col justify-between h-36 sm:h-44 shadow-soft-card group text-white">
           <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <button 
             onClick={() => onNavigate("Balita")}
-            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/30 transition-colors z-10"
+            className="absolute top-3 right-3 sm:top-5 sm:right-5 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/30 transition-colors z-10"
           >
-            <ArrowUpRight className="w-4 h-4 text-white" />
+            <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
           </button>
           
           <div>
-            <span className="text-[11px] uppercase tracking-wider text-white/80 font-medium">Total Balita</span>
-            <h3 className="text-3xl font-mono font-medium mt-1">
+            <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-white/80 font-medium">Total Balita</span>
+            <h3 className="text-2xl sm:text-3xl font-mono font-medium mt-0.5 sm:mt-1">
               {isSummaryLoading ? "…" : `${summary?.totalBalita ?? 0}`}
             </h3>
-            <span className="text-xs text-white/70 font-sans">Anak Terdaftar</span>
+            <span className="text-[11px] sm:text-xs text-white/70 font-sans block">Anak Terdaftar</span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-medium text-white/90 z-10">
-            <span className="px-2.5 py-0.5 rounded-pill bg-white/20 text-white text-[10px] font-mono">LIVE</span>
-            <span>Update Hari Ini</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium text-white/90 z-10">
+            <span className="px-2 py-0.5 rounded-pill bg-white/20 text-white text-[9px] sm:text-[10px] font-mono">LIVE</span>
+            <span className="hidden sm:inline">Update Hari Ini</span>
           </div>
         </div>
 
         {/* Card 2: Royal Blue / Indigo (Total Lansia) */}
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-card p-6 relative overflow-hidden flex flex-col justify-between h-44 shadow-soft-card group text-white">
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-card p-3.5 sm:p-6 relative overflow-hidden flex flex-col justify-between h-36 sm:h-44 shadow-soft-card group text-white">
           <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <button 
             onClick={() => onNavigate("Lansia")}
-            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/30 transition-colors z-10"
+            className="absolute top-3 right-3 sm:top-5 sm:right-5 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/30 transition-colors z-10"
           >
-            <ArrowUpRight className="w-4 h-4 text-white" />
+            <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
           </button>
 
           <div>
-            <span className="text-[11px] uppercase tracking-wider text-white/80 font-medium">Total Lansia</span>
-            <h3 className="text-3xl font-mono font-medium mt-1">
+            <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-white/80 font-medium">Total Lansia</span>
+            <h3 className="text-2xl sm:text-3xl font-mono font-medium mt-0.5 sm:mt-1">
               {isSummaryLoading ? "…" : `${summary?.totalLansia ?? 0}`}
             </h3>
-            <span className="text-xs text-white/70 font-sans">Jiwa Terdaftar</span>
+            <span className="text-[11px] sm:text-xs text-white/70 font-sans block">Jiwa Terdaftar</span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-medium text-white/90 z-10">
-            <span className="px-2.5 py-0.5 rounded-pill bg-white/20 text-white text-[10px] font-mono">TERPANTAU</span>
-            <span>Pemeriksaan Rutin</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium text-white/90 z-10">
+            <span className="px-2 py-0.5 rounded-pill bg-white/20 text-white text-[9px] sm:text-[10px] font-mono">TERPANTAU</span>
+            <span className="hidden sm:inline">Pemeriksaan Rutin</span>
           </div>
         </div>
 
         {/* Card 3: Rose / Crimson (Balita Gizi Kurang) */}
-        <div className="bg-gradient-to-br from-rose-500 to-pink-600 rounded-card p-6 relative overflow-hidden flex flex-col justify-between h-44 shadow-soft-card group text-white">
+        <div className="bg-gradient-to-br from-rose-500 to-pink-600 rounded-card p-3.5 sm:p-6 relative overflow-hidden flex flex-col justify-between h-36 sm:h-44 shadow-soft-card group text-white">
           <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <button 
             onClick={() => onNavigate("Balita")}
-            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/30 transition-colors z-10"
+            className="absolute top-3 right-3 sm:top-5 sm:right-5 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/30 transition-colors z-10"
           >
-            <AlertCircle className="w-4 h-4 text-white" />
+            <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
           </button>
 
           <div>
-            <span className="text-[11px] uppercase tracking-wider text-white/80 font-medium">Perhatian Gizi</span>
-            <h3 className="text-3xl font-mono font-medium mt-1">
+            <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-white/80 font-medium">Perhatian Gizi</span>
+            <h3 className="text-2xl sm:text-3xl font-mono font-medium mt-0.5 sm:mt-1">
               {isSummaryLoading ? "…" : `${(summary?.statusGizi?.bbU?.["Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["Sangat Kurang"] ?? 0)}`}
             </h3>
-            <span className="text-xs text-white/70 font-sans">Balita Kurang Gizi</span>
+            <span className="text-[11px] sm:text-xs text-white/70 font-sans block">Gizi Kurang</span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-medium text-white/90 z-10">
-            <span className="px-2.5 py-0.5 rounded-pill bg-white/20 text-white text-[10px] font-mono">PRIORITAS</span>
-            <span>Perlu Pendampingan</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium text-white/90 z-10">
+            <span className="px-2 py-0.5 rounded-pill bg-white/20 text-white text-[9px] sm:text-[10px] font-mono">ALERT</span>
+            <span className="hidden sm:inline">Pendampingan</span>
           </div>
         </div>
 
-        {/* Card 4: Coinbase Dark Ink / Slate (Lansia Hipertensi) */}
-        <div className="bg-gradient-to-br from-slate-900 to-surface-dark rounded-card p-6 relative overflow-hidden flex flex-col justify-between h-44 shadow-elevated group text-white border border-white/10">
+        {/* Card 4: Slate Dark (Lansia Hipertensi) */}
+        <div className="bg-gradient-to-br from-slate-900 to-surface-dark rounded-card p-3.5 sm:p-6 relative overflow-hidden flex flex-col justify-between h-36 sm:h-44 shadow-elevated group text-white border border-white/10">
           <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-amber-500/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
           <button 
             onClick={() => onNavigate("Lansia")}
-            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors z-10"
+            className="absolute top-3 right-3 sm:top-5 sm:right-5 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors z-10"
           >
-            <ArrowUpRight className="w-4 h-4 text-amber-400" />
+            <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
           </button>
 
           <div>
-            <span className="text-[11px] uppercase tracking-wider text-saas-muted-soft font-medium">Kesehatan Lansia</span>
-            <h3 className="text-3xl font-mono font-medium mt-1 text-white">
+            <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-saas-muted-soft font-medium">Hipertensi</span>
+            <h3 className="text-2xl sm:text-3xl font-mono font-medium mt-0.5 sm:mt-1 text-white">
               {isSummaryLoading ? "…" : `${summary?.lansiaHtDm?.totalHt ?? 0}`}
             </h3>
-            <span className="text-xs text-saas-muted-soft font-sans">Riwayat Hipertensi</span>
+            <span className="text-[11px] sm:text-xs text-saas-muted-soft font-sans block">Lansia Terdiagnosa</span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-medium text-amber-300 z-10">
-            <span className="px-2.5 py-0.5 rounded-pill bg-amber-500/20 text-amber-300 text-[10px] font-mono font-semibold">MONITORING</span>
-            <span className="text-saas-muted-soft">Kontrol Berkala</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium text-amber-300 z-10">
+            <span className="px-2 py-0.5 rounded-pill bg-amber-500/20 text-amber-300 text-[9px] sm:text-[10px] font-mono font-semibold">MONITOR</span>
+            <span className="hidden sm:inline text-saas-muted-soft">Berkala</span>
           </div>
         </div>
       </div>
