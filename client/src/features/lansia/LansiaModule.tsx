@@ -471,8 +471,8 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
               </div>
 
               {/* Disease Filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-saas-muted">Riwayat Penyakit:</span>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full shrink-0">
+                <span className="text-xs font-bold text-saas-muted whitespace-nowrap shrink-0">Riwayat Penyakit:</span>
                 {[
                   { label: "Semua", val: "semua" },
                   { label: "Hipertensi (HT)", val: "ht" },
@@ -481,7 +481,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                   <button
                     key={item.val}
                     onClick={() => setDiseaseFilter(item.val as any)}
-                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all ${
+                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap shrink-0 ${
                       diseaseFilter === item.val
                         ? "bg-saas-primary/10 text-saas-primary border border-saas-primary/20"
                         : "bg-gray-50 text-saas-muted hover:text-saas-dark border border-transparent"

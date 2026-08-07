@@ -447,8 +447,8 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
               <Search className="absolute left-3.5 top-2.5 text-saas-muted/80 w-4 h-4" />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-saas-muted mr-1">Filter Usia:</span>
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full shrink-0">
+              <span className="text-xs font-bold text-saas-muted mr-1 whitespace-nowrap shrink-0">Filter Usia:</span>
               {[
                 { label: "Semua Usia", val: "semua" },
                 { label: "0-6 Bulan", val: "0-6" },
@@ -459,7 +459,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                 <button
                   key={item.val}
                   onClick={() => setAgeFilter(item.val as any)}
-                  className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all ${
+                  className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap shrink-0 ${
                     ageFilter === item.val
                       ? "bg-saas-primary/10 text-saas-primary border border-saas-primary/20"
                       : "bg-gray-50 text-saas-muted hover:text-saas-dark border border-transparent"

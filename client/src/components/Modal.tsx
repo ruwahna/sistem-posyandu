@@ -49,8 +49,8 @@ export default function Modal({
         onClick={(e) => e.stopPropagation()} // Prevents clicks inside the modal card from closing it
         className={
           type === "drawer"
-            ? "bg-white h-full w-full max-w-lg shadow-2xl flex flex-col justify-between p-6 relative overflow-y-auto animate-slide-in"
-            : "bg-white rounded-card shadow-xl border border-gray-100 max-w-xl w-full p-6 space-y-5 relative max-h-[90vh] overflow-y-auto"
+            ? "bg-white h-full w-full max-w-lg shadow-2xl flex flex-col justify-between p-4 sm:p-6 relative overflow-y-auto animate-slide-in"
+            : "bg-white rounded-card shadow-xl border border-gray-100 max-w-xl w-full p-4 sm:p-6 space-y-4 sm:space-y-5 relative max-h-[92vh] overflow-y-auto mx-2"
         }
       >
         {/* Modal Header */}
