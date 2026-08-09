@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma';
 import ExcelJS from 'exceljs';
+import PDFDocument from 'pdfkit';
 
 export interface FilterRiwayat {
   tipe?: 'semua' | 'Balita' | 'Lansia';
@@ -220,5 +221,112 @@ export const riwayatService = {
     }
 
     return workbook;
+  },
+
+  async generatePdfExport(posyanduId: string, filter: FilterRiwayat): Promise<any> {
+    const data = await this.getRiwayat(posyanduId, filter);
+    const posyandu = await prisma.posyandu.findUnique({ where: { id: posyanduId } });
+
+    const doc = new PDFDocument({ margin: 50, bufferPages: true });
+
+    // ─────────────────────────────────────────────────────────
+    // HEADER
+    // ─────────────────────────────────────────────────────────
+    doc.fontSize(18).font('Helvetica-Bold').text('LAPORAN RIWAYAT PEMERIKSAAN BULANAN', { align: 'center' });
+    doc.fontSize(18).font('Helvetica-Bold').text('POSYANDU', { align: 'center' });
+    doc.moveDown(0.5);
+
+    doc.fontSize(11).font('Helvetica').text(`Posyandu: ${posyandu?.nama || '-'}`, { align: 'center' });
+    doc.fontSize(11).font('Helvetica').text(`Desa: ${posyandu?.desa || '-'}, Kecamatan: ${posyandu?.kecamatan || '-'}`, { align: 'center' });
+    doc.fontSize(11).font('Helvetica').text(`Alamat: ${posyandu?.alamat || '-'}`, { align: 'center' });
+    doc.fontSize(10).font('Helvetica-Oblique').text(`Tanggal Cetak: ${new Date().toISOString().split('T')[0]}`, { align: 'center' });
+    doc.moveDown(1);
+
+    // ─────────────────────────────────────────────────────────
+    // TABLE HEADER
+    // ─────────────────────────────────────────────────────────
+    const tableTop = doc.y;
+    const col1 = 50;
+    const col2 = 100;
+    const col3 = 180;
+    const col4 = 250;
+    const col5 = 320;
+    const col6 = 450;
+
+    const drawTableHeader = (y: number) => {
+      doc.rect(col1 - 5, y, 455, 25).stroke();
+      
+      doc.fontSize(10).font('Helvetica-Bold');
+      doc.text('No', col1, y + 7);
+      doc.text('Tanggal', col2, y + 7);
+      doc.text('Nama', col3, y + 7);
+      doc.text('Kategori', col4, y + 7);
+      doc.text('Parameter', col5, y + 7);
+      doc.text('Status', col6, y + 7);
+    };
+
+    drawTableHeader(tableTop);
+    doc.moveDown(1.5);
+
+    // ─────────────────────────────────────────────────────────
+    // TABLE DATA
+    // ─────────────────────────────────────────────────────────
+    let yPosition = doc.y;
+    const rowHeight = 18;
+
+    data.forEach((item, index) => {
+      // Check if need new page
+      if (yPosition > doc.page.height - 80) {
+        doc.addPage();
+        yPosition = 50;
+        drawTableHeader(yPosition);
+        yPosition += 30;
+      }
+
+      doc.fontSize(9).font('Helvetica');
+      
+      // Draw row background for better readability
+      if (index % 2 === 0) {
+        doc.rect(col1 - 5, yPosition, 455, rowHeight).fillAndStroke('f3f4f6', 'e5e7eb');
+      } else {
+        doc.rect(col1 - 5, yPosition, 455, rowHeight).stroke();
+      }
+
+      // Reset font after fill
+      doc.font('Helvetica').fontSize(9);
+
+      // Set text color for warning status
+      if (item.statusType === 'warning') {
+        doc.fillColor('#dc2626');
+      } else {
+        doc.fillColor('#000000');
+      }
+
+      doc.text(String(index + 1), col1, yPosition + 3);
+      doc.text(item.tanggal, col2, yPosition + 3);
+      doc.text(item.nama, col3, yPosition + 3);
+      doc.text(item.tipe, col4, yPosition + 3);
+      doc.text(item.parameter.substring(0, 30), col5, yPosition + 3);
+      doc.text(item.status.substring(0, 25), col6, yPosition + 3);
+
+      doc.fillColor('#000000'); // Reset color
+      yPosition += rowHeight;
+    });
+
+    // ─────────────────────────────────────────────────────────
+    // FOOTER
+    // ─────────────────────────────────────────────────────────
+    doc.moveDown(2);
+    doc.fontSize(9).font('Helvetica').text(`Total Pemeriksaan: ${data.length} data`, { align: 'right' });
+    doc.fontSize(8).font('Helvetica-Oblique').text('Dokumen ini dibuat otomatis oleh Sistem Informasi Posyandu', { align: 'center' });
+
+    // Page number
+    const pages = doc.bufferedPageRange().count;
+    for (let i = 0; i < pages; i++) {
+      doc.switchToPage(i);
+      doc.fontSize(8).text(`Halaman ${i + 1} dari ${pages}`, 50, doc.page.height - 30, { align: 'center' });
+    }
+
+    return doc;
   },
 };
