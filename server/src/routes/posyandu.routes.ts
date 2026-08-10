@@ -13,6 +13,20 @@ import { createPosyanduSchema, updatePosyanduSchema } from '../lib/schemas';
 const router = Router();
 
 import { getRiwayat, exportRiwayatExcel, exportRiwayatPdf } from '../controllers/riwayat.controller';
+import {
+  getKadersByPosyandu,
+  createKader,
+  updateKaderRole,
+  updateKaderStatus,
+  deleteKader,
+  getInviteCode,
+  regenerateInviteCode,
+} from '../controllers/kader.controller';
+import {
+  createKaderSchema,
+  updateKaderRoleSchema,
+  updateKaderStatusSchema,
+} from '../lib/schemas';
 
 // GET /api/posyandu/:posyanduId/riwayat  — Riwayat pemeriksaan bulanan
 router.get('/:posyanduId/riwayat', authenticate, getRiwayat);
@@ -22,6 +36,28 @@ router.get('/:posyanduId/export', authenticate, exportRiwayatExcel);
 
 // GET /api/posyandu/:posyanduId/export-pdf — Export PDF laporan riwayat
 router.get('/:posyanduId/export-pdf', authenticate, exportRiwayatPdf);
+
+// ── MANAJEMEN AKUN KADER ──
+// GET /api/posyandu/:posyanduId/kader
+router.get('/:posyanduId/kader', authenticate, getKadersByPosyandu);
+
+// POST /api/posyandu/:posyanduId/kader
+router.post('/:posyanduId/kader', authenticate, authorize('OWNER'), validate(createKaderSchema), createKader);
+
+// PATCH /api/posyandu/:posyanduId/kader/:id/role
+router.patch('/:posyanduId/kader/:id/role', authenticate, authorize('OWNER'), validate(updateKaderRoleSchema), updateKaderRole);
+
+// PATCH /api/posyandu/:posyanduId/kader/:id/status
+router.patch('/:posyanduId/kader/:id/status', authenticate, authorize('OWNER'), validate(updateKaderStatusSchema), updateKaderStatus);
+
+// DELETE /api/posyandu/:posyanduId/kader/:id
+router.delete('/:posyanduId/kader/:id', authenticate, authorize('OWNER'), deleteKader);
+
+// GET /api/posyandu/:posyanduId/invite-code
+router.get('/:posyanduId/invite-code', authenticate, getInviteCode);
+
+// POST /api/posyandu/:posyanduId/invite-code/regen
+router.post('/:posyanduId/invite-code/regen', authenticate, authorize('OWNER'), regenerateInviteCode);
 
 // GET /api/posyandu  — siapa saja yang sudah login bisa lihat daftar posyandu
 router.get('/', authenticate, getAllPosyandu);

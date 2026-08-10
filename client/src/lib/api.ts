@@ -410,3 +410,53 @@ export const notificationApi = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────
+// API: KADER MANAGEMENT
+// ─────────────────────────────────────────────────────────────
+
+export interface KaderMember {
+  id: string;
+  nama: string;
+  email: string;
+  role: 'OWNER' | 'KADER';
+  isActive: boolean;
+  createdAt: string;
+}
+
+export const kaderApi = {
+  getAll: (posyanduId: string) =>
+    request<ApiResponse<KaderMember[]>>(`/api/posyandu/${posyanduId}/kader`),
+
+  create: (posyanduId: string, data: { nama: string; email: string; password: string; role: 'OWNER' | 'KADER' }) =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateRole: (posyanduId: string, kaderId: string, role: 'OWNER' | 'KADER') =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader/${kaderId}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    }),
+
+  toggleStatus: (posyanduId: string, kaderId: string, isActive: boolean) =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader/${kaderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
+    }),
+
+  delete: (posyanduId: string, kaderId: string) =>
+    request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/kader/${kaderId}`, {
+      method: 'DELETE',
+    }),
+
+  getInviteCode: (posyanduId: string) =>
+    request<ApiResponse<{ invitationCode: string }>>(`/api/posyandu/${posyanduId}/invite-code`),
+
+  regenInviteCode: (posyanduId: string) =>
+    request<ApiResponse<{ invitationCode: string }>>(`/api/posyandu/${posyanduId}/invite-code/regen`, {
+      method: 'POST',
+    }),
+};
+
+

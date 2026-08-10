@@ -23,6 +23,21 @@ export const registerSchema = z.object({
   invitationCode: z.string().optional(),
 });
 
+export const createKaderSchema = z.object({
+  nama: z.string().min(2, 'Nama minimal 2 karakter'),
+  email: z.string().email('Format email tidak valid'),
+  password: z.string().min(6, 'Password minimal 6 karakter'),
+  role: z.enum(['OWNER', 'KADER']).default('KADER'),
+});
+
+export const updateKaderRoleSchema = z.object({
+  role: z.enum(['OWNER', 'KADER']),
+});
+
+export const updateKaderStatusSchema = z.object({
+  isActive: z.boolean(),
+});
+
 export const loginSchema = z.object({
   email: z.string().email('Format email tidak valid'),
   password: z.string().min(1, 'Password wajib diisi'),
