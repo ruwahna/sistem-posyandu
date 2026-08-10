@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
+import { authApi } from "../../lib/api";
 import {
   HeartPulse,
   Eye,
@@ -24,7 +25,7 @@ import {
 // TYPES
 // ─────────────────────────────────────────────────────────────
 
-type Mode = "login" | "register";
+type Mode = "login" | "register" | "forgot";
 type RegisterStep = 1 | 2;
 
 // ─────────────────────────────────────────────────────────────
@@ -140,7 +141,13 @@ function LeftPanel() {
 // LOGIN FORM
 // ─────────────────────────────────────────────────────────────
 
-function LoginForm({ onSwitch }: { onSwitch: () => void }) {
+function LoginForm({
+  onSwitch,
+  onForgotPassword,
+}: {
+  onSwitch: () => void;
+  onForgotPassword: () => void;
+}) {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -196,9 +203,19 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
 
         {/* Password */}
         <div>
-          <label className="block text-xs font-bold text-teal-950 mb-1.5">
-            Kata Sandi
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-bold text-teal-950">
+              Kata Sandi
+            </label>
+            <button
+              id="btn-forgot-password-link"
+              type="button"
+              onClick={onForgotPassword}
+              className="text-xs font-semibold text-saas-primary hover:underline transition-all"
+            >
+              Lupa Kata Sandi?
+            </button>
+          </div>
           <div className="relative">
             <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
@@ -259,6 +276,117 @@ function LoginForm({ onSwitch }: { onSwitch: () => void }) {
           </button>
         </p>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// FORGOT PASSWORD FORM
+// ─────────────────────────────────────────────────────────────
+
+function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
+    setIsLoading(true);
+
+    try {
+      const res = await authApi.forgotPassword(email);
+      setSuccessMessage(
+        res.message || "Jika email terdaftar, instruksi reset password telah dikirim ke email Anda."
+      );
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Gagal mengirim email reset password.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-sm mx-auto">
+      <div className="mb-8">
+        <span className="inline-block px-3 py-1 bg-teal-50 text-saas-primary rounded-pill text-[11px] font-bold tracking-wider uppercase mb-3">
+          RESET KATA SANDI
+        </span>
+        <h1 className="text-3xl font-extrabold text-teal-950 tracking-tight">Lupa Kata Sandi?</h1>
+        <p className="text-sm text-slate-500 mt-2 font-normal leading-relaxed">
+          Masukkan alamat email akun Anda. Kami akan mengirimkan tautan untuk mengatur ulang kata sandi.
+        </p>
+      </div>
+
+      {successMessage ? (
+        <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-4 text-center">
+          <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+            <Mail className="w-6 h-6" />
+          </div>
+          <p className="text-xs font-semibold text-emerald-800 leading-relaxed">
+            {successMessage}
+          </p>
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-full py-3 bg-saas-primary hover:bg-saas-primary-active text-white text-xs font-bold rounded-pill transition-all mt-2"
+          >
+            Kembali ke Halaman Login
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-teal-950 mb-1.5">
+              Alamat Email Anda
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                id="forgot-email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="contoh: nama.kader@gmail.com"
+                className="w-full pl-10 pr-4 py-3 bg-white border border-hairline rounded-input text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-saas-primary focus:ring-2 focus:ring-saas-primary/20 transition-all"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="p-3.5 bg-red-50 border border-red-200 rounded-input text-xs text-red-700 font-semibold leading-relaxed">
+              ⚠️ {error}
+            </div>
+          )}
+
+          <button
+            id="btn-forgot-submit"
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-3.5 bg-saas-primary hover:bg-saas-primary-active text-white text-sm font-bold rounded-pill transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 shadow-sm"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Mengirim Email...
+              </>
+            ) : (
+              "Kirim Tautan Reset"
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-full py-3 border border-hairline text-slate-700 text-xs font-bold rounded-pill hover:bg-slate-50 transition-all flex items-center justify-center gap-2 mt-2"
+          >
+            <ArrowLeft className="w-4 h-4" /> Kembali ke Login
+          </button>
+        </form>
+      )}
     </div>
   );
 }
@@ -622,7 +750,12 @@ export default function LoginPage() {
 
             {/* Form switch animation */}
             {mode === "login" ? (
-              <LoginForm onSwitch={() => setMode("register")} />
+              <LoginForm
+                onSwitch={() => setMode("register")}
+                onForgotPassword={() => setMode("forgot")}
+              />
+            ) : mode === "forgot" ? (
+              <ForgotPasswordForm onBack={() => setMode("login")} />
             ) : (
               <RegisterForm onSwitch={() => setMode("login")} />
             )}
