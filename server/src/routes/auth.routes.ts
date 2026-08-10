@@ -4,6 +4,7 @@ import {
   login,
   getMe,
   registerPosyandu,
+  updateProfile,
   forgotPassword,
   verifyResetToken,
   resetPassword,
@@ -34,5 +35,8 @@ router.post('/reset-password', validate(resetPasswordSchema), resetPassword);
 
 // GET /api/auth/me  (dilindungi JWT)
 router.get('/me', authenticate, getMe);
+
+// PUT /api/auth/profile (dilindungi JWT)
+router.put('/profile', authenticate, updateProfile);
 
 export default router;

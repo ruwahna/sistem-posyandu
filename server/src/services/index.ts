@@ -203,7 +203,7 @@ export const balitaService = {
     });
   },
 
-  async create(posyanduId: string, data: Omit<Prisma.BalitaUncheckedCreateInput, 'posyanduId'>) {
+  async create(posyanduId: string, data: any) {
     return prisma.balita.create({
       data: { ...data, posyanduId },
     });
@@ -333,7 +333,7 @@ export const lansiaService = {
     });
   },
 
-  async create(posyanduId: string, data: Omit<Prisma.LansiaUncheckedCreateInput, 'posyanduId'>) {
+  async create(posyanduId: string, data: any) {
     return prisma.lansia.create({
       data: { ...data, posyanduId },
     });
