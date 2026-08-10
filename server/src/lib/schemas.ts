@@ -130,7 +130,7 @@ export const createPemeriksaanLansiaSchema = z.object({
   asamUrat: z.number().positive('Asam urat harus angka positif').optional().nullable(),
   keluhan: z.string().optional().nullable(),
   tindakan: z.string().optional().nullable(),
-}).strict(false); // Allow extra fields dari frontend
+});
 
 export const updatePemeriksaanLansiaSchema = createPemeriksaanLansiaSchema.partial();
 
