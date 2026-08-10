@@ -68,3 +68,75 @@ export const exportRiwayatExcel = async (req: Request, res: Response): Promise<v
     throw err;
   }
 };
+
+/**
+ * GET /api/posyandu/:posyanduId/export/pdf
+ * Export seluruh data riwayat atau sesuai filter ke format PDF
+ */
+export const exportRiwayatPdf = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const posyanduId = req.params.posyanduId as string;
+    const { tipe, search, status, bulan, tahun } = req.query as {
+      tipe?: 'semua' | 'Balita' | 'Lansia';
+      search?: string;
+      status?: 'semua' | 'success' | 'warning';
+      bulan?: string;
+      tahun?: string;
+    };
+
+    const doc = await riwayatService.generatePdfExport(posyanduId, {
+      tipe,
+      search,
+      status,
+      bulan: bulan ? Number(bulan) : undefined,
+      tahun: tahun ? Number(tahun) : undefined,
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=Laporan_Posyandu_${new Date().toISOString().slice(0, 10)}.pdf`
+    );
+
+    doc.pipe(res);
+    doc.end();
+  } catch (err) {
+    throw err;
+  }
+};
+
+/**
+ * GET /api/posyandu/:posyanduId/export-pdf
+ * Export seluruh data riwayat atau sesuai filter ke format PDF
+ */
+export const exportRiwayatPDF = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const posyanduId = req.params.posyanduId as string;
+    const { tipe, search, status, bulan, tahun } = req.query as {
+      tipe?: 'semua' | 'Balita' | 'Lansia';
+      search?: string;
+      status?: 'semua' | 'success' | 'warning';
+      bulan?: string;
+      tahun?: string;
+    };
+
+    const doc = await riwayatService.generatePdfExport(posyanduId, {
+      tipe,
+      search,
+      status,
+      bulan: bulan ? Number(bulan) : undefined,
+      tahun: tahun ? Number(tahun) : undefined,
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=Laporan_Posyandu_${new Date().toISOString().slice(0, 10)}.pdf`
+    );
+
+    doc.pipe(res);
+    doc.end();
+  } catch (err) {
+    throw err;
+  }
+};
