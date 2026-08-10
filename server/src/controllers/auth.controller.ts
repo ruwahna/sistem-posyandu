@@ -201,6 +201,56 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
+ * PUT /api/auth/profile
+ * Memperbarui profil kader (nama, email, password baru opsional).
+ */
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const { nama, email, password } = req.body;
+
+    if (!nama || !email) {
+      res.status(400).json({ success: false, message: 'Nama dan email wajib diisi' });
+      return;
+    }
+
+    // Cek jika email dipakai kader lain
+    const existing = await prisma.kader.findFirst({
+      where: { email, NOT: { id: userId } },
+    });
+    if (existing) {
+      res.status(409).json({ success: false, message: 'Email sudah digunakan oleh pengguna lain' });
+      return;
+    }
+
+    const updateData: any = { nama, email };
+    if (password && password.trim().length >= 6) {
+      updateData.password = await bcrypt.hash(password.trim(), 12);
+    }
+
+    const updatedKader = await prisma.kader.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        nama: true,
+        email: true,
+        role: true,
+        posyandu: { select: { id: true, nama: true } },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Profil berhasil diperbarui',
+      data: updatedKader,
+    });
+  } catch (err) {
+    throw err;
+  }
+};
+
+/**
  * POST /api/auth/forgot-password
  * Mengirim email instruksi reset password.
  */
@@ -228,7 +278,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     const resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 jam
 
-    await prisma.kader.update({
+    await (prisma.kader as any).update({
       where: { id: kader.id },
       data: {
         resetPasswordToken,
@@ -263,7 +313,7 @@ export const verifyResetToken = async (req: Request, res: Response): Promise<voi
     const token = String(req.params.token);
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-    const kader = await prisma.kader.findFirst({
+    const kader = await (prisma.kader as any).findFirst({
       where: {
         resetPasswordToken: hashedToken,
         resetPasswordExpires: { gt: new Date() },
@@ -295,7 +345,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     const { newPassword } = req.body;
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-    const kader = await prisma.kader.findFirst({
+    const kader = await (prisma.kader as any).findFirst({
       where: {
         resetPasswordToken: hashedToken,
         resetPasswordExpires: { gt: new Date() },
@@ -312,7 +362,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    await prisma.kader.update({
+    await (prisma.kader as any).update({
       where: { id: kader.id },
       data: {
         password: hashedPassword,
@@ -329,4 +379,3 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     throw err;
   }
 };
-

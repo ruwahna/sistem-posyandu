@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Building2,
   Save,
@@ -24,8 +24,12 @@ import {
   Sun,
   Moon,
   Monitor,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { useFontSize, FontSizeLevel } from "../../contexts/FontSizeContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { authApi, posyanduApi } from "../../lib/api";
 
 // ─── Types ────────────────────────────────────────────────
 type SettingSection =
@@ -106,16 +110,57 @@ const navItems: NavItem[] = [
 
 // ─── Profil Posyandu ──────────────────────────────────────
 function ProfilSection() {
-  const [posyanduNama, setPosyanduNama] = useState("Posyandu Sri Lestari");
-  const [posyanduDesa, setPosyanduDesa] = useState("Desa Karanggayam");
-  const [posyanduKecamatan, setPosyanduKecamatan] = useState("Kecamatan Karanggayam");
-  const [posyanduAlamat, setPosyanduAlamat] = useState("RT 02 / RW 02, Karanggayam");
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const { user, posyanduId, updateUser } = useAuth();
+  const [posyanduNama, setPosyanduNama] = useState(user?.posyandu?.nama || "");
+  const [posyanduDesa, setPosyanduDesa] = useState("");
+  const [posyanduKecamatan, setPosyanduKecamatan] = useState("");
+  const [posyanduAlamat, setPosyanduAlamat] = useState("");
+  const [savingPosyandu, setSavingPosyandu] = useState(false);
+  const [posyanduNotice, setPosyanduNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!posyanduId) return;
+    posyanduApi
+      .getById(posyanduId)
+      .then((res) => {
+        if (res.success && res.data) {
+          setPosyanduNama(res.data.nama);
+          setPosyanduDesa(res.data.desa || "");
+          setPosyanduKecamatan(res.data.kecamatan || "");
+          setPosyanduAlamat(res.data.alamat || "");
+        }
+      })
+      .catch((err) => console.error("Gagal mengambil data posyandu:", err));
+  }, [posyanduId]);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    setPosyanduNotice(null);
+    if (!posyanduId) return;
+
+    if (!posyanduNama.trim() || !posyanduDesa.trim() || !posyanduKecamatan.trim()) {
+      setPosyanduNotice({ type: "error", message: "Nama Posyandu, Desa, dan Kecamatan wajib diisi." });
+      return;
+    }
+
+    try {
+      setSavingPosyandu(true);
+      const res = await posyanduApi.update(posyanduId, {
+        nama: posyanduNama.trim(),
+        desa: posyanduDesa.trim(),
+        kecamatan: posyanduKecamatan.trim(),
+        alamat: posyanduAlamat.trim(),
+      });
+
+      if (res.success && res.data) {
+        updateUser({ posyandu: { id: posyanduId, nama: res.data.nama } });
+        setPosyanduNotice({ type: "success", message: "Informasi Posyandu berhasil disimpan!" });
+      }
+    } catch (err: any) {
+      setPosyanduNotice({ type: "error", message: err.message || "Gagal menyimpan data posyandu." });
+    } finally {
+      setSavingPosyandu(false);
+    }
   };
 
   return (
@@ -130,9 +175,20 @@ function ProfilSection() {
 
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <form onSubmit={handleSave} className="space-y-5">
-          {saveSuccess && (
-            <div className="p-3 bg-green-50 text-green-700 border border-green-100 rounded-xl text-sm font-semibold flex items-center gap-2">
-              <UserCheck2 className="w-4 h-4 shrink-0" /> Profil posyandu berhasil disimpan!
+          {posyanduNotice && (
+            <div
+              className={`p-3 rounded-xl text-sm font-semibold flex items-center gap-2 border ${
+                posyanduNotice.type === "success"
+                  ? "bg-green-50 text-green-700 border-green-100"
+                  : "bg-red-50 text-red-700 border-red-100"
+              }`}
+            >
+              {posyanduNotice.type === "success" ? (
+                <UserCheck2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0" />
+              )}
+              {posyanduNotice.message}
             </div>
           )}
 
@@ -141,7 +197,8 @@ function ProfilSection() {
               type="text"
               value={posyanduNama}
               onChange={(e) => setPosyanduNama(e.target.value)}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-400 focus:bg-white transition-all"
+              disabled={user?.role !== "OWNER"}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-400 focus:bg-white disabled:opacity-60 transition-all"
             />
           </FormField>
 
@@ -151,7 +208,8 @@ function ProfilSection() {
                 type="text"
                 value={posyanduDesa}
                 onChange={(e) => setPosyanduDesa(e.target.value)}
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-400 focus:bg-white transition-all"
+                disabled={user?.role !== "OWNER"}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-400 focus:bg-white disabled:opacity-60 transition-all"
               />
             </FormField>
             <FormField label="Kecamatan">
@@ -159,7 +217,8 @@ function ProfilSection() {
                 type="text"
                 value={posyanduKecamatan}
                 onChange={(e) => setPosyanduKecamatan(e.target.value)}
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-400 focus:bg-white transition-all"
+                disabled={user?.role !== "OWNER"}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-400 focus:bg-white disabled:opacity-60 transition-all"
               />
             </FormField>
           </div>
@@ -169,22 +228,33 @@ function ProfilSection() {
               rows={3}
               value={posyanduAlamat}
               onChange={(e) => setPosyanduAlamat(e.target.value)}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-400 focus:bg-white transition-all resize-none"
+              disabled={user?.role !== "OWNER"}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-teal-400 focus:bg-white disabled:opacity-60 transition-all resize-none"
             />
           </FormField>
 
-          <div className="flex justify-end pt-1">
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold rounded-xl shadow-md shadow-teal-500/20 transition-all flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" /> Simpan Perubahan
-            </button>
-          </div>
+          {user?.role === "OWNER" && (
+            <div className="flex justify-end pt-1">
+              <button
+                type="submit"
+                disabled={savingPosyandu}
+                className="px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold rounded-xl shadow-md shadow-teal-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {savingPosyandu ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" /> Simpan Perubahan
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </form>
       </div>
 
-      {/* Info posyandu badge */}
       <div className="bg-teal-50/60 border border-teal-100 rounded-xl p-4 flex gap-3">
         <Shield className="w-5 h-5 text-teal-500 shrink-0 mt-0.5" />
         <div>
@@ -200,33 +270,64 @@ function ProfilSection() {
 
 // ─── Akun & Keamanan ──────────────────────────────────────
 function AkunSection() {
-  const [namaKader, setNamaKader] = useState("Ibu Aminah");
-  const [emailKader] = useState("aminah@gmail.com");
-  const [showOldPw, setShowOldPw] = useState(false);
-  const [showNewPw, setShowNewPw] = useState(false);
-  const [oldPw, setOldPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [pwError, setPwError] = useState("");
-  const [pwSuccess, setPwSuccess] = useState(false);
-  const [profileSuccess, setProfileSuccess] = useState(false);
+  const { user, updateUser } = useAuth();
+  const [namaKader, setNamaKader] = useState(user?.nama || "");
+  const [emailKader, setEmailKader] = useState(user?.email || "");
+  const [newPassword, setNewPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileNotice, setProfileNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      setNamaKader(user.nama);
+      setEmailKader(user.email);
+    }
+  }, [user]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setProfileSuccess(true);
-    setTimeout(() => setProfileSuccess(false), 3000);
+    setProfileNotice(null);
+
+    if (!namaKader.trim() || !emailKader.trim()) {
+      setProfileNotice({ type: "error", message: "Nama dan Email wajib diisi." });
+      return;
+    }
+
+    if (newPassword && newPassword.length < 6) {
+      setProfileNotice({ type: "error", message: "Kata sandi baru minimal 6 karakter." });
+      return;
+    }
+
+    try {
+      setSavingProfile(true);
+      const res = await authApi.updateProfile({
+        nama: namaKader.trim(),
+        email: emailKader.trim(),
+        ...(newPassword.trim() ? { password: newPassword.trim() } : {}),
+      });
+
+      if (res.success && res.data) {
+        updateUser({
+          nama: res.data.nama,
+          email: res.data.email,
+        });
+        setNewPassword("");
+        setProfileNotice({ type: "success", message: "Profil dan akun berhasil diperbarui!" });
+      }
+    } catch (err: any) {
+      setProfileNotice({ type: "error", message: err.message || "Gagal memperbarui profil." });
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPwError("");
-    if (!oldPw || !newPw || !confirmPw) { setPwError("Semua kolom wajib diisi."); return; }
-    if (newPw.length < 6) { setPwError("Kata sandi baru minimal 6 karakter."); return; }
-    if (newPw !== confirmPw) { setPwError("Konfirmasi kata sandi tidak cocok."); return; }
-    setPwSuccess(true);
-    setOldPw(""); setNewPw(""); setConfirmPw("");
-    setTimeout(() => setPwSuccess(false), 3000);
-  };
+  const initials = namaKader
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <div className="space-y-6">
@@ -238,118 +339,98 @@ function AkunSection() {
         subtitle="Kelola profil pribadi dan keamanan kata sandi akun Anda."
       />
 
-      {/* Profil Kader */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
           <User className="w-4 h-4 text-blue-500" /> Profil Kader
         </h3>
 
         <form onSubmit={handleSaveProfile} className="space-y-4">
-          {profileSuccess && (
-            <div className="p-3 bg-green-50 text-green-700 border border-green-100 rounded-xl text-sm font-semibold flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0" /> Profil berhasil diperbarui!
+          {profileNotice && (
+            <div
+              className={`p-3 rounded-xl text-sm font-semibold flex items-center gap-2 border ${
+                profileNotice.type === "success"
+                  ? "bg-green-50 text-green-700 border-green-100"
+                  : "bg-red-50 text-red-700 border-red-100"
+              }`}
+            >
+              {profileNotice.type === "success" ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0" />
+              )}
+              {profileNotice.message}
             </div>
           )}
 
-          {/* Avatar */}
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center font-bold text-blue-600 text-xl border-2 border-blue-100">
-              {namaKader.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
+            <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center font-bold text-blue-600 text-xl border-2 border-blue-100 shrink-0">
+              {initials}
             </div>
             <div>
-              <p className="text-sm font-bold text-saas-dark">{namaKader}</p>
-              <p className="text-xs text-saas-muted">{emailKader}</p>
-              <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold border border-teal-100">Owner</span>
+              <p className="text-sm font-bold text-saas-dark">{user?.nama}</p>
+              <p className="text-xs text-saas-muted">{user?.email}</p>
+              <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold border border-teal-100">
+                {user?.role === "OWNER" ? "Pengelola (Owner)" : "Kader"}
+              </span>
             </div>
           </div>
 
-          <FormField label="Nama Lengkap">
-            <input
-              type="text"
-              value={namaKader}
-              onChange={(e) => setNamaKader(e.target.value)}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
-            />
-          </FormField>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Nama Lengkap">
+              <input
+                type="text"
+                value={namaKader}
+                onChange={(e) => setNamaKader(e.target.value)}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
+                required
+              />
+            </FormField>
 
-          <FormField label="Email">
-            <input
-              type="email"
-              value={emailKader}
-              disabled
-              className="w-full p-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-semibold text-saas-muted cursor-not-allowed"
-            />
-            <p className="text-[11px] text-saas-muted mt-1">Email tidak dapat diubah.</p>
-          </FormField>
-
-          <div className="flex justify-end">
-            <button type="submit" className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center gap-2">
-              <Save className="w-4 h-4" /> Simpan Profil
-            </button>
+            <FormField label="Alamat Email">
+              <input
+                type="email"
+                value={emailKader}
+                onChange={(e) => setEmailKader(e.target.value)}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
+                required
+              />
+            </FormField>
           </div>
-        </form>
-      </div>
 
-      {/* Ubah Password */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
-        <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
-          <Lock className="w-4 h-4 text-blue-500" /> Ubah Kata Sandi
-        </h3>
-
-        <form onSubmit={handleChangePassword} className="space-y-4">
-          {pwError && (
-            <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded-xl text-sm font-semibold">{pwError}</div>
-          )}
-          {pwSuccess && (
-            <div className="p-3 bg-green-50 text-green-700 border border-green-100 rounded-xl text-sm font-semibold flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> Kata sandi berhasil diubah!
-            </div>
-          )}
-
-          <FormField label="Kata Sandi Lama">
+          <FormField label="Kata Sandi Baru (Opsional)">
             <div className="relative">
               <input
-                type={showOldPw ? "text" : "password"}
-                value={oldPw}
-                onChange={(e) => setOldPw(e.target.value)}
-                placeholder="Masukkan kata sandi lama"
+                type={showPw ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Biarkan kosong jika tidak ingin mengganti kata sandi"
                 className="w-full p-3 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
               />
-              <button type="button" onClick={() => setShowOldPw(!showOldPw)} className="absolute right-3 top-3.5 text-saas-muted hover:text-saas-dark">
-                {showOldPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <button
+                type="button"
+                onClick={() => setShowPw(!showPw)}
+                className="absolute right-3 top-3.5 text-saas-muted hover:text-saas-dark"
+              >
+                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </FormField>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="Kata Sandi Baru">
-              <div className="relative">
-                <input
-                  type={showNewPw ? "text" : "password"}
-                  value={newPw}
-                  onChange={(e) => setNewPw(e.target.value)}
-                  placeholder="Minimal 6 karakter"
-                  className="w-full p-3 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
-                />
-                <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-3 top-3.5 text-saas-muted hover:text-saas-dark">
-                  {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </FormField>
-            <FormField label="Konfirmasi Kata Sandi">
-              <input
-                type="password"
-                value={confirmPw}
-                onChange={(e) => setConfirmPw(e.target.value)}
-                placeholder="Ulangi kata sandi baru"
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
-              />
-            </FormField>
-          </div>
-
-          <div className="flex justify-end">
-            <button type="submit" className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center gap-2">
-              <Lock className="w-4 h-4" /> Ubah Kata Sandi
+          <div className="flex justify-end pt-1">
+            <button
+              type="submit"
+              disabled={savingProfile}
+              className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {savingProfile ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" /> Simpan Profil
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -404,12 +485,16 @@ function TampilanSection() {
         {/* Preview */}
         <div className="p-4 bg-gradient-to-br from-violet-50/60 to-indigo-50/40 border border-violet-100/60 rounded-xl">
           <p className="text-[10px] text-violet-500 font-bold mb-2 uppercase tracking-widest">Pratinjau Teks</p>
-          <p className="font-bold text-saas-dark transition-all duration-300"
-            style={{ fontSize: fontSizeLevel === "kecil" ? "0.875em" : fontSizeLevel === "normal" ? "1em" : fontSizeLevel === "besar" ? "1.125em" : "1.375em" }}>
-            Data Posyandu Sri Lestari
+          <p
+            className="font-bold text-saas-dark transition-all duration-300"
+            style={{ fontSize: fontSizeLevel === "kecil" ? "0.875em" : fontSizeLevel === "normal" ? "1em" : fontSizeLevel === "besar" ? "1.125em" : "1.375em" }}
+          >
+            Data Posyandu Kita
           </p>
-          <p className="text-saas-muted mt-1 transition-all duration-300"
-            style={{ fontSize: fontSizeLevel === "kecil" ? "0.75em" : fontSizeLevel === "normal" ? "0.875em" : fontSizeLevel === "besar" ? "1em" : "1.125em" }}>
+          <p
+            className="text-saas-muted mt-1 transition-all duration-300"
+            style={{ fontSize: fontSizeLevel === "kecil" ? "0.75em" : fontSizeLevel === "normal" ? "0.875em" : fontSizeLevel === "besar" ? "1em" : "1.125em" }}
+          >
             Kader dapat melihat informasi warga dengan jelas.
           </p>
         </div>
@@ -456,7 +541,6 @@ function TampilanSection() {
           </button>
         </div>
 
-        {/* Level labels */}
         <div className="flex gap-2 px-[3.25rem]">
           {fontSizeLevels.map((item) => (
             <div key={item.level} className="flex-1 text-center">
@@ -466,33 +550,31 @@ function TampilanSection() {
             </div>
           ))}
         </div>
-
-        <p className="text-xs text-saas-muted bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
-          💡 Tersimpan otomatis dan berlaku di seluruh halaman aplikasi.
-        </p>
       </div>
 
-      {/* Tema Warna */}
+      {/* Tema Mode */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
-          <Sun className="w-4 h-4 text-violet-500" /> Tema Warna
-          <span className="ml-auto text-[10px] font-bold text-saas-muted bg-gray-100 px-2 py-0.5 rounded-full">Segera Hadir</span>
+          <Palette className="w-4 h-4 text-violet-500" /> Mode Tema
         </h3>
-        <div className="grid grid-cols-3 gap-3 opacity-60 pointer-events-none">
-          {themes.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setTheme(id)}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                theme === id
-                  ? "border-violet-500 bg-violet-50"
-                  : "border-gray-200 bg-gray-50"
-              }`}
-            >
-              <Icon className={`w-5 h-5 ${theme === id ? "text-violet-600" : "text-saas-muted"}`} />
-              <span className={`text-xs font-bold ${theme === id ? "text-violet-700" : "text-saas-muted"}`}>{label}</span>
-            </button>
-          ))}
+        <div className="grid grid-cols-3 gap-3">
+          {themes.map(({ id, label, icon: Icon }) => {
+            const isActive = theme === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setTheme(id)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border font-bold text-xs transition-all ${
+                  isActive
+                    ? "border-violet-600 bg-violet-50/50 text-violet-700 shadow-sm"
+                    : "border-gray-200 text-saas-muted hover:border-gray-300"
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -500,29 +582,29 @@ function TampilanSection() {
 }
 
 // ─── Notifikasi ───────────────────────────────────────────
-type NotifKey = "jadwalBuka" | "imunisasi" | "penimbangan" | "laporanBulanan";
-
 function NotifikasiSection() {
-  const [notifs, setNotifs] = useState<Record<NotifKey, boolean>>({
-    jadwalBuka: true,
-    imunisasi: true,
-    penimbangan: false,
-    laporanBulanan: true,
+  const [notifs, setNotifs] = useState({
+    jadwalPosyandu: true,
+    imunisasiBalita: true,
+    resikoKesehatan: true,
+    laporanBulanan: false,
   });
   const [saved, setSaved] = useState(false);
 
-  const toggle = (key: NotifKey) => setNotifs(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggle = (key: keyof typeof notifs) => {
+    setNotifs((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const items: { key: NotifKey; label: string; desc: string }[] = [
-    { key: "jadwalBuka", label: "Pengingat Jadwal Posyandu", desc: "Notifikasi H-1 sebelum hari buka posyandu" },
-    { key: "imunisasi", label: "Pengingat Imunisasi Balita", desc: "Alert balita yang jadwal imunisasinya mendekati" },
-    { key: "penimbangan", label: "Pengingat Penimbangan Bulanan", desc: "Alert balita yang belum ditimbang bulan ini" },
-    { key: "laporanBulanan", label: "Pengingat Laporan Bulanan", desc: "Notifikasi untuk melengkapi laporan akhir bulan" },
+  const items = [
+    { key: "jadwalPosyandu" as const, label: "Pengingat Jadwal Posyandu", desc: "Notifikasi otomatis menjelang hari buka posyandu" },
+    { key: "imunisasiBalita" as const, label: "Peringatan Imunisasi Balita", desc: "Notifikasi balita yang belum lengkap imunisasinya" },
+    { key: "resikoKesehatan" as const, label: "Peringatan Gizi & Hipertensi", desc: "Notifikasi lansia/balita berisiko tinggi" },
+    { key: "laporanBulanan" as const, label: "Pengingat Laporan Bulanan", desc: "Notifikasi untuk melengkapi laporan akhir bulan" },
   ];
 
   return (
@@ -550,7 +632,6 @@ function NotifikasiSection() {
                 <p className="text-xs text-saas-muted mt-0.5">{desc}</p>
               </div>
             </div>
-            {/* Toggle Switch */}
             <button
               onClick={() => toggle(key)}
               aria-label={`Toggle ${label}`}
@@ -594,7 +675,6 @@ function DataSection() {
         subtitle="Kelola backup, ekspor data posyandu, dan keamanan informasi."
       />
 
-      {/* Ekspor Data */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
           <Download className="w-4 h-4 text-rose-500" /> Ekspor & Backup Data
@@ -627,17 +707,16 @@ function DataSection() {
         )}
       </div>
 
-      {/* Log Aktivitas */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
           <Shield className="w-4 h-4 text-rose-500" /> Log Aktivitas Terakhir
         </h3>
         <div className="space-y-2">
           {[
-            { action: "Login berhasil", user: "Ibu Aminah", time: "Hari ini, 08:24", dot: "bg-green-400" },
-            { action: "Tambah data balita baru", user: "Ibu Siti Rahmawati", time: "Kemarin, 14:05", dot: "bg-blue-400" },
-            { action: "Edit laporan bulanan", user: "Ibu Aminah", time: "3 hari lalu, 09:10", dot: "bg-violet-400" },
-            { action: "Ubah pengaturan posyandu", user: "Ibu Aminah", time: "5 hari lalu, 11:30", dot: "bg-amber-400" },
+            { action: "Login berhasil", user: "Kader Posyandu", time: "Hari ini, 08:24", dot: "bg-green-400" },
+            { action: "Tambah data balita baru", user: "Kader Posyandu", time: "Kemarin, 14:05", dot: "bg-blue-400" },
+            { action: "Edit laporan bulanan", user: "Kader Posyandu", time: "3 hari lalu, 09:10", dot: "bg-violet-400" },
+            { action: "Ubah pengaturan posyandu", user: "Pengelola Posyandu", time: "5 hari lalu, 11:30", dot: "bg-amber-400" },
           ].map((log, i) => (
             <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
               <span className={`w-2 h-2 rounded-full shrink-0 ${log.dot}`} />
@@ -650,7 +729,6 @@ function DataSection() {
         </div>
       </div>
 
-      {/* Danger Zone */}
       <div className="bg-red-50/50 border border-red-100 rounded-2xl p-6 space-y-4">
         <h3 className="text-sm font-bold text-red-700 flex items-center gap-2">
           ⚠️ Zona Berbahaya
@@ -724,13 +802,11 @@ export default function PengaturanModule() {
 
   return (
     <div className="space-y-4">
-      {/* Page Header */}
       <div>
         <h2 className="text-2xl font-bold text-saas-dark tracking-tight">Pengaturan</h2>
         <p className="text-sm text-saas-muted mt-0.5">Kelola preferensi, profil, dan konfigurasi sistem posyandu Anda.</p>
       </div>
 
-      {/* Mobile: active section button */}
       <button
         onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
         className="flex md:hidden w-full items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm"
@@ -745,7 +821,6 @@ export default function PengaturanModule() {
         <ChevronRight className={`w-4 h-4 text-saas-muted transition-transform ${mobileSidebarOpen ? "rotate-90" : ""}`} />
       </button>
 
-      {/* Mobile: dropdown nav */}
       {mobileSidebarOpen && (
         <div className="md:hidden bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
           {navItems.map((item) => {
@@ -771,9 +846,7 @@ export default function PengaturanModule() {
         </div>
       )}
 
-      {/* Desktop: Sidebar + Content layout */}
       <div className="flex gap-6 items-start">
-        {/* Sidebar */}
         <aside className="hidden md:flex w-60 shrink-0 flex-col bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden sticky top-6">
           {navItems.map((item, idx) => {
             const isActive = activeSection === item.id;
@@ -787,7 +860,6 @@ export default function PengaturanModule() {
                     : "hover:bg-gray-50/60"
                 } ${idx !== navItems.length - 1 ? "border-b border-gray-50" : ""}`}
               >
-                {/* Active indicator bar */}
                 {isActive && (
                   <span className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-saas-primary" />
                 )}
@@ -806,7 +878,6 @@ export default function PengaturanModule() {
           })}
         </aside>
 
-        {/* Content Area */}
         <div className="flex-1 min-w-0">
           {renderSection()}
         </div>
