@@ -449,14 +449,6 @@ export const kaderApi = {
     request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/kader/${kaderId}`, {
       method: 'DELETE',
     }),
-
-  getInviteCode: (posyanduId: string) =>
-    request<ApiResponse<{ invitationCode: string }>>(`/api/posyandu/${posyanduId}/invite-code`),
-
-  regenInviteCode: (posyanduId: string) =>
-    request<ApiResponse<{ invitationCode: string }>>(`/api/posyandu/${posyanduId}/invite-code/regen`, {
-      method: 'POST',
-    }),
 };
 
 

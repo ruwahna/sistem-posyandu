@@ -20,7 +20,6 @@ model Posyandu {
   desa       String
   kecamatan  String
   alamat     String
-  kodeUndangan String? @unique @map("kode_undangan")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 

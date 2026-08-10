@@ -4,18 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '../lib/prisma';
 
 /**
- * Helper to generate invitation code for a Posyandu
- */
-function generateInvitationCode(namaPosyandu: string): string {
-  const cleanName = namaPosyandu
-    .replace(/[^A-Z0-9]/gi, '')
-    .toUpperCase()
-    .slice(0, 10) || 'POSYANDU';
-  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `${cleanName}-KADER-${randomSuffix}`;
-}
-
-/**
  * GET /api/posyandu/:posyanduId/kader
  * Mengambil daftar seluruh kader di posyandu ini.
  */
@@ -277,89 +265,3 @@ export const deleteKader = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-/**
- * GET /api/posyandu/:posyanduId/invite-code
- * Mendapatkan kode undangan posyandu.
- */
-export const getInviteCode = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const posyanduId = String(req.params.posyanduId);
-
-    if (req.user?.posyanduId !== posyanduId) {
-      res.status(403).json({ success: false, message: 'Anda tidak memiliki akses ke posyandu ini' });
-      return;
-    }
-
-    let posyandu = await prisma.posyandu.findUnique({
-      where: { id: posyanduId },
-      select: { id: true, nama: true, kodeUndangan: true },
-    });
-
-    if (!posyandu) {
-      res.status(404).json({ success: false, message: 'Posyandu tidak ditemukan' });
-      return;
-    }
-
-    // Jika belum ada kode undangan, buat secara otomatis
-    if (!posyandu.kodeUndangan) {
-      const code = generateInvitationCode(posyandu.nama);
-      posyandu = await prisma.posyandu.update({
-        where: { id: posyanduId },
-        data: { kodeUndangan: code },
-        select: { id: true, nama: true, kodeUndangan: true },
-      });
-    }
-
-    res.json({
-      success: true,
-      data: { invitationCode: posyandu.kodeUndangan },
-    });
-  } catch (err) {
-    throw err;
-  }
-};
-
-/**
- * POST /api/posyandu/:posyanduId/invite-code/regen
- * Memperbarui / meriset kode undangan posyandu baru.
- */
-export const regenerateInviteCode = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const posyanduId = String(req.params.posyanduId);
-
-    if (req.user?.posyanduId !== posyanduId) {
-      res.status(403).json({ success: false, message: 'Anda tidak memiliki akses ke posyandu ini' });
-      return;
-    }
-
-    if (req.user?.role !== 'OWNER') {
-      res.status(403).json({ success: false, message: 'Hanya Kader Owner yang dapat memperbarui kode undangan' });
-      return;
-    }
-
-    const posyandu = await prisma.posyandu.findUnique({
-      where: { id: posyanduId },
-    });
-
-    if (!posyandu) {
-      res.status(404).json({ success: false, message: 'Posyandu tidak ditemukan' });
-      return;
-    }
-
-    const newCode = generateInvitationCode(posyandu.nama);
-
-    const updated = await prisma.posyandu.update({
-      where: { id: posyanduId },
-      data: { kodeUndangan: newCode },
-      select: { id: true, kodeUndangan: true },
-    });
-
-    res.json({
-      success: true,
-      message: 'Kode undangan berhasil diperbarui',
-      data: { invitationCode: updated.kodeUndangan },
-    });
-  } catch (err) {
-    throw err;
-  }
-};

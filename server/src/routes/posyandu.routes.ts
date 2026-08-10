@@ -19,8 +19,6 @@ import {
   updateKaderRole,
   updateKaderStatus,
   deleteKader,
-  getInviteCode,
-  regenerateInviteCode,
 } from '../controllers/kader.controller';
 import {
   createKaderSchema,
@@ -52,12 +50,6 @@ router.patch('/:posyanduId/kader/:id/status', authenticate, authorize('OWNER'), 
 
 // DELETE /api/posyandu/:posyanduId/kader/:id
 router.delete('/:posyanduId/kader/:id', authenticate, authorize('OWNER'), deleteKader);
-
-// GET /api/posyandu/:posyanduId/invite-code
-router.get('/:posyanduId/invite-code', authenticate, getInviteCode);
-
-// POST /api/posyandu/:posyanduId/invite-code/regen
-router.post('/:posyanduId/invite-code/regen', authenticate, authorize('OWNER'), regenerateInviteCode);
 
 // GET /api/posyandu  — siapa saja yang sudah login bisa lihat daftar posyandu
 router.get('/', authenticate, getAllPosyandu);

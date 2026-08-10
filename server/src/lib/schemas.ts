@@ -20,7 +20,6 @@ export const registerSchema = z.object({
   email: z.string().email('Format email tidak valid'),
   password: z.string().min(8, 'Password minimal 8 karakter'),
   posyanduId: z.string().uuid('ID Posyandu tidak valid'),
-  invitationCode: z.string().optional(),
 });
 
 export const createKaderSchema = z.object({

@@ -3,9 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Users,
-  Copy,
-  Check,
-  RefreshCw,
   UserCheck2,
   AlertCircle,
   Shield,
@@ -30,10 +27,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
 
   // State
   const [kaders, setKaders] = useState<KaderMember[]>([]);
-  const [invitationCode, setInvitationCode] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRegenLoading, setIsRegenLoading] = useState<boolean>(false);
-  const [copied, setCopied] = useState<boolean>(false);
   const [errorNotice, setErrorNotice] = useState<string>("");
 
   // Form State
@@ -48,22 +42,15 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
   const [addMemberError, setAddMemberError] = useState<string>("");
   const [actionNotice, setActionNotice] = useState<string>("");
 
-  // Fetch Kader List & Invitation Code
+  // Fetch Kader List
   const fetchData = useCallback(async () => {
     if (!currentPosyanduId) return;
     setIsLoading(true);
     setErrorNotice("");
     try {
-      const [kaderRes, inviteRes] = await Promise.all([
-        kaderApi.getAll(currentPosyanduId),
-        kaderApi.getInviteCode(currentPosyanduId),
-      ]);
-
-      if (kaderRes.success && kaderRes.data) {
-        setKaders(kaderRes.data);
-      }
-      if (inviteRes.success && inviteRes.data) {
-        setInvitationCode(inviteRes.data.invitationCode);
+      const res = await kaderApi.getAll(currentPosyanduId);
+      if (res.success && res.data) {
+        setKaders(res.data);
       }
     } catch (err: any) {
       console.error("Error loading kader data:", err);
@@ -76,34 +63,6 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  // Copy invitation code
-  const handleCopyCode = () => {
-    if (!invitationCode) return;
-    navigator.clipboard.writeText(invitationCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // Regenerate invitation code
-  const handleRegenCode = async () => {
-    if (!currentPosyanduId || !isOwner) return;
-    setIsRegenLoading(true);
-    try {
-      const res = await kaderApi.regenInviteCode(currentPosyanduId);
-      if (res.success && res.data) {
-        setInvitationCode(res.data.invitationCode);
-        setCopied(false);
-        setActionNotice("Kode undangan berhasil diperbarui.");
-        setTimeout(() => setActionNotice(""), 3000);
-      }
-    } catch (err: any) {
-      setActionNotice(err.message || "Gagal memperbarui kode undangan.");
-      setTimeout(() => setActionNotice(""), 3000);
-    } finally {
-      setIsRegenLoading(false);
-    }
-  };
 
   // Create new kader account directly
   const handleCreateAccount = async (e: React.FormEvent) => {
@@ -241,7 +200,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
             )}
           </div>
           <p className="text-sm text-saas-muted mt-0.5">
-            Kelola hak akses kader, buat akun secara langsung, atau bagikan kode undangan posyandu.
+            Kelola hak akses kader dan buat akun pelaksana posyandu secara langsung.
           </p>
         </div>
       </div>
@@ -496,43 +455,8 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
           </div>
         </div>
 
-        {/* Kolom Kanan: Kode Undangan & Panduan */}
+        {/* Kolom Kanan: Panduan Hak Akses */}
         <div className="space-y-6">
-          {/* Kode Undangan */}
-          <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-4">
-            <div>
-              <h3 className="font-bold text-sm text-saas-dark">Kode Undangan Posyandu</h3>
-              <p className="text-[11px] text-saas-muted mt-0.5 leading-normal">
-                Kode ini unik untuk Posyandu Anda. Gunakan untuk mendaftarkan kader baru.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <code className="flex-1 p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono font-bold text-center tracking-wider text-saas-dark select-all min-h-[38px] flex items-center justify-center">
-                {invitationCode || (isLoading ? "..." : "BELUM ADA KODE")}
-              </code>
-              <button
-                onClick={handleCopyCode}
-                title="Salin Kode Undangan"
-                disabled={!invitationCode}
-                className="w-9 h-9 rounded-lg bg-gray-50 hover:bg-saas-primary/10 border border-gray-200 flex items-center justify-center text-saas-dark hover:text-saas-primary transition-all shrink-0 disabled:opacity-50"
-              >
-                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-              </button>
-              {isOwner && (
-                <button
-                  onClick={handleRegenCode}
-                  title="Perbarui Kode Undangan"
-                  disabled={isRegenLoading}
-                  className="w-9 h-9 rounded-lg bg-gray-50 hover:bg-saas-primary/10 border border-gray-200 flex items-center justify-center text-saas-dark hover:text-saas-primary transition-all shrink-0 disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isRegenLoading ? "animate-spin" : ""}`} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Panduan Peran */}
           <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-4 text-xs font-semibold leading-normal">
             <div className="flex items-center gap-2.5">
               <Shield className="w-4.5 h-4.5 text-saas-primary" />
@@ -545,7 +469,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
                   <Shield className="w-3.5 h-3.5 text-saas-primary" /> Kader Owner:
                 </p>
                 <p>
-                  Akses administrasi penuh. Dapat edit profil posyandu, mengelola akun kader lain, dan meriset kode undangan.
+                  Akses administrasi penuh. Dapat edit profil posyandu dan mengelola akun kader lain.
                 </p>
               </div>
 
