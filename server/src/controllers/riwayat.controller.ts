@@ -45,6 +45,24 @@ export const exportRiwayatExcel = async (req: Request, res: Response): Promise<v
       tahun?: string;
     };
 
+    // Validate input
+    if (!posyanduId) {
+      res.status(400).json({ success: false, message: 'posyanduId tidak boleh kosong' });
+      return;
+    }
+
+    // Validate bulan if provided
+    if (bulan && (Number(bulan) < 1 || Number(bulan) > 12)) {
+      res.status(400).json({ success: false, message: 'Bulan harus antara 1-12' });
+      return;
+    }
+
+    // Validate tahun if provided
+    if (tahun && (Number(tahun) < 1900 || Number(tahun) > new Date().getFullYear())) {
+      res.status(400).json({ success: false, message: `Tahun harus antara 1900-${new Date().getFullYear()}` });
+      return;
+    }
+
     const workbook = await riwayatService.generateExcelExport(posyanduId, {
       tipe,
       search,
@@ -65,7 +83,12 @@ export const exportRiwayatExcel = async (req: Request, res: Response): Promise<v
     await workbook.xlsx.write(res);
     res.end();
   } catch (err) {
-    throw err;
+    const error = err as Error;
+    if (error.message === 'Posyandu tidak ditemukan') {
+      res.status(404).json({ success: false, message: error.message });
+    } else {
+      res.status(500).json({ success: false, message: 'Gagal generate Excel', error: error.message });
+    }
   }
 };
 
@@ -120,6 +143,24 @@ export const exportRiwayatPDF = async (req: Request, res: Response): Promise<voi
       tahun?: string;
     };
 
+    // Validate input
+    if (!posyanduId) {
+      res.status(400).json({ success: false, message: 'posyanduId tidak boleh kosong' });
+      return;
+    }
+
+    // Validate bulan if provided
+    if (bulan && (Number(bulan) < 1 || Number(bulan) > 12)) {
+      res.status(400).json({ success: false, message: 'Bulan harus antara 1-12' });
+      return;
+    }
+
+    // Validate tahun if provided
+    if (tahun && (Number(tahun) < 1900 || Number(tahun) > new Date().getFullYear())) {
+      res.status(400).json({ success: false, message: `Tahun harus antara 1900-${new Date().getFullYear()}` });
+      return;
+    }
+
     const doc = await riwayatService.generatePdfExport(posyanduId, {
       tipe,
       search,
@@ -137,6 +178,11 @@ export const exportRiwayatPDF = async (req: Request, res: Response): Promise<voi
     doc.pipe(res);
     doc.end();
   } catch (err) {
-    throw err;
+    const error = err as Error;
+    if (error.message === 'Posyandu tidak ditemukan') {
+      res.status(404).json({ success: false, message: error.message });
+    } else {
+      res.status(500).json({ success: false, message: 'Gagal generate PDF', error: error.message });
+    }
   }
 };
