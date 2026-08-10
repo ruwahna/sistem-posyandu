@@ -197,3 +197,53 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
     throw err;
   }
 };
+
+/**
+ * PUT /api/auth/profile
+ * Memperbarui profil kader (nama, email, password baru opsional).
+ */
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const { nama, email, password } = req.body;
+
+    if (!nama || !email) {
+      res.status(400).json({ success: false, message: 'Nama dan email wajib diisi' });
+      return;
+    }
+
+    // Cek jika email dipakai kader lain
+    const existing = await prisma.kader.findFirst({
+      where: { email, NOT: { id: userId } },
+    });
+    if (existing) {
+      res.status(409).json({ success: false, message: 'Email sudah digunakan oleh pengguna lain' });
+      return;
+    }
+
+    const updateData: any = { nama, email };
+    if (password && password.trim().length >= 6) {
+      updateData.password = await bcrypt.hash(password.trim(), 12);
+    }
+
+    const updatedKader = await prisma.kader.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        nama: true,
+        email: true,
+        role: true,
+        posyandu: { select: { id: true, nama: true } },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Profil berhasil diperbarui',
+      data: updatedKader,
+    });
+  } catch (err) {
+    throw err;
+  }
+};

@@ -8,6 +8,7 @@ import posyanduRoutes from './routes/posyandu.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import balitaRoutes from './routes/balita.routes';
 import lansiaRoutes from './routes/lansia.routes';
+import notificationRoutes from './routes/notification.routes';
 import { errorHandler, notFound } from './middlewares/error.middleware';
 
 const app = express();
@@ -43,6 +44,9 @@ app.use('/api/posyandu/:posyanduId/balita', balitaRoutes);
 
 // Nested routes: /api/posyandu/:posyanduId/lansia
 app.use('/api/posyandu/:posyanduId/lansia', lansiaRoutes);
+
+// Nested routes: /api/posyandu/:posyanduId/notifications
+app.use('/api/posyandu/:posyanduId/notifications', notificationRoutes);
 
 // ─────────────────────────────────────────────────────────────
 // ERROR HANDLING (harus di akhir)

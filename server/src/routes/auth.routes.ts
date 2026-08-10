@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getMe, registerPosyandu } from '../controllers/auth.controller';
+import { register, login, getMe, registerPosyandu, updateProfile } from '../controllers/auth.controller';
 import { authenticate } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
 import { registerSchema, loginSchema } from '../lib/schemas';
@@ -17,5 +17,8 @@ router.post('/login', validate(loginSchema), login);
 
 // GET /api/auth/me  (dilindungi JWT)
 router.get('/me', authenticate, getMe);
+
+// PUT /api/auth/profile (dilindungi JWT)
+router.put('/profile', authenticate, updateProfile);
 
 export default router;

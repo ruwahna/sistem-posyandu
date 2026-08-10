@@ -45,6 +45,16 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'DANGER' | 'WARNING' | 'SUCCESS' | 'INFO';
+  createdAt: string;
+  isRead: boolean;
+  category?: 'balita' | 'lansia' | 'system';
+}
+
 export interface DashboardSummary {
   totalBalita: number;
   totalLansia: number;
@@ -191,15 +201,31 @@ export const authApi = {
 
   getMe: () =>
     request<ApiResponse<KaderInfo & { posyandu: { id: string; nama: string; desa: string; kecamatan: string } }>>('/api/auth/me'),
-};
 
-// ─────────────────────────────────────────────────────────────
-// DASHBOARD API
-// ─────────────────────────────────────────────────────────────
+  updateProfile: (data: { nama: string; email: string; password?: string }) =>
+    request<ApiResponse<KaderInfo>>('/api/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+};
 
 export const dashboardApi = {
   getSummary: (posyanduId: string) =>
     request<ApiResponse<DashboardSummary>>(`/api/dashboard/${posyanduId}`),
+};
+
+// ─────────────────────────────────────────────────────────────
+// POSYANDU API
+// ─────────────────────────────────────────────────────────────
+
+export const posyanduApi = {
+  getById: (id: string) =>
+    request<ApiResponse<{ id: string; nama: string; desa: string; kecamatan: string; alamat: string }>>(`/api/posyandu/${id}`),
+  update: (id: string, data: { nama?: string; desa?: string; kecamatan?: string; alamat?: string }) =>
+    request<ApiResponse<{ id: string; nama: string; desa: string; kecamatan: string; alamat: string }>>(`/api/posyandu/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -347,6 +373,25 @@ export const riwayatApi = {
     a.click();
     a.remove();
     window.URL.revokeObjectURL(url);
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
+// API: NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────
+export const notificationApi = {
+  getNotifications: async (posyanduId: string): Promise<{ notifications: AppNotification[]; unreadCount: number }> => {
+    const res = await request<ApiResponse<{ notifications: AppNotification[]; unreadCount: number }>>(
+      `/api/posyandu/${posyanduId}/notifications`
+    );
+    return res.data;
+  },
+
+  markAsRead: async (posyanduId: string, notificationIds: string[]): Promise<void> => {
+    await request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/notifications/read`, {
+      method: 'POST',
+      body: JSON.stringify({ notificationIds }),
+    });
   },
 };
 

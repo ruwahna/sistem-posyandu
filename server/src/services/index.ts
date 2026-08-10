@@ -202,9 +202,9 @@ export const balitaService = {
     });
   },
 
-  async create(posyanduId: string, data: Parameters<typeof prisma.balita.create>[0]['data']) {
+  async create(posyanduId: string, data: Omit<Parameters<typeof prisma.balita.create>[0]['data'], 'posyandu' | 'posyanduId'>) {
     return prisma.balita.create({
-      data: { ...data, posyanduId } as Parameters<typeof prisma.balita.create>[0]['data'],
+      data: { ...data, posyanduId },
     });
   },
 
@@ -332,9 +332,9 @@ export const lansiaService = {
     });
   },
 
-  async create(posyanduId: string, data: Parameters<typeof prisma.lansia.create>[0]['data']) {
+  async create(posyanduId: string, data: Omit<Parameters<typeof prisma.lansia.create>[0]['data'], 'posyandu' | 'posyanduId'>) {
     return prisma.lansia.create({
-      data: { ...data, posyanduId } as Parameters<typeof prisma.lansia.create>[0]['data'],
+      data: { ...data, posyanduId },
     });
   },
 
