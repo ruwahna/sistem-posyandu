@@ -2,7 +2,9 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import prisma from '../lib/prisma';
+import { sendResetPasswordEmail } from '../lib/email';
 
 /**
  * POST /api/auth/register
@@ -197,3 +199,134 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
     throw err;
   }
 };
+
+/**
+ * POST /api/auth/forgot-password
+ * Mengirim email instruksi reset password.
+ */
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    const kader = await prisma.kader.findUnique({ where: { email } });
+    if (!kader) {
+      // Keamanan: hindari email enumeration attack
+      res.json({
+        success: true,
+        message: 'Jika email terdaftar, instruksi reset password telah dikirim ke email Anda.',
+      });
+      return;
+    }
+
+    if (!kader.isActive) {
+      res.status(403).json({ success: false, message: 'Akun Anda dinonaktifkan.' });
+      return;
+    }
+
+    // Generate random token & expiry (1 jam)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 jam
+
+    await prisma.kader.update({
+      where: { id: kader.id },
+      data: {
+        resetPasswordToken,
+        resetPasswordExpires,
+      },
+    });
+
+    const clientHost = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',')[0].trim() : 'http://localhost:3000';
+    const resetUrl = `${clientHost}/reset-password?token=${resetToken}`;
+
+    await sendResetPasswordEmail({
+      to: kader.email,
+      nama: kader.nama,
+      resetUrl,
+    });
+
+    res.json({
+      success: true,
+      message: 'Instruksi reset password telah dikirim ke email Anda.',
+    });
+  } catch (err) {
+    throw err;
+  }
+};
+
+/**
+ * GET /api/auth/verify-reset-token/:token
+ * Memeriksa apakah token reset password valid.
+ */
+export const verifyResetToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const token = String(req.params.token);
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const kader = await prisma.kader.findFirst({
+      where: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { gt: new Date() },
+      },
+    });
+
+    if (!kader) {
+      res.status(400).json({
+        success: false,
+        valid: false,
+        message: 'Tautan reset password tidak valid atau telah kadaluarsa.',
+      });
+      return;
+    }
+
+    res.json({ success: true, valid: true });
+  } catch (err) {
+    throw err;
+  }
+};
+
+/**
+ * POST /api/auth/reset-password
+ * Mengubah kata sandi pengguna dengan token reset password.
+ */
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const token = String(req.body.token);
+    const { newPassword } = req.body;
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const kader = await prisma.kader.findFirst({
+      where: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { gt: new Date() },
+      },
+    });
+
+    if (!kader) {
+      res.status(400).json({
+        success: false,
+        message: 'Tautan reset password tidak valid atau telah kadaluarsa.',
+      });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await prisma.kader.update({
+      where: { id: kader.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Kata sandi Anda berhasil diperbarui. Silakan masuk dengan kata sandi baru Anda.',
+    });
+  } catch (err) {
+    throw err;
+  }
+};
+

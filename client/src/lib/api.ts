@@ -191,6 +191,21 @@ export const authApi = {
 
   getMe: () =>
     request<ApiResponse<KaderInfo & { posyandu: { id: string; nama: string; desa: string; kecamatan: string } }>>('/api/auth/me'),
+
+  forgotPassword: (email: string) =>
+    request<ApiResponse<null>>('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  verifyResetToken: (token: string) =>
+    request<ApiResponse<{ valid: boolean }>>(`/api/auth/verify-reset-token/${token}`),
+
+  resetPassword: (token: string, newPassword: string) =>
+    request<ApiResponse<null>>('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    }),
 };
 
 // ─────────────────────────────────────────────────────────────

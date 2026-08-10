@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb } from '../lib/zScoreCalculator';
 
@@ -202,9 +203,9 @@ export const balitaService = {
     });
   },
 
-  async create(posyanduId: string, data: Parameters<typeof prisma.balita.create>[0]['data']) {
+  async create(posyanduId: string, data: Omit<Prisma.BalitaUncheckedCreateInput, 'posyanduId'>) {
     return prisma.balita.create({
-      data: { ...data, posyanduId } as Parameters<typeof prisma.balita.create>[0]['data'],
+      data: { ...data, posyanduId },
     });
   },
 
@@ -332,9 +333,9 @@ export const lansiaService = {
     });
   },
 
-  async create(posyanduId: string, data: Parameters<typeof prisma.lansia.create>[0]['data']) {
+  async create(posyanduId: string, data: Omit<Prisma.LansiaUncheckedCreateInput, 'posyanduId'>) {
     return prisma.lansia.create({
-      data: { ...data, posyanduId } as Parameters<typeof prisma.lansia.create>[0]['data'],
+      data: { ...data, posyanduId },
     });
   },
 
