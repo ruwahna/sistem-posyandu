@@ -395,6 +395,9 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
         };
         setBalitas((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
       }
+      
+      // Emit event to notify Riwayat module to refresh
+      window.dispatchEvent(new Event("pemeriksaanSaved"));
       setExamBB(""); setExamTB(""); setExamLK(""); setExamLiLA("");
       setExamBBU("Normal"); setExamTBU("Normal"); setExamBBTB("Normal");
       setExamVitA(false); setExamAsi(false); setExamCacing(false); setExamImunisasi("");
