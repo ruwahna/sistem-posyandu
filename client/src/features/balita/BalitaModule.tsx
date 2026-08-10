@@ -18,7 +18,7 @@ import {
   Trash2,
   ChevronRight
 } from "lucide-react";
-import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb } from "../../lib/zScoreCalculator";
+import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, convertStatusBbUToCode, convertStatusTbUToCode, convertStatusBbTbToCode } from "../../lib/zScoreCalculator";
 
 // Tipe Data
 export interface PemeriksaanBalita {
@@ -372,9 +372,9 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
         tinggiBadan: tb,
         lingkarKepala: lk,
         lingkarLengan: examLiLA ? parseFloat(examLiLA) : undefined,
-        statusBbU: examBBU,
-        statusTbU: examTBU,
-        statusBbTb: examBBTB,
+        statusBbU: convertStatusBbUToCode(examBBU),
+        statusTbU: convertStatusTbUToCode(examTBU),
+        statusBbTb: convertStatusBbTbToCode(examBBTB),
         statusKms: examKms,
         vitaminA: examVitA,
         asiEksklusif: examAsi,

@@ -147,3 +147,31 @@ export function hitungIMT(beratBadan: number, tinggiBadan: number): number {
   const tbMeter = tinggiBadan / 100;
   return Number((beratBadan / (tbMeter * tbMeter)).toFixed(1));
 }
+
+// Helper functions untuk convert label ke enum code
+export function convertStatusBbUToCode(label: 'Sangat Kurang' | 'Kurang' | 'Normal' | 'Lebih'): 'SK' | 'K' | 'N' | 'L' {
+  switch (label) {
+    case 'Sangat Kurang': return 'SK';
+    case 'Kurang': return 'K';
+    case 'Normal': return 'N';
+    case 'Lebih': return 'L';
+  }
+}
+
+export function convertStatusTbUToCode(label: 'Sangat Pendek' | 'Pendek' | 'Normal' | 'Tinggi'): 'SP' | 'P' | 'N' | 'T' {
+  switch (label) {
+    case 'Sangat Pendek': return 'SP';
+    case 'Pendek': return 'P';
+    case 'Normal': return 'N';
+    case 'Tinggi': return 'T';
+  }
+}
+
+export function convertStatusBbTbToCode(label: 'Sangat Kurus' | 'Kurus' | 'Normal' | 'Gemuk'): 'SK' | 'K' | 'N' | 'G' {
+  switch (label) {
+    case 'Sangat Kurus': return 'SK';
+    case 'Kurus': return 'K';
+    case 'Normal': return 'N';
+    case 'Gemuk': return 'G';
+  }
+}

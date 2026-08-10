@@ -13,6 +13,7 @@ export const validate = (schema: ZodSchema) => {
         field: e.path.join('.'),
         message: e.message,
       }));
+      console.log('VALIDATION ERROR:', JSON.stringify({ body: req.body, errors }, null, 2));
       res.status(400).json({
         success: false,
         message: 'Validasi gagal',
