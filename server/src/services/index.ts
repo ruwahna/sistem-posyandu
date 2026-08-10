@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb } from '../lib/zScoreCalculator';
 
@@ -202,7 +203,7 @@ export const balitaService = {
     });
   },
 
-  async create(posyanduId: string, data: Omit<Parameters<typeof prisma.balita.create>[0]['data'], 'posyandu' | 'posyanduId'>) {
+  async create(posyanduId: string, data: any) {
     return prisma.balita.create({
       data: { ...data, posyanduId },
     });
@@ -332,7 +333,7 @@ export const lansiaService = {
     });
   },
 
-  async create(posyanduId: string, data: Omit<Parameters<typeof prisma.lansia.create>[0]['data'], 'posyandu' | 'posyanduId'>) {
+  async create(posyanduId: string, data: any) {
     return prisma.lansia.create({
       data: { ...data, posyanduId },
     });
