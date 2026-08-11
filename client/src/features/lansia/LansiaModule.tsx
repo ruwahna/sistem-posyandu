@@ -249,7 +249,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
     setEditNama(l.nama);
     setEditNik(l.nik);
     setEditBpjs(l.noBpjs || "");
-    setEditTglLahir(l.tanggalLahir);
+    setEditTglLahir(l.tanggalLahir ? (typeof l.tanggalLahir === "string" ? l.tanggalLahir.split("T")[0] : new Date(l.tanggalLahir).toISOString().split("T")[0]) : "");
     setEditJk(l.jenisKelamin);
     setEditRtRw(l.rtRw);
     setEditAlamat(l.alamat);
@@ -728,8 +728,9 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <input
                       type="date"
                       value={examDate}
+                      onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                       onChange={(e) => setExamDate(e.target.value)}
-                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 cursor-pointer"
                     />
                   </div>
 
@@ -739,9 +740,11 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Contoh: 60"
                       value={examBB}
-                      onChange={(e) => setExamBB(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                      onChange={(e) => setExamBB(e.target.value.replace(/-/g, ""))}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
                   </div>
@@ -752,9 +755,11 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Contoh: 160"
                       value={examTB}
-                      onChange={(e) => setExamTB(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                      onChange={(e) => setExamTB(e.target.value.replace(/-/g, ""))}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
                   </div>
@@ -781,11 +786,14 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <label className="text-xs font-bold text-saas-muted">Sistol (mmHg)</label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="TD atas, cth: 130"
                       value={examSistol}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
                       onChange={(e) => {
-                        setExamSistol(e.target.value);
-                        handleExamInputCheck(e.target.value, examGds);
+                        const val = e.target.value.replace(/-/g, "");
+                        setExamSistol(val);
+                        handleExamInputCheck(val, examGds);
                       }}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
@@ -796,9 +804,11 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <label className="text-xs font-bold text-saas-muted">Diastol (mmHg)</label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="TD bawah, cth: 85"
                       value={examDiastol}
-                      onChange={(e) => setExamDiastol(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                      onChange={(e) => setExamDiastol(e.target.value.replace(/-/g, ""))}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
                   </div>
@@ -808,11 +818,14 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <label className="text-xs font-bold text-saas-muted">GDS (mg/dL)</label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="Contoh: 120"
                       value={examGds}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
                       onChange={(e) => {
-                        setExamGds(e.target.value);
-                        handleExamInputCheck(examSistol, e.target.value);
+                        const val = e.target.value.replace(/-/g, "");
+                        setExamGds(val);
+                        handleExamInputCheck(examSistol, val);
                       }}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
@@ -823,9 +836,11 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <label className="text-xs font-bold text-saas-muted">Lingkar Perut (cm)</label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="Contoh: 90"
                       value={examLp}
-                      onChange={(e) => setExamLp(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                      onChange={(e) => setExamLp(e.target.value.replace(/-/g, ""))}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
                   </div>
@@ -837,9 +852,11 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <label className="text-xs font-bold text-saas-muted">Kolesterol (mg/dL - opsional)</label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="cth: 180"
                       value={examCholesterol}
-                      onChange={(e) => setExamCholesterol(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                      onChange={(e) => setExamCholesterol(e.target.value.replace(/-/g, ""))}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
                   </div>
@@ -850,9 +867,11 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="cth: 6.2"
                       value={examUricAcid}
-                      onChange={(e) => setExamUricAcid(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                      onChange={(e) => setExamUricAcid(e.target.value.replace(/-/g, ""))}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
                   </div>
@@ -1053,8 +1072,9 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                 <input
                   type="date"
                   value={formTglLahir}
+                  onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                   onChange={(e) => setFormTglLahir(e.target.value)}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 cursor-pointer"
                 />
               </div>
 
@@ -1228,8 +1248,9 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                 type="date"
                 required
                 value={editTglLahir}
+                onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                 onChange={(e) => setEditTglLahir(e.target.value)}
-                className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary cursor-pointer"
               />
             </div>
             <div className="space-y-1.5">

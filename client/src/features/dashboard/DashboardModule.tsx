@@ -16,7 +16,10 @@ import {
   Baby,
   Heart,
   X,
-  UserCheck2
+  UserCheck2,
+  RefreshCw,
+  Filter,
+  Eye
 } from "lucide-react";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
 
@@ -124,6 +127,54 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   // Real-time additions from quick-exam modal go here
   const [localKunjungans, setLocalKunjungans] = useState<Kunjungan[]>([]);
   const kunjungans = [...localKunjungans, ...apiKunjungans];
+
+  // Popover State 3-Dots Menu
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Trend Chart Timeframe State (Bulanan vs Tahunan)
+  const [trendTimeframe, setTrendTimeframe] = useState<"bulanan" | "tahunan">("bulanan");
+
+  const monthlyTrendData = [
+    { label: "Jan", normal: 82, kurang: 18 },
+    { label: "Feb", normal: 85, kurang: 15 },
+    { label: "Mar", normal: 88, kurang: 12 },
+    { label: "Apr", normal: 78, kurang: 22 },
+    { label: "Mei", normal: 92, kurang: 8 },
+    { label: "Jun", normal: 87, kurang: 13 },
+    { label: "Jul", normal: 90, kurang: 10 },
+    { label: "Ags", normal: 93, kurang: 7 },
+    { label: "Sep", normal: 91, kurang: 9 },
+    { label: "Okt", normal: 94, kurang: 6 },
+    { label: "Nov", normal: 89, kurang: 11 },
+    { label: "Des", normal: 95, kurang: 5 },
+  ];
+
+  const yearlyTrendData = [
+    { label: "2022", normal: 74, kurang: 26 },
+    { label: "2023", normal: 79, kurang: 21 },
+    { label: "2024", normal: 84, kurang: 16 },
+    { label: "2025", normal: 88, kurang: 12 },
+    { label: "2026", normal: 93, kurang: 7 },
+  ];
+
+  const currentTrendData = trendTimeframe === "bulanan" ? monthlyTrendData : yearlyTrendData;
+
+  const toggleMenu = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === id ? null : id);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => setOpenMenuId(null);
+    window.addEventListener("click", handleClickOutside);
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   // Modal State
   const [isOpenModal, setIsOpenModal] = useState(false);
@@ -449,53 +500,63 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Tren Status Gizi Balita (Bar Chart) */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h3 className="font-bold text-base text-saas-dark">Tren Status Gizi Balita</h3>
-              <p className="text-xs text-saas-muted mt-0.5">Distribusi hasil pemeriksaan bulanan 2026</p>
+              <p className="text-xs text-saas-muted mt-0.5">
+                {trendTimeframe === "bulanan"
+                  ? "Distribusi hasil pemeriksaan bulanan tahun 2026"
+                  : "Perbandingan tren tahunan gizi balita (2022 - 2026)"}
+              </p>
             </div>
-            <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-1">
-              <button className="text-xs px-3 py-1.5 rounded-md font-bold bg-white text-saas-dark shadow-sm">
+            <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-1 border border-gray-100/60 self-start sm:self-auto">
+              <button
+                onClick={() => setTrendTimeframe("bulanan")}
+                className={`text-xs px-3.5 py-1.5 rounded-md font-bold transition-all ${
+                  trendTimeframe === "bulanan"
+                    ? "bg-white text-saas-primary shadow-sm"
+                    : "text-saas-muted hover:text-saas-dark"
+                }`}
+              >
                 Bulanan
               </button>
-              <button className="text-xs px-3 py-1.5 rounded-md font-bold text-saas-muted hover:text-saas-dark">
+              <button
+                onClick={() => setTrendTimeframe("tahunan")}
+                className={`text-xs px-3.5 py-1.5 rounded-md font-bold transition-all ${
+                  trendTimeframe === "tahunan"
+                    ? "bg-white text-saas-primary shadow-sm"
+                    : "text-saas-muted hover:text-saas-dark"
+                }`}
+              >
                 Tahunan
               </button>
             </div>
           </div>
 
           <div className="h-64 flex flex-col justify-between">
-            <div className="flex-1 flex items-end justify-between px-4 pb-2 border-b border-gray-100 relative">
+            <div className="flex-1 flex items-end justify-between px-2 sm:px-4 pb-2 border-b border-gray-100 relative overflow-x-auto">
               <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="w-full border-t border-dashed border-gray-100/80"></div>
                 ))}
               </div>
 
-              {[
-                { bln: "Jan", val: 82, val2: 12 },
-                { bln: "Feb", val: 85, val2: 10 },
-                { bln: "Mar", val: 90, val2: 8 },
-                { bln: "Apr", val: 78, val2: 15 },
-                { bln: "Mei", val: 95, val2: 3 },
-                { bln: "Jun", val: 88, val2: 9 },
-                { bln: "Jul", val: 92, val2: 6 },
-              ].map((data, index) => (
-                <div key={index} className="flex flex-col items-center gap-2 z-10 w-8 group">
+              {currentTrendData.map((data, index) => (
+                <div key={index} className="flex flex-col items-center gap-2 z-10 w-7 sm:w-10 group">
                   <div className="w-full flex justify-center gap-0.5 items-end h-48 relative">
                     <div className="absolute -top-10 bg-saas-dark text-white text-[10px] py-1 px-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none z-20">
-                      Normal: {data.val}% | Kurang: {data.val2}%
+                      {data.label} | Normal: {data.normal}% | Kurang: {data.kurang}%
                     </div>
                     <div
-                      style={{ height: `${data.val * 0.45}%` }}
-                      className="w-3 bg-saas-primary rounded-t-full transition-all duration-700 hover:opacity-85"
+                      style={{ height: `${data.normal * 0.45}%` }}
+                      className="w-2.5 sm:w-3.5 bg-saas-primary rounded-t-full transition-all duration-500 hover:opacity-85"
                     ></div>
                     <div
-                      style={{ height: `${data.val2 * 0.45}%` }}
-                      className="w-3 bg-trend-dangerText/80 rounded-t-full transition-all duration-700 hover:opacity-85"
+                      style={{ height: `${data.kurang * 0.45}%` }}
+                      className="w-2.5 sm:w-3.5 bg-trend-dangerText/80 rounded-t-full transition-all duration-500 hover:opacity-85"
                     ></div>
                   </div>
-                  <span className="text-[10px] text-saas-muted font-semibold">{data.bln}</span>
+                  <span className="text-[10px] text-saas-muted font-bold tracking-tight">{data.label}</span>
                 </div>
               ))}
             </div>
@@ -503,11 +564,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
             <div className="flex items-center gap-4 mt-4 px-2">
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-saas-primary"></span>
-                <span className="text-xs text-saas-muted font-medium">Balita Gizi Normal</span>
+                <span className="text-xs text-saas-muted font-medium">Balita Gizi Normal (%)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-trend-dangerText/80"></span>
-                <span className="text-xs text-saas-muted font-medium">Balita Gizi Kurang</span>
+                <span className="text-xs text-saas-muted font-medium">Balita Gizi Kurang / Perlu Perhatian (%)</span>
               </div>
             </div>
           </div>
@@ -520,9 +581,37 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Aktivitas Kunjungan</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat partisipasi kader & posyandu</p>
             </div>
-            <button className="text-saas-muted hover:text-saas-dark transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={(e) => toggleMenu("aktivitas-kunjungan", e)}
+                className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
+                title="Opsi Aktivitas Kunjungan"
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
+              {openMenuId === "aktivitas-kunjungan" && (
+                <div className="absolute right-0 top-8 z-30 w-52 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs">
+                  <button
+                    onClick={() => {
+                      fetchSummary();
+                      showToast("Data aktivitas kunjungan berhasil diperbarui");
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Refresh Data
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("Semua");
+                      showToast("Tampilan difilter ke Semua Kategori");
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
+                  >
+                    <Filter className="w-3.5 h-3.5" /> Tampilkan Semua Kategori
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col items-center justify-center">
@@ -612,6 +701,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                   <th className="pb-3">Keterangan</th>
                   <th className="pb-3 text-center">Status</th>
                   <th className="pb-3 text-right">Jam Periksa</th>
+                  <th className="pb-3 text-center w-12">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -638,11 +728,46 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         </span>
                       </td>
                       <td className="py-4 text-right text-saas-muted font-semibold">{item.waktu}</td>
+                      <td className="py-4 text-center relative">
+                        <button
+                          onClick={(e) => toggleMenu(`row-${item.id}`, e)}
+                          className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
+                          title="Aksi Kunjungan"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                        {openMenuId === `row-${item.id}` && (
+                          <div className="absolute right-0 top-10 z-30 w-48 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs text-left">
+                            <button
+                              onClick={() => {
+                                onNavigate(item.tipe === "Balita" ? "balita" : "lansia");
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all"
+                            >
+                              <ArrowUpRight className="w-3.5 h-3.5" /> Buka Data {item.tipe}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedPasien({
+                                  id: item.id,
+                                  nama: item.nama,
+                                  tipe: item.tipe as "Balita" | "Lansia",
+                                  detailInfo: item.detail,
+                                });
+                                setIsOpenModal(true);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Input Pemeriksaan
+                            </button>
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-xs text-saas-muted font-medium">
+                    <td colSpan={6} className="py-8 text-center text-xs text-saas-muted font-medium">
                       Tidak menemukan data kunjungan yang cocok
                     </td>
                   </tr>
@@ -659,9 +784,28 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Distribusi Kehadiran RT/RW</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat kehadiran per wilayah</p>
             </div>
-            <button className="text-saas-muted hover:text-saas-dark transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={(e) => toggleMenu("distribusi-rtrw", e)}
+                className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
+                title="Opsi Distribusi RT/RW"
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
+              {openMenuId === "distribusi-rtrw" && (
+                <div className="absolute right-0 top-8 z-30 w-52 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs">
+                  <button
+                    onClick={() => {
+                      fetchSummary();
+                      showToast("Statistik kehadiran wilayah diperbarui");
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Refresh Statistik Wilayah
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -784,8 +928,9 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                     <input
                       type="date"
                       value={examDate}
+                      onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                       onChange={(e) => setExamDate(e.target.value)}
-                      className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                      className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50 cursor-pointer"
                     />
                   </div>
 
@@ -795,11 +940,14 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Cth: 8.5"
                       value={examBB}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
                       onChange={(e) => {
-                        setExamBB(e.target.value);
-                        checkWarnings(e.target.value, examSistol);
+                        const val = e.target.value.replace(/-/g, "");
+                        setExamBB(val);
+                        checkWarnings(val, examSistol);
                       }}
                       className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
@@ -811,9 +959,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Cth: 72"
                       value={examTB}
-                      onChange={(e) => setExamTB(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                      onChange={(e) => setExamTB(e.target.value.replace(/-/g, ""))}
                       className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
                   </div>
@@ -846,9 +996,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <input
                           type="number"
                           step="0.1"
+                          min="0"
                           placeholder="Opsional, cth: 44"
                           value={examLK}
-                          onChange={(e) => setExamLK(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamLK(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -859,9 +1011,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <input
                           type="number"
                           step="0.1"
+                          min="0"
                           placeholder="Cth: 12.5"
                           value={examLiLA}
-                          onChange={(e) => setExamLiLA(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamLiLA(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -990,11 +1144,14 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Sistol (mmHg)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="TD atas, cth: 130"
                           value={examSistol}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
                           onChange={(e) => {
-                            setExamSistol(e.target.value);
-                            checkWarnings(examBB, e.target.value);
+                            const val = e.target.value.replace(/-/g, "");
+                            setExamSistol(val);
+                            checkWarnings(examBB, val);
                           }}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
@@ -1005,9 +1162,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Diastol (mmHg)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="TD bawah, cth: 85"
                           value={examDiastol}
-                          onChange={(e) => setExamDiastol(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamDiastol(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -1017,9 +1176,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">GDS (mg/dL)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="Cth: 120"
                           value={examGds}
-                          onChange={(e) => setExamGds(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamGds(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -1029,9 +1190,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Lingkar Perut (cm)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="Cth: 90"
                           value={examLp}
-                          onChange={(e) => setExamLp(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamLp(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -1043,9 +1206,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Kolesterol (mg/dL)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="cth: 180"
                           value={examCholesterol}
-                          onChange={(e) => setExamCholesterol(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamCholesterol(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -1056,9 +1221,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <input
                           type="number"
                           step="0.1"
+                          min="0"
                           placeholder="cth: 6.2"
                           value={examUricAcid}
-                          onChange={(e) => setExamUricAcid(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamUricAcid(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -1114,6 +1281,13 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               </form>
             )}
       </Modal>
+
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-saas-dark text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

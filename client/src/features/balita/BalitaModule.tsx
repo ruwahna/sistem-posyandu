@@ -155,8 +155,10 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
           // Map API shape to local shape (pemeriksaans → pemeriksaan)
           const mapped: Balita[] = res.data.map((b) => ({
             ...b,
+            tanggalLahir: typeof b.tanggalLahir === "string" ? b.tanggalLahir.split("T")[0] : new Date(b.tanggalLahir).toISOString().split("T")[0],
             pemeriksaan: (b.pemeriksaans ?? []).map((p) => ({
               ...p,
+              tanggalPeriksa: typeof p.tanggalPeriksa === "string" ? p.tanggalPeriksa.split("T")[0] : new Date(p.tanggalPeriksa).toISOString().split("T")[0],
               statusBBU: (p as unknown as Record<string, string>).statusBbU as PemeriksaanBalita["statusBBU"] ?? "Normal",
               statusTBU: (p as unknown as Record<string, string>).statusTbU as PemeriksaanBalita["statusTBU"] ?? "Normal",
               statusBBTB: (p as unknown as Record<string, string>).statusBbTb as PemeriksaanBalita["statusBBTB"] ?? "Normal",
@@ -231,7 +233,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   const openEditModal = (b: Balita) => {
     setEditNama(b.nama);
     setEditNik(b.nik || "");
-    setEditTglLahir(b.tanggalLahir);
+    setEditTglLahir(b.tanggalLahir ? (typeof b.tanggalLahir === "string" ? b.tanggalLahir.split("T")[0] : new Date(b.tanggalLahir).toISOString().split("T")[0]) : "");
     setEditJk(b.jenisKelamin);
     setEditNamaIbu(b.namaIbu);
     setEditAlamat(b.alamat);
@@ -650,8 +652,9 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     <input
                       type="date"
                       value={examDate}
+                      onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                       onChange={(e) => setExamDate(e.target.value)}
-                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 cursor-pointer"
                     />
                   </div>
 
@@ -661,11 +664,14 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Contoh: 8.5"
                       value={examBB}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
                       onChange={(e) => {
-                        setExamBB(e.target.value);
-                        handleExamInputCheck(e.target.value, examTB);
+                        const val = e.target.value.replace(/-/g, "");
+                        setExamBB(val);
+                        handleExamInputCheck(val, examTB);
                       }}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
@@ -677,11 +683,14 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Contoh: 72.4"
                       value={examTB}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
                       onChange={(e) => {
-                        setExamTB(e.target.value);
-                        handleExamInputCheck(examBB, e.target.value);
+                        const val = e.target.value.replace(/-/g, "");
+                        setExamTB(val);
+                        handleExamInputCheck(examBB, val);
                       }}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
@@ -695,9 +704,11 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Contoh: 44.5"
                       value={examLK}
-                      onChange={(e) => setExamLK(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                      onChange={(e) => setExamLK(e.target.value.replace(/-/g, ""))}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
                   </div>
@@ -708,9 +719,11 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Contoh: 12.5"
                       value={examLiLA}
-                      onChange={(e) => setExamLiLA(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                      onChange={(e) => setExamLiLA(e.target.value.replace(/-/g, ""))}
                       className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
                   </div>
@@ -989,8 +1002,9 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                 <input
                   type="date"
                   value={formTglLahir}
+                  onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                   onChange={(e) => setFormTglLahir(e.target.value)}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 cursor-pointer"
                 />
               </div>
 
@@ -1097,8 +1111,9 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                 type="date"
                 required
                 value={editTglLahir}
+                onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                 onChange={(e) => setEditTglLahir(e.target.value)}
-                className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary cursor-pointer"
               />
             </div>
             <div className="space-y-1.5">
