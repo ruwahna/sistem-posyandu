@@ -1,4 +1,4 @@
-import prisma from '../lib/prisma';
+import prisma from '../../shared/config/prisma';
 
 export interface AppNotification {
   id: string;
@@ -10,26 +10,20 @@ export interface AppNotification {
   category: 'balita' | 'lansia' | 'system';
 }
 
-// In-memory store for read notification IDs per Posyandu (or session)
 const readNotificationsMap = new Map<string, Set<string>>();
 
 export const notificationService = {
-  /**
-   * Generates real dynamic notifications based on active Posyandu health records
-   */
   async getNotifications(posyanduId: string): Promise<{
     notifications: AppNotification[];
     unreadCount: number;
   }> {
     const notifications: AppNotification[] = [];
 
-    // Fetch Posyandu details
     const posyandu = await prisma.posyandu.findUnique({
       where: { id: posyanduId },
       select: { nama: true },
     });
 
-    // 1. Check Balita Nutrition & Stunting Alerts (Status SK/K or SP/P or G)
     const alertBalita = await prisma.pemeriksaanBalita.findMany({
       where: {
         balita: { posyanduId },
@@ -72,7 +66,6 @@ export const notificationService = {
       });
     });
 
-    // 2. Check Lansia High Risk Alerts (Blood pressure >= 140 or Blood sugar >= 200)
     const alertLansia = await prisma.pemeriksaanLansia.findMany({
       where: {
         lansia: { posyanduId },
@@ -111,7 +104,6 @@ export const notificationService = {
       });
     });
 
-    // 3. Recent Examinations Logged (Last 3 examinations)
     const recentBalitaCheck = await prisma.pemeriksaanBalita.findMany({
       where: { balita: { posyanduId } },
       take: 2,
@@ -121,7 +113,6 @@ export const notificationService = {
 
     recentBalitaCheck.forEach((pem) => {
       const id = `balita-recent-${pem.id}`;
-      // Prevent duplicate if already added in alerts
       if (!notifications.some((n) => n.id === id || n.id === `balita-alert-${pem.id}`)) {
         notifications.push({
           id,
@@ -135,7 +126,6 @@ export const notificationService = {
       }
     });
 
-    // 4. Sample Test Notifications
     notifications.push({
       id: `demo-balita-${posyanduId}`,
       title: `Peringatan Gizi Balita: Anisa Rahma`,
@@ -156,7 +146,6 @@ export const notificationService = {
       category: 'lansia',
     });
 
-    // 5. System & Connectivity Info
     notifications.push({
       id: `sys-conn-${posyanduId}`,
       title: `Terhubung ke ${posyandu?.nama || 'Posyandu'}`,
@@ -167,10 +156,8 @@ export const notificationService = {
       category: 'system',
     });
 
-    // Sort by createdAt descending
     notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    // Check read status from read map
     const readSet = readNotificationsMap.get(posyanduId) || new Set<string>();
     let unreadCount = 0;
 
@@ -185,9 +172,6 @@ export const notificationService = {
     return { notifications, unreadCount };
   },
 
-  /**
-   * Marks all current notifications as read for a posyandu
-   */
   async markAllAsRead(posyanduId: string, notificationIds: string[]): Promise<void> {
     if (!readNotificationsMap.has(posyanduId)) {
       readNotificationsMap.set(posyanduId, new Set<string>());

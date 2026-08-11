@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getDashboardSummary } from '../controllers/dashboard.controller';
-import { authenticate } from '../middlewares/auth.middleware';
+import { getDashboardSummary } from './dashboard.controller';
+import { authenticate } from '../../shared/middlewares/auth.middleware';
 
 const router = Router({ mergeParams: true });
 

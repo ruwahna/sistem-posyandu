@@ -1,15 +1,12 @@
-import { Request, Response } from 'express';
-import { lansiaService, kelompokUmurLansia } from '../services';
+import { Request, Response, NextFunction } from 'express';
+import { lansiaService } from './lansia.service';
+import { kelompokUmurLansia } from './lansia.helper';
 
 // ─────────────────────────────────────────────────────────────
 // LANSIA CRUD
 // ─────────────────────────────────────────────────────────────
 
-/**
- * GET /api/posyandu/:posyanduId/lansia
- * FR-27: Daftar lansia dengan pencarian, filter kelompok umur, filter HT/DM
- */
-export const getAllLansia = async (req: Request, res: Response): Promise<void> => {
+export const getAllLansia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const { search, kelompokUmur, ht, dm } = req.query as {
@@ -25,15 +22,11 @@ export const getAllLansia = async (req: Request, res: Response): Promise<void> =
     const data = await lansiaService.findAll(posyanduId, search, kelompokUmur, filterHt, filterDm);
     res.json({ success: true, data });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * GET /api/posyandu/:posyanduId/lansia/:id
- * FR-28: Detail lansia + riwayat pemeriksaan
- */
-export const getLansiaById = async (req: Request, res: Response): Promise<void> => {
+export const getLansiaById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const id = req.params.id as string;
@@ -44,7 +37,6 @@ export const getLansiaById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // BR-05: Hitung usia otomatis
     const now = new Date();
     const usiaTahun = now.getFullYear() - lansia.tanggalLahir.getFullYear();
 
@@ -57,15 +49,11 @@ export const getLansiaById = async (req: Request, res: Response): Promise<void> 
       },
     });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * POST /api/posyandu/:posyanduId/lansia
- * FR-22, FR-23, FR-24, FR-25: Tambah data lansia baru
- */
-export const createLansia = async (req: Request, res: Response): Promise<void> => {
+export const createLansia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const {
@@ -89,15 +77,11 @@ export const createLansia = async (req: Request, res: Response): Promise<void> =
 
     res.status(201).json({ success: true, message: 'Data lansia berhasil ditambahkan', data });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * PATCH /api/posyandu/:posyanduId/lansia/:id
- * FR-26: Ubah data identitas lansia
- */
-export const updateLansia = async (req: Request, res: Response): Promise<void> => {
+export const updateLansia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const id = req.params.id as string;
@@ -114,15 +98,11 @@ export const updateLansia = async (req: Request, res: Response): Promise<void> =
       res.status(404).json({ success: false, message: err.message });
       return;
     }
-    throw err;
+    next(err);
   }
 };
 
-/**
- * DELETE /api/posyandu/:posyanduId/lansia/:id
- * FR-26: Hapus data lansia
- */
-export const deleteLansia = async (req: Request, res: Response): Promise<void> => {
+export const deleteLansia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const id = req.params.id as string;
@@ -133,7 +113,7 @@ export const deleteLansia = async (req: Request, res: Response): Promise<void> =
       res.status(404).json({ success: false, message: err.message });
       return;
     }
-    throw err;
+    next(err);
   }
 };
 
@@ -141,25 +121,17 @@ export const deleteLansia = async (req: Request, res: Response): Promise<void> =
 // PEMERIKSAAN LANSIA
 // ─────────────────────────────────────────────────────────────
 
-/**
- * GET /api/posyandu/:posyanduId/lansia/:lansiaId/pemeriksaan
- * FR-30: Riwayat pemeriksaan lansia terurut terbaru
- */
-export const getAllPemeriksaanLansia = async (req: Request, res: Response): Promise<void> => {
+export const getAllPemeriksaanLansia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const lansiaId = req.params.lansiaId as string;
     const data = await lansiaService.findAllPemeriksaan(lansiaId);
     res.json({ success: true, data });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * POST /api/posyandu/:posyanduId/lansia/:lansiaId/pemeriksaan
- * FR-29: Tambah entri pemeriksaan lansia
- */
-export const createPemeriksaanLansia = async (req: Request, res: Response): Promise<void> => {
+export const createPemeriksaanLansia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const lansiaId = req.params.lansiaId as string;
     const {
@@ -188,15 +160,11 @@ export const createPemeriksaanLansia = async (req: Request, res: Response): Prom
       res.status(404).json({ success: false, message: err.message });
       return;
     }
-    throw err;
+    next(err);
   }
 };
 
-/**
- * PATCH /api/posyandu/:posyanduId/lansia/:lansiaId/pemeriksaan/:id
- * FR-31: Edit entri pemeriksaan lansia
- */
-export const updatePemeriksaanLansia = async (req: Request, res: Response): Promise<void> => {
+export const updatePemeriksaanLansia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const id = req.params.id as string;
     const { tanggalPeriksa, ...rest } = req.body;
@@ -208,20 +176,16 @@ export const updatePemeriksaanLansia = async (req: Request, res: Response): Prom
 
     res.json({ success: true, message: 'Pemeriksaan lansia berhasil diperbarui', data });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * DELETE /api/posyandu/:posyanduId/lansia/:lansiaId/pemeriksaan/:id
- * FR-31: Hapus entri pemeriksaan lansia
- */
-export const deletePemeriksaanLansia = async (req: Request, res: Response): Promise<void> => {
+export const deletePemeriksaanLansia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const id = req.params.id as string;
     await lansiaService.deletePemeriksaan(id);
     res.json({ success: true, message: 'Pemeriksaan lansia berhasil dihapus' });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };

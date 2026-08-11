@@ -8,10 +8,10 @@ import {
   forgotPassword,
   verifyResetToken,
   resetPassword,
-} from '../controllers/auth.controller';
-import { authenticate } from '../middlewares/auth.middleware';
-import { validate } from '../middlewares/validate.middleware';
-import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from '../lib/schemas';
+} from './auth.controller';
+import { authenticate } from '../../shared/middlewares/auth.middleware';
+import { validate } from '../../shared/middlewares/validate.middleware';
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema';
 
 const router = Router();
 

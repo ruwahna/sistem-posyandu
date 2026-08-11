@@ -1,11 +1,7 @@
-import { Request, Response } from 'express';
-import { riwayatService } from '../services/riwayat.service';
+import { Request, Response, NextFunction } from 'express';
+import { riwayatService } from './riwayat.service';
 
-/**
- * GET /api/posyandu/:posyanduId/riwayat
- * Memuat riwayat pemeriksaan bulanan Balita & Lansia secara terpadu
- */
-export const getRiwayat = async (req: Request, res: Response): Promise<void> => {
+export const getRiwayat = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const { tipe, search, status, bulan, tahun } = req.query as {
@@ -26,15 +22,11 @@ export const getRiwayat = async (req: Request, res: Response): Promise<void> => 
 
     res.json({ success: true, data });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * GET /api/posyandu/:posyanduId/export
- * Export seluruh data riwayat atau sesuai filter ke format Excel (.xlsx)
- */
-export const exportRiwayatExcel = async (req: Request, res: Response): Promise<void> => {
+export const exportRiwayatExcel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const { tipe, search, status, bulan, tahun } = req.query as {
@@ -45,19 +37,16 @@ export const exportRiwayatExcel = async (req: Request, res: Response): Promise<v
       tahun?: string;
     };
 
-    // Validate input
     if (!posyanduId) {
       res.status(400).json({ success: false, message: 'posyanduId tidak boleh kosong' });
       return;
     }
 
-    // Validate bulan if provided
     if (bulan && (Number(bulan) < 1 || Number(bulan) > 12)) {
       res.status(400).json({ success: false, message: 'Bulan harus antara 1-12' });
       return;
     }
 
-    // Validate tahun if provided
     if (tahun && (Number(tahun) < 1900 || Number(tahun) > new Date().getFullYear())) {
       res.status(400).json({ success: false, message: `Tahun harus antara 1900-${new Date().getFullYear()}` });
       return;
@@ -82,21 +71,16 @@ export const exportRiwayatExcel = async (req: Request, res: Response): Promise<v
 
     await workbook.xlsx.write(res);
     res.end();
-  } catch (err) {
-    const error = err as Error;
-    if (error.message === 'Posyandu tidak ditemukan') {
-      res.status(404).json({ success: false, message: error.message });
+  } catch (err: any) {
+    if (err.message === 'Posyandu tidak ditemukan') {
+      res.status(404).json({ success: false, message: err.message });
     } else {
-      res.status(500).json({ success: false, message: 'Gagal generate Excel', error: error.message });
+      res.status(500).json({ success: false, message: 'Gagal generate Excel', error: err.message });
     }
   }
 };
 
-/**
- * GET /api/posyandu/:posyanduId/export/pdf
- * Export seluruh data riwayat atau sesuai filter ke format PDF
- */
-export const exportRiwayatPdf = async (req: Request, res: Response): Promise<void> => {
+export const exportRiwayatPdf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const { tipe, search, status, bulan, tahun } = req.query as {
@@ -107,55 +91,16 @@ export const exportRiwayatPdf = async (req: Request, res: Response): Promise<voi
       tahun?: string;
     };
 
-    const doc = await riwayatService.generatePdfExport(posyanduId, {
-      tipe,
-      search,
-      status,
-      bulan: bulan ? Number(bulan) : undefined,
-      tahun: tahun ? Number(tahun) : undefined,
-    });
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=Laporan_Posyandu_${new Date().toISOString().slice(0, 10)}.pdf`
-    );
-
-    doc.pipe(res);
-    doc.end();
-  } catch (err) {
-    throw err;
-  }
-};
-
-/**
- * GET /api/posyandu/:posyanduId/export-pdf
- * Export seluruh data riwayat atau sesuai filter ke format PDF
- */
-export const exportRiwayatPDF = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const posyanduId = req.params.posyanduId as string;
-    const { tipe, search, status, bulan, tahun } = req.query as {
-      tipe?: 'semua' | 'Balita' | 'Lansia';
-      search?: string;
-      status?: 'semua' | 'success' | 'warning';
-      bulan?: string;
-      tahun?: string;
-    };
-
-    // Validate input
     if (!posyanduId) {
       res.status(400).json({ success: false, message: 'posyanduId tidak boleh kosong' });
       return;
     }
 
-    // Validate bulan if provided
     if (bulan && (Number(bulan) < 1 || Number(bulan) > 12)) {
       res.status(400).json({ success: false, message: 'Bulan harus antara 1-12' });
       return;
     }
 
-    // Validate tahun if provided
     if (tahun && (Number(tahun) < 1900 || Number(tahun) > new Date().getFullYear())) {
       res.status(400).json({ success: false, message: `Tahun harus antara 1900-${new Date().getFullYear()}` });
       return;
@@ -177,12 +122,11 @@ export const exportRiwayatPDF = async (req: Request, res: Response): Promise<voi
 
     doc.pipe(res);
     doc.end();
-  } catch (err) {
-    const error = err as Error;
-    if (error.message === 'Posyandu tidak ditemukan') {
-      res.status(404).json({ success: false, message: error.message });
+  } catch (err: any) {
+    if (err.message === 'Posyandu tidak ditemukan') {
+      res.status(404).json({ success: false, message: err.message });
     } else {
-      res.status(500).json({ success: false, message: 'Gagal generate PDF', error: error.message });
+      res.status(500).json({ success: false, message: 'Gagal generate PDF', error: err.message });
     }
   }
 };

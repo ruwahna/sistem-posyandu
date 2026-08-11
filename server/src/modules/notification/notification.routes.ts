@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getNotifications, markNotificationsAsRead } from '../controllers/notification.controller';
-import { authenticate } from '../middlewares/auth.middleware';
+import { getNotifications, markNotificationsAsRead } from './notification.controller';
+import { authenticate } from '../../shared/middlewares/auth.middleware';
 
 const router = Router({ mergeParams: true });
 

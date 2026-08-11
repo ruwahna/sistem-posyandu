@@ -9,17 +9,16 @@ import {
   createPemeriksaanBalita,
   updatePemeriksaanBalita,
   deletePemeriksaanBalita,
-} from '../controllers/balita.controller';
-import { authenticate, authorize } from '../middlewares/auth.middleware';
-import { validate } from '../middlewares/validate.middleware';
+} from './balita.controller';
+import { authenticate, authorize } from '../../shared/middlewares/auth.middleware';
+import { validate } from '../../shared/middlewares/validate.middleware';
 import {
   createBalitaSchema,
   updateBalitaSchema,
   createPemeriksaanBalitaSchema,
   updatePemeriksaanBalitaSchema,
-} from '../lib/schemas';
+} from './balita.schema';
 
-// mergeParams: true agar bisa akses :posyanduId dari parent router
 const router = Router({ mergeParams: true });
 
 // ── BALITA ─────────────────────────────────────────────────

@@ -9,15 +9,15 @@ import {
   createPemeriksaanLansia,
   updatePemeriksaanLansia,
   deletePemeriksaanLansia,
-} from '../controllers/lansia.controller';
-import { authenticate, authorize } from '../middlewares/auth.middleware';
-import { validate } from '../middlewares/validate.middleware';
+} from './lansia.controller';
+import { authenticate, authorize } from '../../shared/middlewares/auth.middleware';
+import { validate } from '../../shared/middlewares/validate.middleware';
 import {
   createLansiaSchema,
   updateLansiaSchema,
   createPemeriksaanLansiaSchema,
   updatePemeriksaanLansiaSchema,
-} from '../lib/schemas';
+} from './lansia.schema';
 
 const router = Router({ mergeParams: true });
 

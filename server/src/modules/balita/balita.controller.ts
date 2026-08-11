@@ -1,15 +1,12 @@
-import { Request, Response } from 'express';
-import { balitaService, hitungUsiaBulan, kelompokUsiaBulan } from '../services';
+import { Request, Response, NextFunction } from 'express';
+import { balitaService } from './balita.service';
+import { hitungUsiaBulan, kelompokUsiaBulan } from './balita.helper';
 
 // ─────────────────────────────────────────────────────────────
 // BALITA CRUD
 // ─────────────────────────────────────────────────────────────
 
-/**
- * GET /api/posyandu/:posyanduId/balita
- * FR-14: Daftar balita dengan pencarian nama & filter kelompok usia
- */
-export const getAllBalita = async (req: Request, res: Response): Promise<void> => {
+export const getAllBalita = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const { search, kelompokUsia } = req.query as { search?: string; kelompokUsia?: string };
@@ -17,15 +14,11 @@ export const getAllBalita = async (req: Request, res: Response): Promise<void> =
     const data = await balitaService.findAll(posyanduId, search, kelompokUsia);
     res.json({ success: true, data });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * GET /api/posyandu/:posyanduId/balita/:id
- * FR-15: Detail balita + riwayat pemeriksaan
- */
-export const getBalitaById = async (req: Request, res: Response): Promise<void> => {
+export const getBalitaById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const id = req.params.id as string;
@@ -36,7 +29,6 @@ export const getBalitaById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // FR-16: Hitung usia otomatis (BR-05)
     const usiaBulan = hitungUsiaBulan(balita.tanggalLahir);
     res.json({
       success: true,
@@ -47,15 +39,11 @@ export const getBalitaById = async (req: Request, res: Response): Promise<void> 
       },
     });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * POST /api/posyandu/:posyanduId/balita
- * FR-11: Tambah data balita baru
- */
-export const createBalita = async (req: Request, res: Response): Promise<void> => {
+export const createBalita = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const { nama, nik, tanggalLahir, jenisKelamin, namaIbu, alamat } = req.body;
@@ -71,15 +59,11 @@ export const createBalita = async (req: Request, res: Response): Promise<void> =
 
     res.status(201).json({ success: true, message: 'Data balita berhasil ditambahkan', data });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * PATCH /api/posyandu/:posyanduId/balita/:id
- * FR-12: Ubah data identitas balita
- */
-export const updateBalita = async (req: Request, res: Response): Promise<void> => {
+export const updateBalita = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const id = req.params.id as string;
@@ -92,15 +76,11 @@ export const updateBalita = async (req: Request, res: Response): Promise<void> =
 
     res.json({ success: true, message: 'Data balita berhasil diperbarui', data });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * DELETE /api/posyandu/:posyanduId/balita/:id
- * FR-13: Hapus data balita
- */
-export const deleteBalita = async (req: Request, res: Response): Promise<void> => {
+export const deleteBalita = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
     const id = req.params.id as string;
@@ -111,7 +91,7 @@ export const deleteBalita = async (req: Request, res: Response): Promise<void> =
       res.status(404).json({ success: false, message: err.message });
       return;
     }
-    throw err;
+    next(err);
   }
 };
 
@@ -119,25 +99,17 @@ export const deleteBalita = async (req: Request, res: Response): Promise<void> =
 // PEMERIKSAAN BALITA
 // ─────────────────────────────────────────────────────────────
 
-/**
- * GET /api/posyandu/:posyanduId/balita/:balitaId/pemeriksaan
- * FR-20: Riwayat pemeriksaan balita terurut terbaru
- */
-export const getAllPemeriksaanBalita = async (req: Request, res: Response): Promise<void> => {
+export const getAllPemeriksaanBalita = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const balitaId = req.params.balitaId as string;
     const data = await balitaService.findAllPemeriksaan(balitaId);
     res.json({ success: true, data });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * POST /api/posyandu/:posyanduId/balita/:balitaId/pemeriksaan
- * FR-17, FR-18, FR-19: Tambah entri pemeriksaan balita
- */
-export const createPemeriksaanBalita = async (req: Request, res: Response): Promise<void> => {
+export const createPemeriksaanBalita = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const balitaId = req.params.balitaId as string;
     const {
@@ -178,15 +150,11 @@ export const createPemeriksaanBalita = async (req: Request, res: Response): Prom
       res.status(404).json({ success: false, message: err.message });
       return;
     }
-    throw err;
+    next(err);
   }
 };
 
-/**
- * PATCH /api/posyandu/:posyanduId/balita/:balitaId/pemeriksaan/:id
- * FR-21: Edit entri pemeriksaan balita
- */
-export const updatePemeriksaanBalita = async (req: Request, res: Response): Promise<void> => {
+export const updatePemeriksaanBalita = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const id = req.params.id as string;
     const { tanggalPeriksa, ...rest } = req.body;
@@ -198,20 +166,16 @@ export const updatePemeriksaanBalita = async (req: Request, res: Response): Prom
 
     res.json({ success: true, message: 'Pemeriksaan balita berhasil diperbarui', data });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
 
-/**
- * DELETE /api/posyandu/:posyanduId/balita/:balitaId/pemeriksaan/:id
- * FR-21: Hapus entri pemeriksaan balita
- */
-export const deletePemeriksaanBalita = async (req: Request, res: Response): Promise<void> => {
+export const deletePemeriksaanBalita = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const id = req.params.id as string;
     await balitaService.deletePemeriksaan(id);
     res.json({ success: true, message: 'Pemeriksaan balita berhasil dihapus' });
   } catch (err) {
-    throw err;
+    next(err);
   }
 };
