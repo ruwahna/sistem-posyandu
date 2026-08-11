@@ -10,7 +10,8 @@ import {
   ChevronRight,
   UserPlus,
   SlidersHorizontal,
-  UserCheck2
+  UserCheck2,
+  Loader2
 } from "lucide-react";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
 import { balitaApi, lansiaApi, Balita, Lansia } from "../../lib/api";
@@ -216,7 +217,31 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Helper mapping status enum for API
+  function mapStatusBbU(s: string): 'SK' | 'K' | 'N' | 'L' {
+    if (s === 'Sangat Kurang' || s === 'SK') return 'SK';
+    if (s === 'Kurang' || s === 'K') return 'K';
+    if (s === 'Lebih' || s === 'L' || s === 'Risiko Lebih') return 'L';
+    return 'N';
+  }
+
+  function mapStatusTbU(s: string): 'SP' | 'P' | 'N' | 'T' {
+    if (s === 'Sangat Pendek' || s === 'SP') return 'SP';
+    if (s === 'Pendek' || s === 'P') return 'P';
+    if (s === 'Tinggi' || s === 'T') return 'T';
+    return 'N';
+  }
+
+  function mapStatusBbTb(s: string): 'SK' | 'K' | 'N' | 'G' {
+    if (s === 'Sangat Kurus' || s === 'SK') return 'SK';
+    if (s === 'Kurus' || s === 'K') return 'K';
+    if (s === 'Gemuk' || s === 'G' || s === 'Obesitas') return 'G';
+    return 'N';
+  }
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
 
@@ -230,69 +255,112 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
       return;
     }
 
-    let summaryText = `BB: ${bb}kg, TB: ${tb}cm`;
-    let statusText = "Selesai (Normal)";
+    setIsSubmitting(true);
+    try {
+      let summaryText = `BB: ${bb}kg, TB: ${tb}cm`;
+      let statusText = "Selesai (Normal)";
 
-    if (selectedPasien.tipe === "Balita") {
-      const lk = examLK ? parseFloat(examLK) : undefined;
-      const lila = examLiLA ? parseFloat(examLiLA) : undefined;
-      summaryText += `${lk ? `, LK: ${lk}cm` : ""}${lila ? `, LiLA: ${lila}cm` : ""}${examVitA ? ", Vit A" : ""}${examAsi ? ", ASI Eksklusif" : ""}${examCacing ? ", Obat Cacing" : ""}${examImunisasi ? `, Imunisasi: ${examImunisasi}` : ""}`;
-      statusText = `Selesai (${examBBU})`;
-    } else {
-      const sis = parseInt(examSistol);
-      const dia = parseInt(examDiastol);
-      const gds = parseInt(examGds);
-      const lp = parseInt(examLp);
-      const kol = examCholesterol ? parseInt(examCholesterol) : undefined;
-      const urat = examUricAcid ? parseFloat(examUricAcid) : undefined;
+      if (selectedPasien.tipe === "Balita") {
+        const lk = examLK ? parseFloat(examLK) : undefined;
+        const lila = examLiLA ? parseFloat(examLiLA) : undefined;
+        const usiaBulan = calculateAgeInMonths(selectedPasien.tanggalLahir || "2025-01-01", examDate);
 
-      if (isNaN(sis) || isNaN(dia) || isNaN(gds) || isNaN(lp)) {
-        setFormError("Silakan isi data Tekanan Darah, GDS, dan Lingkar Perut lansia secara lengkap.");
-        return;
+        await balitaApi.createPemeriksaan(posyanduId, selectedPasien.id, {
+          tanggalPeriksa: examDate,
+          usiaBulan,
+          beratBadan: bb,
+          tinggiBadan: tb,
+          lingkarKepala: lk,
+          lingkarLengan: lila,
+          statusBbU: mapStatusBbU(examBBU),
+          statusTbU: mapStatusTbU(examTBU),
+          statusBbTb: mapStatusBbTb(examBBTB),
+          statusKms: examKms || "N",
+          vitaminA: examVitA,
+          asiEksklusif: examAsi,
+          obatCacing: examCacing,
+          statusImunisasi: examImunisasi || undefined,
+        } as any);
+
+        summaryText += `${lk ? `, LK: ${lk}cm` : ""}${lila ? `, LiLA: ${lila}cm` : ""}${examVitA ? ", Vit A" : ""}${examAsi ? ", ASI Eksklusif" : ""}${examCacing ? ", Obat Cacing" : ""}${examImunisasi ? `, Imunisasi: ${examImunisasi}` : ""}`;
+        statusText = `Selesai (${examBBU})`;
+      } else {
+        const sis = parseInt(examSistol);
+        const dia = parseInt(examDiastol);
+        const gds = parseInt(examGds);
+        const lp = parseInt(examLp);
+        const kol = examCholesterol ? parseInt(examCholesterol) : undefined;
+        const urat = examUricAcid ? parseFloat(examUricAcid) : undefined;
+
+        if (isNaN(sis) || isNaN(dia) || isNaN(gds) || isNaN(lp)) {
+          setFormError("Silakan isi data Tekanan Darah, GDS, dan Lingkar Perut lansia secara lengkap.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        await lansiaApi.createPemeriksaan(posyanduId, selectedPasien.id, {
+          tanggalPeriksa: examDate,
+          beratBadan: bb,
+          tinggiBadan: tb,
+          tekananDarahSistol: sis,
+          tekananDarahDiastol: dia,
+          gulaDarahSewaktu: gds,
+          lingkarPerut: lp,
+          kolesterol: kol,
+          asamUrat: urat,
+          keluhan: examKeluhan || undefined,
+          tindakan: examTindakan || undefined,
+        } as any);
+
+        summaryText += `, TD: ${sis}/${dia}, GDS: ${gds}, LP: ${lp}cm${kol ? `, Kolesterol: ${kol}` : ""}${urat ? `, Asam Urat: ${urat}` : ""}`;
+        statusText = sis >= 140 || gds >= 200 || (kol && kol >= 200) ? "Selesai (Rawan)" : "Selesai (Normal)";
       }
-      summaryText += `, TD: ${sis}/${dia}, GDS: ${gds}, LP: ${lp}cm${kol ? `, Kolesterol: ${kol}` : ""}${urat ? `, Asam Urat: ${urat}` : ""}`;
-      statusText = sis >= 140 || gds >= 200 || (kol && kol >= 200) ? "Selesai (Rawan)" : "Selesai (Normal)";
+
+      const timeNow = new Date();
+      const timeStr = `${String(timeNow.getHours()).padStart(2, "0")}:${String(timeNow.getMinutes()).padStart(2, "0")} WIB`;
+
+      const newLog: SessionLog = {
+        id: `s-${Date.now()}`,
+        nama: selectedPasien.nama,
+        tipe: selectedPasien.tipe,
+        waktu: timeStr,
+        summary: summaryText,
+        status: statusText,
+      };
+
+      setSessionLogs([newLog, ...sessionLogs]);
+      setSuccessToast(`Pemeriksaan bulanan untuk ${selectedPasien.nama} berhasil disimpan ke database.`);
+
+      setExamBB("");
+      setExamTB("");
+      setExamLK("");
+      setExamSistol("");
+      setExamDiastol("");
+      setExamGds("");
+      setExamLp("");
+      setExamLiLA("");
+      setExamCholesterol("");
+      setExamUricAcid("");
+      setExamKeluhan("");
+      setExamTindakan("");
+      setExamKms("N");
+      setExamAsi(false);
+      setExamCacing(false);
+      setExamImunisasi("");
+      setExamBBU("Normal");
+      setExamTBU("Normal");
+      setExamBBTB("Normal");
+      setExamVitA(false);
+      setSelectedPasien(null);
+      setFormWarning("");
+
+      setTimeout(() => setSuccessToast(""), 4000);
+    } catch (err: any) {
+      console.error("Gagal menyimpan data pemeriksaan ke API:", err);
+      setFormError(err.message || "Gagal menyimpan data pemeriksaan ke database.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const timeNow = new Date();
-    const timeStr = `${String(timeNow.getHours()).padStart(2, "0")}:${String(timeNow.getMinutes()).padStart(2, "0")} WIB`;
-
-    const newLog: SessionLog = {
-      id: `s-${Date.now()}`,
-      nama: selectedPasien.nama,
-      tipe: selectedPasien.tipe,
-      waktu: timeStr,
-      summary: summaryText,
-      status: statusText,
-    };
-
-    setSessionLogs([newLog, ...sessionLogs]);
-    setSuccessToast(`Pemeriksaan bulanan untuk ${selectedPasien.nama} berhasil disimpan.`);
-
-    setExamBB("");
-    setExamTB("");
-    setExamLK("");
-    setExamSistol("");
-    setExamDiastol("");
-    setExamGds("");
-    setExamLp("");
-    setExamLiLA("");
-    setExamCholesterol("");
-    setExamUricAcid("");
-    setExamKeluhan("");
-    setExamTindakan("");
-    setExamKms("N");
-    setExamAsi(false);
-    setExamCacing(false);
-    setExamImunisasi("");
-    setExamBBU("Normal");
-    setExamTBU("Normal");
-    setExamBBTB("Normal");
-    setExamVitA(false);
-    setSelectedPasien(null);
-    setFormWarning("");
-
-    setTimeout(() => setSuccessToast(""), 4000);
   };
 
   // Submit Handler (Register Balita)
@@ -595,8 +663,9 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                       <input
                         type="date"
                         value={examDate}
+                        onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                         onChange={(e) => setExamDate(e.target.value)}
-                        className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                        className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 cursor-pointer"
                       />
                     </div>
 
@@ -605,11 +674,14 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                       <input
                         type="number"
                         step="0.1"
+                        min="0"
                         placeholder="Contoh: 9.5"
                         value={examBB}
+                        onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
                         onChange={(e) => {
-                          setExamBB(e.target.value);
-                          checkWarnings(e.target.value, examSistol, examGds);
+                          const val = e.target.value.replace(/-/g, "");
+                          setExamBB(val);
+                          checkWarnings(val, examSistol, examGds);
                         }}
                         className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                       />
@@ -620,9 +692,11 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                       <input
                         type="number"
                         step="0.1"
+                        min="0"
                         placeholder="Contoh: 74.2"
                         value={examTB}
-                        onChange={(e) => setExamTB(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                        onChange={(e) => setExamTB(e.target.value.replace(/-/g, ""))}
                         className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                       />
                     </div>
@@ -652,9 +726,11 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <input
                             type="number"
                             step="0.1"
+                            min="0"
                             placeholder="Cth: 45"
                             value={examLK}
-                            onChange={(e) => setExamLK(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                            onChange={(e) => setExamLK(e.target.value.replace(/-/g, ""))}
                             className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                           />
                         </div>
@@ -664,9 +740,11 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <input
                             type="number"
                             step="0.1"
+                            min="0"
                             placeholder="Cth: 12.5"
                             value={examLiLA}
-                            onChange={(e) => setExamLiLA(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                            onChange={(e) => setExamLiLA(e.target.value.replace(/-/g, ""))}
                             className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                           />
                         </div>
@@ -789,11 +867,14 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <label className="text-xs font-bold text-saas-muted">Sistol (mmHg)</label>
                           <input
                             type="number"
+                            min="0"
                             placeholder="cth: 120"
                             value={examSistol}
+                            onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
                             onChange={(e) => {
-                              setExamSistol(e.target.value);
-                              checkWarnings(examBB, e.target.value, examGds);
+                              const val = e.target.value.replace(/-/g, "");
+                              setExamSistol(val);
+                              checkWarnings(examBB, val, examGds);
                             }}
                             className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                           />
@@ -803,9 +884,11 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <label className="text-xs font-bold text-saas-muted">Diastol (mmHg)</label>
                           <input
                             type="number"
+                            min="0"
                             placeholder="cth: 80"
                             value={examDiastol}
-                            onChange={(e) => setExamDiastol(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                            onChange={(e) => setExamDiastol(e.target.value.replace(/-/g, ""))}
                             className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                           />
                         </div>
@@ -814,11 +897,14 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <label className="text-xs font-bold text-saas-muted">GDS (mg/dL)</label>
                           <input
                             type="number"
+                            min="0"
                             placeholder="cth: 120"
                             value={examGds}
+                            onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
                             onChange={(e) => {
-                              setExamGds(e.target.value);
-                              checkWarnings(examBB, examSistol, e.target.value);
+                              const val = e.target.value.replace(/-/g, "");
+                              setExamGds(val);
+                              checkWarnings(examBB, examSistol, val);
                             }}
                             className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                           />
@@ -828,9 +914,11 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <label className="text-xs font-bold text-saas-muted">Lingkar Perut (cm)</label>
                           <input
                             type="number"
+                            min="0"
                             placeholder="cth: 90"
                             value={examLp}
-                            onChange={(e) => setExamLp(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                            onChange={(e) => setExamLp(e.target.value.replace(/-/g, ""))}
                             className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                           />
                         </div>
@@ -841,9 +929,11 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <label className="text-xs font-bold text-saas-muted">Kolesterol (mg/dL)</label>
                           <input
                             type="number"
+                            min="0"
                             placeholder="cth: 180"
                             value={examCholesterol}
-                            onChange={(e) => setExamCholesterol(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                            onChange={(e) => setExamCholesterol(e.target.value.replace(/-/g, ""))}
                             className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                           />
                         </div>
@@ -853,9 +943,11 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <input
                             type="number"
                             step="0.1"
+                            min="0"
                             placeholder="cth: 6.2"
                             value={examUricAcid}
-                            onChange={(e) => setExamUricAcid(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                            onChange={(e) => setExamUricAcid(e.target.value.replace(/-/g, ""))}
                             className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                           />
                         </div>
@@ -890,9 +982,15 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                   <div className="flex justify-end pt-4 border-t border-gray-50">
                     <button
                       type="submit"
-                      className="px-6 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-all flex items-center gap-1.5"
+                      disabled={isSubmitting}
+                      className="px-6 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-all flex items-center gap-1.5 disabled:opacity-50"
                     >
-                      <Plus className="w-4 h-4" /> Simpan Pemeriksaan
+                      {isSubmitting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4" />
+                      )}
+                      {isSubmitting ? "Menyimpan..." : "Simpan Pemeriksaan"}
                     </button>
                   </div>
                 </form>
@@ -995,8 +1093,9 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                 <input
                   type="date"
                   value={bTglLahir}
+                  onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                   onChange={(e) => setBTglLahir(e.target.value)}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 cursor-pointer"
                 />
               </div>
 
@@ -1133,8 +1232,9 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                 <input
                   type="date"
                   value={lTglLahir}
+                  onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                   onChange={(e) => setLTglLahir(e.target.value)}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 cursor-pointer"
                 />
               </div>
 
