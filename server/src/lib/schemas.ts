@@ -89,15 +89,16 @@ export const createPemeriksaanBalitaSchema = z.object({
   tinggiBadan: z.number().positive('Tinggi badan harus angka positif'), // BR-03
   lingkarKepala: z.number().positive('Lingkar kepala harus angka positif').optional().nullable(),
   lingkarLengan: z.number().positive('Lingkar lengan harus angka positif').optional().nullable(),
-  statusBbU: statusBbUEnum,
-  statusTbU: statusTbUEnum,
-  statusBbTb: statusBbTbEnum,
+  statusBbU: statusBbUEnum.optional(),
+  statusTbU: statusTbUEnum.optional(),
+  statusBbTb: statusBbTbEnum.optional(),
   statusKms: z.string().optional().nullable(),
   vitaminA: z.boolean(),
   asiEksklusif: z.boolean().optional().nullable(),
   obatCacing: z.boolean().optional().nullable(),
   statusImunisasi: z.string().optional().nullable(),
-});
+  usiaBulan: z.number().optional(), // Frontend mengirim tapi backend ignore (hitung sendiri)
+}).strict(false); // Allow extra fields dari frontend
 
 export const updatePemeriksaanBalitaSchema = createPemeriksaanBalitaSchema.partial();
 

@@ -139,8 +139,13 @@ export const riwayatService = {
   },
 
   async generateExcelExport(posyanduId: string, filter: FilterRiwayat): Promise<ExcelJS.Workbook> {
-    const data = await this.getRiwayat(posyanduId, filter);
+    // Validate posyandu exists
     const posyandu = await prisma.posyandu.findUnique({ where: { id: posyanduId } });
+    if (!posyandu) {
+      throw new Error('Posyandu tidak ditemukan');
+    }
+
+    const data = await this.getRiwayat(posyanduId, filter);
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Sistem Posyandu';
@@ -224,8 +229,13 @@ export const riwayatService = {
   },
 
   async generatePdfExport(posyanduId: string, filter: FilterRiwayat): Promise<any> {
-    const data = await this.getRiwayat(posyanduId, filter);
+    // Validate posyandu exists
     const posyandu = await prisma.posyandu.findUnique({ where: { id: posyanduId } });
+    if (!posyandu) {
+      throw new Error('Posyandu tidak ditemukan');
+    }
+
+    const data = await this.getRiwayat(posyanduId, filter);
 
     const doc = new PDFDocument({ margin: 50, bufferPages: true });
 

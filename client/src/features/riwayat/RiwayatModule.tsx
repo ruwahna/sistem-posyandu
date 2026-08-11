@@ -73,6 +73,15 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Listen for pemeriksaanSaved event from Balita/Lansia modules
+  useEffect(() => {
+    const handlePemeriksaanSaved = () => {
+      fetchRiwayat();
+    };
+    window.addEventListener("pemeriksaanSaved", handlePemeriksaanSaved);
+    return () => window.removeEventListener("pemeriksaanSaved", handlePemeriksaanSaved);
+  }, []);
+
   // Handler Export Excel
   const handleExport = async () => {
     try {
