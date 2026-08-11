@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../contexts/AuthContext";
 import { FontSizeProvider } from "../contexts/FontSizeContext";
+import HelmetClientProvider from "../components/HelmetClientProvider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -11,7 +12,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Sistem Informasi Posyandu",
+  title: "PosyanduKita — Sistem Informasi Posyandu",
   description: "Digitalisasi Pencatatan Tumbuh Kembang Anak & Pelayanan Lansia Mandiri",
 };
 
@@ -23,9 +24,11 @@ export default function RootLayout({
   return (
     <html lang="id" className={`${plusJakartaSans.variable} font-sans h-full antialiased`}>
       <body className="min-h-full bg-canvas text-saas-dark flex flex-col">
-        <FontSizeProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </FontSizeProvider>
+        <HelmetClientProvider>
+          <FontSizeProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </FontSizeProvider>
+        </HelmetClientProvider>
       </body>
     </html>
   );

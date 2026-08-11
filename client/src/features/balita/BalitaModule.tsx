@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Modal from "../../components/Modal";
+import PageHelmet from "../../components/PageHelmet";
 import {
   ArrowLeft,
   Plus,
@@ -411,6 +412,10 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
 
   return (
     <div className="space-y-6">
+      <PageHelmet
+        title={activeBalita ? `Balita: ${activeBalita.nama}` : "Manajemen Data Balita"}
+        description="Pengelolaan data identitas, pengukuran fisik, dan grafik tumbuh kembang anak/balita."
+      />
       {/* API Error Banner */}
       {apiError && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">

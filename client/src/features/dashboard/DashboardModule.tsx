@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { dashboardApi, DashboardSummary, balitaApi, lansiaApi } from "../../lib/api";
 import Modal from "../../components/Modal";
+import PageHelmet from "../../components/PageHelmet";
 import {
   ArrowUpRight,
   SlidersHorizontal,
@@ -314,6 +315,10 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
 
   return (
     <div className="space-y-8">
+      <PageHelmet
+        title="Dashboard Overview"
+        description="Ringkasan statistik data balita, lansia, dan grafik status gizi Posyandu."
+      />
       {/* Toast Success Alert */}
       {toastSuccess && (
         <div className="fixed bottom-6 right-6 z-50 p-4 bg-green-50 text-trend-successText border border-green-150 rounded-card shadow-lg flex items-center gap-2.5">

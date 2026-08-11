@@ -16,6 +16,7 @@ import {
   LineChart as LineChartIcon
 } from "lucide-react";
 import { riwayatApi, ItemRiwayat } from "@/lib/api";
+import PageHelmet from "@/components/PageHelmet";
 import {
   ResponsiveContainer,
   LineChart,
@@ -118,6 +119,10 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
 
   return (
     <div className="space-y-6">
+      <PageHelmet
+        title="Riwayat & Laporan"
+        description="Laporan riwayat pemeriksaan bulanan terpadu dengan fitur cetak Excel dan PDF."
+      />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

@@ -17,6 +17,7 @@ import { balitaApi, lansiaApi, Balita, Lansia } from "../../lib/api";
 
 // Reusable Modal Component
 import Modal from "../../components/Modal";
+import PageHelmet from "../../components/PageHelmet";
 
 // Tipe Data Pasien
 interface Pasien {
@@ -419,6 +420,10 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
 
   return (
     <div className="space-y-6">
+      <PageHelmet
+        title="Pelayanan Posyandu"
+        description="Pencatatan cepat pelayanan dan pemeriksaan fisik balita & lansia PosyanduKita."
+      />
       {/* Success Toast */}
       {successToast && (
         <div className="fixed bottom-6 right-6 z-50 p-4 bg-green-50 text-trend-successText border border-green-150 rounded-card shadow-lg flex items-center gap-2.5">

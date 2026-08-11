@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useFontSize, FontSizeLevel } from "../../contexts/FontSizeContext";
 import { useAuth } from "../../contexts/AuthContext";
+import PageHelmet from "../../components/PageHelmet";
 import { authApi, posyanduApi } from "../../lib/api";
 
 // ─── Types ────────────────────────────────────────────────
@@ -802,6 +803,10 @@ export default function PengaturanModule() {
 
   return (
     <div className="space-y-4">
+      <PageHelmet
+        title="Pengaturan Sistem"
+        description="Konfigurasi akun profil kader, ubah kata sandi, dan preferensi tampilan."
+      />
       <div>
         <h2 className="text-2xl font-bold text-saas-dark tracking-tight">Pengaturan</h2>
         <p className="text-sm text-saas-muted mt-0.5">Kelola preferensi, profil, dan konfigurasi sistem posyandu Anda.</p>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Modal from "../../components/Modal";
+import PageHelmet from "../../components/PageHelmet";
 import { TableSkeleton, DetailViewSkeleton } from "../../components/Skeleton";
 import { lansiaApi } from "../../lib/api";
 import {
@@ -437,6 +438,10 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
 
   return (
     <div className="space-y-6">
+      <PageHelmet
+        title={activeLansia ? `Lansia: ${activeLansia.nama}` : "Manajemen Data Lansia"}
+        description="Pengelolaan data lansia, riwayat penyakit Hipertensi/Diabetes, dan tingkat kemandirian."
+      />
       {/* ========================================================================= */}
       {/* 1. VIEW: LIST LANSIA */}
       {/* ========================================================================= */}

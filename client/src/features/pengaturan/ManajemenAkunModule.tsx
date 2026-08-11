@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { kaderApi, KaderMember } from "../../lib/api";
+import PageHelmet from "../../components/PageHelmet";
 
 interface ManajemenAkunModuleProps {
   posyanduId?: string | null;
@@ -183,7 +184,11 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <PageHelmet
+        title="Manajemen Akun Kader"
+        description="Pengelolaan anggota kader posyandu, peran akses Owner/Kader, dan status keaktifan."
+      />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
