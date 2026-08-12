@@ -20,6 +20,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, convertStatusBbUToCode, convertStatusTbUToCode, convertStatusBbTbToCode } from "../../lib/zScoreCalculator";
+import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
 
 // Tipe Data
 export interface PemeriksaanBalita {
@@ -232,7 +233,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   const openEditModal = (b: Balita) => {
     setEditNama(b.nama);
     setEditNik(b.nik || "");
-    setEditTglLahir(b.tanggalLahir);
+    setEditTglLahir(formatTanggalInput(b.tanggalLahir));
     setEditJk(b.jenisKelamin);
     setEditNamaIbu(b.namaIbu);
     setEditAlamat(b.alamat);
@@ -608,7 +609,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                   <div>
                     <p className="text-xs text-saas-muted">Tanggal Lahir & Usia</p>
                     <p className="text-saas-dark text-xs mt-0.5">
-                      {activeBalita.tanggalLahir} ({calculateAgeInMonths(activeBalita.tanggalLahir)} Bulan)
+                      {formatTanggalIndonesia(activeBalita.tanggalLahir)} ({calculateAgeInMonths(activeBalita.tanggalLahir)} Bulan)
                     </p>
                   </div>
                 </div>
@@ -881,7 +882,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                   {activeBalita.pemeriksaan.length > 0 ? (
                     activeBalita.pemeriksaan.map((exam) => (
                       <tr key={exam.id} className="border-b border-gray-50 last:border-b-0 text-xs text-saas-dark">
-                        <td className="py-4 font-bold">{exam.tanggalPeriksa}</td>
+                        <td className="py-4 font-bold">{formatTanggalIndonesia(exam.tanggalPeriksa)}</td>
                         <td className="py-4 font-semibold">{exam.usiaBulan} Bulan</td>
                         <td className="py-4 font-bold">{exam.beratBadan} kg</td>
                         <td className="py-4 font-bold">{exam.tinggiBadan} cm</td>

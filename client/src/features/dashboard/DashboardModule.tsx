@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { dashboardApi, DashboardSummary, balitaApi, lansiaApi } from "../../lib/api";
+import { formatTanggalIndonesia } from "../../lib/dateUtils";
 import Modal from "../../components/Modal";
 import PageHelmet from "../../components/PageHelmet";
 import {
@@ -109,7 +110,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       detail: p.statusBbU ?? "-",
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: new Date(p.tanggalPeriksa).toLocaleDateString("id-ID"),
+      waktu: formatTanggalIndonesia(p.tanggalPeriksa),
     })),
     ...(summary?.pemeriksaanTerbaru.lansia ?? []).map((p, i) => ({
       id: `l-${p.id ?? i}`,
@@ -118,7 +119,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       detail: `${p.tekananDarahSistol}/${p.tekananDarahDiastol} mmHg`,
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: new Date(p.tanggalPeriksa).toLocaleDateString("id-ID"),
+      waktu: formatTanggalIndonesia(p.tanggalPeriksa),
     })),
   ].sort((a, b) => b.waktu.localeCompare(a.waktu)); // sort by date
 

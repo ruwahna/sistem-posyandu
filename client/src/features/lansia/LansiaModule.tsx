@@ -5,6 +5,7 @@ import Modal from "../../components/Modal";
 import PageHelmet from "../../components/PageHelmet";
 import { TableSkeleton, DetailViewSkeleton } from "../../components/Skeleton";
 import { lansiaApi } from "../../lib/api";
+import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
 import {
   ArrowLeft,
   Plus,
@@ -250,7 +251,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
     setEditNama(l.nama);
     setEditNik(l.nik);
     setEditBpjs(l.noBpjs || "");
-    setEditTglLahir(l.tanggalLahir);
+    setEditTglLahir(formatTanggalInput(l.tanggalLahir));
     setEditJk(l.jenisKelamin);
     setEditRtRw(l.rtRw);
     setEditAlamat(l.alamat);
@@ -657,7 +658,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                   <div>
                     <p className="text-xs text-saas-muted">Tanggal Lahir & Usia</p>
                     <p className="text-saas-dark text-xs mt-0.5">
-                      {activeLansia.tanggalLahir} ({calculateAgeInYears(activeLansia.tanggalLahir)} Tahun)
+                      {formatTanggalIndonesia(activeLansia.tanggalLahir)} ({calculateAgeInYears(activeLansia.tanggalLahir)} Tahun)
                     </p>
                   </div>
                 </div>
@@ -931,7 +932,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                   {activeLansia.pemeriksaan.length > 0 ? (
                     activeLansia.pemeriksaan.map((exam) => (
                       <tr key={exam.id} className="border-b border-gray-50 last:border-b-0 text-xs text-saas-dark">
-                        <td className="py-4 font-bold">{exam.tanggalPeriksa}</td>
+                        <td className="py-4 font-bold">{formatTanggalIndonesia(exam.tanggalPeriksa)}</td>
                         <td className="py-4 font-bold">{exam.beratBadan} kg</td>
                         <td className="py-4 font-bold">{exam.tinggiBadan} cm</td>
                         <td className="py-4 font-bold text-teal-600">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatTanggalIndonesia } from "../../lib/dateUtils";
 import {
   Search,
   Download,
@@ -331,7 +332,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                         <td className="py-4 font-bold text-saas-dark">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-3.5 h-3.5 text-saas-muted" />
-                            {log.tanggal}
+                            {formatTanggalIndonesia(log.tanggal)}
                           </div>
                         </td>
                         <td className="py-4 font-bold text-saas-dark">{log.nama}</td>
