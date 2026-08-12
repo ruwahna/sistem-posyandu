@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { dashboardApi, DashboardSummary, balitaApi, lansiaApi } from "../../lib/api";
 import Modal from "../../components/Modal";
+import ActionMenu from "../../components/ActionMenu";
 import {
   ArrowUpRight,
   SlidersHorizontal,
@@ -16,7 +17,9 @@ import {
   Baby,
   Heart,
   X,
-  UserCheck2
+  UserCheck2,
+  Eye,
+  DownloadIcon
 } from "lucide-react";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
 
@@ -51,6 +54,10 @@ import { DashboardSkeleton, Skeleton } from "../../components/Skeleton";
 export default function DashboardModule({ searchQuery, onNavigate, posyanduId }: DashboardModuleProps) {
 
   const [activeTab, setActiveTab] = useState<"Semua" | "Balita" | "Lansia">("Semua");
+
+  // ── Modal state untuk Action Menu ──────────────────────────
+  const [showDetailAktivitas, setShowDetailAktivitas] = useState(false);
+  const [showDetailDistribusi, setShowDetailDistribusi] = useState(false);
 
   // ── API state ──────────────────────────────────────────────
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -308,6 +315,123 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
     }
   };
 
+  // ── Handler Aktivitas Kunjungan Menu ──────────────────────
+  const handleDetailAktivitas = () => {
+    setShowDetailAktivitas(true);
+  };
+
+  const handleExportAktivitas = () => {
+    try {
+      const data = [
+        ["Aktivitas Kunjungan - Tingkat Partisipasi Kader & Posyandu"],
+        ["Tanggal Export", new Date().toLocaleString("id-ID")],
+        ["Posyandu ID", posyanduId],
+        [],
+        ["Kategori", "Jumlah", "Persentase"],
+        ["Balita Selesai Periksa", "45", "60%"],
+        ["Lansia Selesai Periksa", "23", "30%"],
+        ["Belum Mengisi Data", "12", "10%"],
+        [],
+        ["Total Partisipasi", "78%"]
+      ];
+
+      const csv = data.map(row => row.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute("href", url);
+      link.setAttribute("download", `aktivitas-kunjungan-${new Date().getTime()}.csv`);
+      link.style.visibility = "hidden";
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Export gagal:", err);
+      alert("Gagal export data aktivitas kunjungan");
+    }
+  };
+
+  const handleShareAktivitas = () => {
+    try {
+      const text = `Aktivitas Kunjungan Posyandu\n\nTingkat Partisipasi: 78%\nBalita Selesai: 45 Anak\nLansia Selesai: 23 Lansia\nBelum Mengisi: 12 Orang`;
+      
+      if (navigator.share) {
+        navigator.share({ title: "Aktivitas Kunjungan", text });
+      } else {
+        // Fallback: copy ke clipboard
+        navigator.clipboard.writeText(text);
+        alert("Data disalin ke clipboard!");
+      }
+    } catch (err) {
+      console.error("Share gagal:", err);
+    }
+  };
+
+  const handleSettingsAktivitas = () => {
+    alert("Pengaturan Aktivitas Kunjungan akan segera hadir");
+    // TODO: Implementasi modal settings
+  };
+
+  // ── Handler Distribusi Kehadiran Menu ──────────────────────
+  const handleDetailDistribusi = () => {
+    setShowDetailDistribusi(true);
+  };
+
+  const handleExportDistribusi = () => {
+    try {
+      const data = [
+        ["Distribusi Kehadiran RT/RW"],
+        ["Tanggal Export", new Date().toLocaleString("id-ID")],
+        ["Posyandu ID", posyanduId],
+        [],
+        ["Wilayah", "Kehadiran", "Persentase"],
+        ["RT 01 / RW 02", "84 Orang", "84%"],
+        ["RT 02 / RW 02", "72 Orang", "72%"],
+        ["RT 03 / RW 02", "65 Orang", "65%"],
+        ["RT 04 / RW 02", "48 Orang", "48%"],
+        ["RT 05 / RW 02", "30 Orang", "30%"]
+      ];
+
+      const csv = data.map(row => row.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute("href", url);
+      link.setAttribute("download", `distribusi-kehadiran-${new Date().getTime()}.csv`);
+      link.style.visibility = "hidden";
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Export gagal:", err);
+      alert("Gagal export data distribusi kehadiran");
+    }
+  };
+
+  const handleShareDistribusi = () => {
+    try {
+      const text = `Distribusi Kehadiran RT/RW\n\nRT 01: 84%\nRT 02: 72%\nRT 03: 65%\nRT 04: 48%\nRT 05: 30%`;
+      
+      if (navigator.share) {
+        navigator.share({ title: "Distribusi Kehadiran", text });
+      } else {
+        navigator.clipboard.writeText(text);
+        alert("Data disalin ke clipboard!");
+      }
+    } catch (err) {
+      console.error("Share gagal:", err);
+    }
+  };
+
+  const handleSettingsDistribusi = () => {
+    alert("Pengaturan Distribusi Kehadiran akan segera hadir");
+    // TODO: Implementasi modal settings
+  };
+
   if (isSummaryLoading) {
     return <DashboardSkeleton />;
   }
@@ -520,9 +644,20 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Aktivitas Kunjungan</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat partisipasi kader & posyandu</p>
             </div>
-            <button className="text-saas-muted hover:text-saas-dark transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
+            <ActionMenu
+              items={[
+                {
+                  label: "Lihat Detail",
+                  icon: <Eye className="w-4 h-4" />,
+                  onClick: handleDetailAktivitas
+                },
+                {
+                  label: "Unduh Laporan",
+                  icon: <DownloadIcon className="w-4 h-4" />,
+                  onClick: handleExportAktivitas
+                }
+              ]}
+            />
           </div>
 
           <div className="flex flex-col items-center justify-center">
@@ -659,9 +794,20 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Distribusi Kehadiran RT/RW</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat kehadiran per wilayah</p>
             </div>
-            <button className="text-saas-muted hover:text-saas-dark transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
+            <ActionMenu
+              items={[
+                {
+                  label: "Lihat Detail per RT",
+                  icon: <Eye className="w-4 h-4" />,
+                  onClick: handleDetailDistribusi
+                },
+                {
+                  label: "Unduh Laporan",
+                  icon: <DownloadIcon className="w-4 h-4" />,
+                  onClick: handleExportDistribusi
+                }
+              ]}
+            />
           </div>
 
           <div className="space-y-6">
@@ -1123,6 +1269,57 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                 </div>
               </form>
             )}
+      </Modal>
+
+      {/* Modal Detail Aktivitas Kunjungan */}
+      <Modal
+        isOpen={showDetailAktivitas}
+        onClose={() => setShowDetailAktivitas(false)}
+        title="Detail Aktivitas Kunjungan"
+      >
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-bold text-blue-900 mb-2">Selesai Periksa</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between"><span>Balita Selesai</span><span className="font-bold">45 Anak</span></div>
+              <div className="flex justify-between"><span>Lansia Selesai</span><span className="font-bold">23 Lansia</span></div>
+            </div>
+          </div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h4 className="font-bold text-yellow-900 mb-2">Belum Mengisi Data</h4>
+            <div className="flex justify-between"><span>Belum Input</span><span className="font-bold">12 Orang</span></div>
+          </div>
+          <div className="text-center pt-4">
+            <p className="text-sm text-saas-muted">Total Partisipasi: <span className="font-bold text-lg text-saas-primary">78%</span></p>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Detail Distribusi Kehadiran */}
+      <Modal
+        isOpen={showDetailDistribusi}
+        onClose={() => setShowDetailDistribusi(false)}
+        title="Detail Distribusi Kehadiran per RT/RW"
+      >
+        <div className="space-y-3">
+          {[
+            { region: "RT 01 / RW 02", count: 84 },
+            { region: "RT 02 / RW 02", count: 72 },
+            { region: "RT 03 / RW 02", count: 65 },
+            { region: "RT 04 / RW 02", count: 48 },
+            { region: "RT 05 / RW 02", count: 30 }
+          ].map((item, i) => (
+            <div key={i} className="border border-gray-200 rounded-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-semibold text-saas-dark">{item.region}</span>
+                <span className="bg-saas-primary/10 text-saas-primary px-2.5 py-1 rounded-full text-sm font-bold">{item.count}%</span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div style={{ width: `${item.count}%` }} className="h-full bg-saas-primary rounded-full"></div>
+              </div>
+            </div>
+          ))}
+        </div>
       </Modal>
     </div>
   );
