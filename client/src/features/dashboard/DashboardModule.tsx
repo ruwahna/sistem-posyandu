@@ -1,8 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { dashboardApi, DashboardSummary, balitaApi, lansiaApi } from "../../lib/api";
+import { dashboardApi, DashboardSummary, balitaApi, lansiaApi, TrenGiziItem } from "../../lib/api";
+import { formatTanggalIndonesia } from "../../lib/dateUtils";
 import Modal from "../../components/Modal";
+import PageHelmet from "../../components/PageHelmet";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+  LineChart,
+  Line,
+  ComposedChart,
+  ReferenceLine,
+} from "recharts";
 import {
   ArrowUpRight,
   SlidersHorizontal,
@@ -17,9 +33,11 @@ import {
   Heart,
   X,
   UserCheck2,
+  TrendingUp,
+  Activity,
   RefreshCw,
   Filter,
-  Eye
+  Eye,
 } from "lucide-react";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
 
@@ -59,6 +77,25 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const [dbPasiens, setDbPasiens] = useState<Pasien[]>([]);
+
+  // ── Tren Gizi & Z-Score State ──
+  const [trenPeriod, setTrenPeriod] = useState<"bulanan" | "tahunan">("bulanan");
+  const [trenViewMode, setTrenViewMode] = useState<"status" | "zscore">("status");
+  const [trenGiziData, setTrenGiziData] = useState<TrenGiziItem[]>([]);
+  const [isTrenGiziLoading, setIsTrenGiziLoading] = useState(false);
+
+  useEffect(() => {
+    setIsTrenGiziLoading(true);
+    dashboardApi
+      .getTrenGizi(posyanduId, trenPeriod)
+      .then((res) => {
+        if (res.success && res.data) {
+          setTrenGiziData(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsTrenGiziLoading(false));
+  }, [posyanduId, trenPeriod]);
 
   const fetchSummary = () => {
     dashboardApi
@@ -111,7 +148,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       detail: p.statusBbU ?? "-",
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: new Date(p.tanggalPeriksa).toLocaleDateString("id-ID"),
+      waktu: formatTanggalIndonesia(p.tanggalPeriksa),
     })),
     ...(summary?.pemeriksaanTerbaru.lansia ?? []).map((p, i) => ({
       id: `l-${p.id ?? i}`,
@@ -120,7 +157,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       detail: `${p.tekananDarahSistol}/${p.tekananDarahDiastol} mmHg`,
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: new Date(p.tanggalPeriksa).toLocaleDateString("id-ID"),
+      waktu: formatTanggalIndonesia(p.tanggalPeriksa),
     })),
   ].sort((a, b) => b.waktu.localeCompare(a.waktu)); // sort by date
 
@@ -365,6 +402,10 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
 
   return (
     <div className="space-y-8">
+      <PageHelmet
+        title="Dashboard Overview"
+        description="Ringkasan statistik data balita, lansia, dan grafik status gizi Posyandu."
+      />
       {/* Toast Success Alert */}
       {toastSuccess && (
         <div className="fixed bottom-6 right-6 z-50 p-4 bg-green-50 text-trend-successText border border-green-150 rounded-card shadow-lg flex items-center gap-2.5">
@@ -498,79 +539,133 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
 
       {/* Main Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Tren Status Gizi Balita (Bar Chart) */}
+        {/* Tren Status Gizi Balita (Recharts & WHO Z-Score) */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 lg:col-span-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div>
-              <h3 className="font-bold text-base text-saas-dark">Tren Status Gizi Balita</h3>
+              <h3 className="font-bold text-base text-saas-dark flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-saas-primary" />
+                Tren Status Gizi & Z-Score Balita
+              </h3>
               <p className="text-xs text-saas-muted mt-0.5">
-                {trendTimeframe === "bulanan"
-                  ? "Distribusi hasil pemeriksaan bulanan tahun 2026"
-                  : "Perbandingan tren tahunan gizi balita (2022 - 2026)"}
+                Agregasi data historis {trenPeriod === "bulanan" ? "bulanan" : "tahunan"} & kurva presisi Z-score WHO
               </p>
             </div>
-            <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-1 border border-gray-100/60 self-start sm:self-auto">
-              <button
-                onClick={() => setTrendTimeframe("bulanan")}
-                className={`text-xs px-3.5 py-1.5 rounded-md font-bold transition-all ${
-                  trendTimeframe === "bulanan"
-                    ? "bg-white text-saas-primary shadow-sm"
-                    : "text-saas-muted hover:text-saas-dark"
-                }`}
-              >
-                Bulanan
-              </button>
-              <button
-                onClick={() => setTrendTimeframe("tahunan")}
-                className={`text-xs px-3.5 py-1.5 rounded-md font-bold transition-all ${
-                  trendTimeframe === "tahunan"
-                    ? "bg-white text-saas-primary shadow-sm"
-                    : "text-saas-muted hover:text-saas-dark"
-                }`}
-              >
-                Tahunan
-              </button>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Toggle Mode Display */}
+              <div className="flex items-center gap-1 bg-gray-100/80 rounded-lg p-1">
+                <button
+                  onClick={() => setTrenViewMode("status")}
+                  className={`text-xs px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    trenViewMode === "status"
+                      ? "bg-white text-saas-dark shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Status Gizi
+                </button>
+                <button
+                  onClick={() => setTrenViewMode("zscore")}
+                  className={`text-xs px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    trenViewMode === "zscore"
+                      ? "bg-white text-saas-dark shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Kurva Z-Score WHO
+                </button>
+              </div>
+
+              {/* Toggle Period */}
+              <div className="flex items-center gap-1 bg-gray-100/80 rounded-lg p-1">
+                <button
+                  onClick={() => setTrenPeriod("bulanan")}
+                  className={`text-xs px-3 py-1.5 rounded-md font-bold transition-all ${
+                    trenPeriod === "bulanan"
+                      ? "bg-saas-primary text-white shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Bulanan
+                </button>
+                <button
+                  onClick={() => setTrenPeriod("tahunan")}
+                  className={`text-xs px-3 py-1.5 rounded-md font-bold transition-all ${
+                    trenPeriod === "tahunan"
+                      ? "bg-saas-primary text-white shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Tahunan
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="h-64 flex flex-col justify-between">
-            <div className="flex-1 flex items-end justify-between px-2 sm:px-4 pb-2 border-b border-gray-100 relative overflow-x-auto">
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-full border-t border-dashed border-gray-100/80"></div>
-                ))}
+          <div className="h-72 w-full">
+            {isTrenGiziLoading ? (
+              <div className="h-full flex items-center justify-center text-sm text-saas-muted">
+                Memuat data grafik tren gizi...
               </div>
-
-              {currentTrendData.map((data, index) => (
-                <div key={index} className="flex flex-col items-center gap-2 z-10 w-7 sm:w-10 group">
-                  <div className="w-full flex justify-center gap-0.5 items-end h-48 relative">
-                    <div className="absolute -top-10 bg-saas-dark text-white text-[10px] py-1 px-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none z-20">
-                      {data.label} | Normal: {data.normal}% | Kurang: {data.kurang}%
-                    </div>
-                    <div
-                      style={{ height: `${data.normal * 0.45}%` }}
-                      className="w-2.5 sm:w-3.5 bg-saas-primary rounded-t-full transition-all duration-500 hover:opacity-85"
-                    ></div>
-                    <div
-                      style={{ height: `${data.kurang * 0.45}%` }}
-                      className="w-2.5 sm:w-3.5 bg-trend-dangerText/80 rounded-t-full transition-all duration-500 hover:opacity-85"
-                    ></div>
-                  </div>
-                  <span className="text-[10px] text-saas-muted font-bold tracking-tight">{data.label}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-4 mt-4 px-2">
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-saas-primary"></span>
-                <span className="text-xs text-saas-muted font-medium">Balita Gizi Normal (%)</span>
+            ) : trenGiziData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-sm text-saas-muted">
+                Belum ada data pemeriksaan balita untuk periode ini.
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-trend-dangerText/80"></span>
-                <span className="text-xs text-saas-muted font-medium">Balita Gizi Kurang / Perlu Perhatian (%)</span>
-              </div>
-            </div>
+            ) : trenViewMode === "status" ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={trenGiziData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "10px", border: "none", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", fontSize: "12px" }}
+                    formatter={(value: any, name: any) => [
+                      value,
+                      name === "normal"
+                        ? "Gizi Normal (BB/U)"
+                        : name === "kurang"
+                        ? "Gizi Kurang (BB/U)"
+                        : name === "sangatKurang"
+                        ? "Gizi Buruk/SK (BB/U)"
+                        : name === "stunting"
+                        ? "Stunting (TB/U)"
+                        : String(name || ""),
+                    ]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
+                  <Bar dataKey="normal" name="Gizi Normal" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="kurang" name="Gizi Kurang" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="sangatKurang" name="Gizi Buruk" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Line type="monotone" dataKey="stunting" name="Stunting (TB/U)" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trenGiziData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <YAxis domain={[-4, 4]} tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "10px", border: "none", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", fontSize: "12px" }}
+                    formatter={(val: any, name: any) => [
+                      `${val} SD`,
+                      name === "avgZScoreBBU"
+                        ? "Rata-rata Z-Score BB/U"
+                        : name === "avgZScoreTBU"
+                        ? "Rata-rata Z-Score TB/U"
+                        : String(name || ""),
+                    ]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
+                  <ReferenceLine y={0} label={{ value: "Median WHO (0 SD)", fill: "#10b981", fontSize: 10 }} stroke="#10b981" strokeDasharray="4 4" />
+                  <ReferenceLine y={-2} label={{ value: "Batas Stunting/K (-2 SD)", fill: "#ef4444", fontSize: 10 }} stroke="#ef4444" strokeDasharray="4 4" />
+                  <ReferenceLine y={2} label={{ value: "Batas Lebih (+2 SD)", fill: "#f59e0b", fontSize: 10 }} stroke="#f59e0b" strokeDasharray="4 4" />
+                  <Line type="monotone" dataKey="avgZScoreBBU" name="Rata-rata Z-Score BB/U" stroke="#0284c7" strokeWidth={2.5} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="avgZScoreTBU" name="Rata-rata Z-Score TB/U" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 

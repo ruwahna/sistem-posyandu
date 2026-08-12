@@ -100,13 +100,27 @@ export function hitungZScore(
   return (val - median) / sd;
 }
 
+export function hitungZScoreBBU(beratBadan: number, usiaBulan: number, jenisKelamin: 'L' | 'P'): number {
+  const milestones = jenisKelamin === 'L' ? BBU_BOYS : BBU_GIRLS;
+  return Number(hitungZScore(beratBadan, usiaBulan, milestones).toFixed(2));
+}
+
+export function hitungZScoreTBU(tinggiBadan: number, usiaBulan: number, jenisKelamin: 'L' | 'P'): number {
+  const milestones = jenisKelamin === 'L' ? TBU_BOYS : TBU_GIRLS;
+  return Number(hitungZScore(tinggiBadan, usiaBulan, milestones).toFixed(2));
+}
+
+export function hitungZScoreBBTB(beratBadan: number, tinggiBadan: number, jenisKelamin: 'L' | 'P'): number {
+  const milestones = jenisKelamin === 'L' ? BBTB_BOYS : BBTB_GIRLS;
+  return Number(hitungZScore(beratBadan, tinggiBadan, milestones).toFixed(2));
+}
+
 export function hitungStatusBbU(
   beratBadan: number,
   usiaBulan: number,
   jenisKelamin: 'L' | 'P'
 ): 'Sangat Kurang' | 'Kurang' | 'Normal' | 'Lebih' {
-  const milestones = jenisKelamin === 'L' ? BBU_BOYS : BBU_GIRLS;
-  const zScore = hitungZScore(beratBadan, usiaBulan, milestones);
+  const zScore = hitungZScoreBBU(beratBadan, usiaBulan, jenisKelamin);
 
   if (zScore < -3) return 'Sangat Kurang';
   if (zScore < -2) return 'Kurang';
@@ -119,8 +133,7 @@ export function hitungStatusTbU(
   usiaBulan: number,
   jenisKelamin: 'L' | 'P'
 ): 'Sangat Pendek' | 'Pendek' | 'Normal' | 'Tinggi' {
-  const milestones = jenisKelamin === 'L' ? TBU_BOYS : TBU_GIRLS;
-  const zScore = hitungZScore(tinggiBadan, usiaBulan, milestones);
+  const zScore = hitungZScoreTBU(tinggiBadan, usiaBulan, jenisKelamin);
 
   if (zScore < -3) return 'Sangat Pendek';
   if (zScore < -2) return 'Pendek';
@@ -133,8 +146,7 @@ export function hitungStatusBbTb(
   tinggiBadan: number,
   jenisKelamin: 'L' | 'P'
 ): 'Sangat Kurus' | 'Kurus' | 'Normal' | 'Gemuk' {
-  const milestones = jenisKelamin === 'L' ? BBTB_BOYS : BBTB_GIRLS;
-  const zScore = hitungZScore(beratBadan, tinggiBadan, milestones);
+  const zScore = hitungZScoreBBTB(beratBadan, tinggiBadan, jenisKelamin);
 
   if (zScore < -3) return 'Sangat Kurus';
   if (zScore < -2) return 'Kurus';
@@ -146,4 +158,32 @@ export function hitungIMT(beratBadan: number, tinggiBadan: number): number {
   if (tinggiBadan <= 0) return 0;
   const tbMeter = tinggiBadan / 100;
   return Number((beratBadan / (tbMeter * tbMeter)).toFixed(1));
+}
+
+// Helper functions untuk convert label ke enum code
+export function convertStatusBbUToCode(label: 'Sangat Kurang' | 'Kurang' | 'Normal' | 'Lebih'): 'SK' | 'K' | 'N' | 'L' {
+  switch (label) {
+    case 'Sangat Kurang': return 'SK';
+    case 'Kurang': return 'K';
+    case 'Normal': return 'N';
+    case 'Lebih': return 'L';
+  }
+}
+
+export function convertStatusTbUToCode(label: 'Sangat Pendek' | 'Pendek' | 'Normal' | 'Tinggi'): 'SP' | 'P' | 'N' | 'T' {
+  switch (label) {
+    case 'Sangat Pendek': return 'SP';
+    case 'Pendek': return 'P';
+    case 'Normal': return 'N';
+    case 'Tinggi': return 'T';
+  }
+}
+
+export function convertStatusBbTbToCode(label: 'Sangat Kurus' | 'Kurus' | 'Normal' | 'Gemuk'): 'SK' | 'K' | 'N' | 'G' {
+  switch (label) {
+    case 'Sangat Kurus': return 'SK';
+    case 'Kurus': return 'K';
+    case 'Normal': return 'N';
+    case 'Gemuk': return 'G';
+  }
 }

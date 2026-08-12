@@ -197,7 +197,7 @@ export default function Home() {
       case "Riwayat":
         return <RiwayatModule posyanduId={posyanduId} />;
       case "Manajemen Akun":
-        return <ManajemenAkunModule />;
+        return <ManajemenAkunModule posyanduId={posyanduId} />;
       case "Pengaturan":
         return <PengaturanModule />;
       case "Bantuan":

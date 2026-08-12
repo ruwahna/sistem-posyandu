@@ -224,9 +224,26 @@ export const authApi = {
     }),
 };
 
+export interface TrenGiziItem {
+  periodKey: string;
+  label: string;
+  total: number;
+  normal: number;
+  kurang: number;
+  sangatKurang: number;
+  lebih: number;
+  stunting: number;
+  pctNormal: number;
+  pctKurang: number;
+  avgZScoreBBU: number;
+  avgZScoreTBU: number;
+}
+
 export const dashboardApi = {
   getSummary: (posyanduId: string) =>
     request<ApiResponse<DashboardSummary>>(`/api/dashboard/${posyanduId}`),
+  getTrenGizi: (posyanduId: string, period: 'bulanan' | 'tahunan' = 'bulanan') =>
+    request<ApiResponse<TrenGiziItem[]>>(`/api/dashboard/${posyanduId}/tren-gizi?period=${period}`),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -280,6 +297,12 @@ export const balitaApi = {
       body: JSON.stringify(data),
     }),
 
+  updatePemeriksaan: (posyanduId: string, balitaId: string, id: string, data: Partial<Omit<PemeriksaanBalita, 'id'>>) =>
+    request<ApiResponse<PemeriksaanBalita>>(`/api/posyandu/${posyanduId}/balita/${balitaId}/pemeriksaan/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   deletePemeriksaan: (posyanduId: string, balitaId: string, id: string) =>
     request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/balita/${balitaId}/pemeriksaan/${id}`, {
       method: 'DELETE',
@@ -323,6 +346,12 @@ export const lansiaApi = {
       body: JSON.stringify(data),
     }),
 
+  updatePemeriksaan: (posyanduId: string, lansiaId: string, id: string, data: Partial<Omit<PemeriksaanLansia, 'id'>>) =>
+    request<ApiResponse<PemeriksaanLansia>>(`/api/posyandu/${posyanduId}/lansia/${lansiaId}/pemeriksaan/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   deletePemeriksaan: (posyanduId: string, lansiaId: string, id: string) =>
     request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/lansia/${lansiaId}/pemeriksaan/${id}`, {
       method: 'DELETE',
@@ -335,6 +364,7 @@ export const lansiaApi = {
 
 export interface ItemRiwayat {
   id: string;
+  pasienId?: string;
   nama: string;
   tipe: 'Balita' | 'Lansia';
   tanggal: string;
@@ -342,6 +372,28 @@ export interface ItemRiwayat {
   parameter: string;
   status: string;
   statusType: 'success' | 'warning' | 'info';
+  tanggalLahir?: string;
+  jenisKelamin?: string;
+  beratBadan?: number;
+  tinggiBadan?: number;
+  lingkarKepala?: number;
+  lingkarLengan?: number;
+  statusBbU?: string;
+  statusTbU?: string;
+  statusBbTb?: string;
+  statusKms?: string;
+  vitaminA?: boolean;
+  asiEksklusif?: boolean;
+  obatCacing?: boolean;
+  statusImunisasi?: string;
+  tekananDarahSistol?: number;
+  tekananDarahDiastol?: number;
+  gulaDarahSewaktu?: number;
+  kolesterol?: number;
+  asamUrat?: number;
+  lingkarPerut?: number;
+  keluhan?: string;
+  tindakan?: string;
 }
 
 export const riwayatApi = {
@@ -409,4 +461,74 @@ export const notificationApi = {
     });
   },
 };
+
+// ─────────────────────────────────────────────────────────────
+// API: KADER MANAGEMENT
+// ─────────────────────────────────────────────────────────────
+
+export interface KaderMember {
+  id: string;
+  nama: string;
+  email: string;
+  role: 'OWNER' | 'KADER';
+  isActive: boolean;
+  createdAt: string;
+}
+
+export const kaderApi = {
+  getAll: (posyanduId: string) =>
+    request<ApiResponse<KaderMember[]>>(`/api/posyandu/${posyanduId}/kader`),
+
+  create: (posyanduId: string, data: { nama: string; email: string; password: string; role: 'OWNER' | 'KADER' }) =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateRole: (posyanduId: string, kaderId: string, role: 'OWNER' | 'KADER') =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader/${kaderId}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    }),
+
+  toggleStatus: (posyanduId: string, kaderId: string, isActive: boolean) =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader/${kaderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
+    }),
+
+  delete: (posyanduId: string, kaderId: string) =>
+    request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/kader/${kaderId}`, {
+      method: 'DELETE',
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// API: OWNER / SYSTEM SECURITY & BACKUP
+// ─────────────────────────────────────────────────────────────
+
+export interface AuditLogItem {
+  id: string;
+  posyanduId?: string;
+  kaderId?: string;
+  kaderNama?: string;
+  action: string;
+  details?: string;
+  ipAddress?: string;
+  createdAt: string;
+}
+
+export const ownerApi = {
+  getAuditLogs: (posyanduId: string) =>
+    request<ApiResponse<AuditLogItem[]>>(`/api/owner/audit-logs/${posyanduId}`),
+
+  backupDataUrl: (posyanduId: string) => `/api/owner/backup/${posyanduId}`,
+
+  resetData: (posyanduId: string, data: { confirmText: string; password: string }) =>
+    request<ApiResponse<{ message: string }>>(`/api/owner/reset-data/${posyanduId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+};
+
 
