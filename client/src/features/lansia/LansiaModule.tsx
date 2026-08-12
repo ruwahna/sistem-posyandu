@@ -154,10 +154,14 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
   const [view, setView] = useState<"list" | "detail" | "add">("list");
   const [selectedLansiaId, setSelectedLansiaId] = useState<string | null>(null);
 
-  // Search & Filter State
+  // Search, Filter & Pagination State
   const [query, setQuery] = useState("");
   const [ageFilter, setAgeFilter] = useState<"semua" | "45-59" | "60-69" | "70+">("semua");
   const [diseaseFilter, setDiseaseFilter] = useState<"semua" | "ht" | "dm">("semua");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Edit & Delete Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -198,8 +202,24 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
   const fetchLansias = useCallback(() => {
     setIsLoading(true);
     setApiError(null);
+
+    const kelompokUmurParam =
+      ageFilter === "45-59" ? "Pra Lansia (45-59th)" :
+      ageFilter === "60-69" ? "Lansia (60-69th)" :
+      ageFilter === "70+" ? "Lansia Risti (70th+)" : undefined;
+
+    const htParam = diseaseFilter === "ht" ? "true" : undefined;
+    const dmParam = diseaseFilter === "dm" ? "true" : undefined;
+
     lansiaApi
-      .getAll(posyanduId, query ? { search: query } : undefined)
+      .getAll(posyanduId, {
+        search: query || undefined,
+        kelompokUmur: kelompokUmurParam,
+        ht: htParam,
+        dm: dmParam,
+        page: currentPage,
+        limit: limit,
+      })
       .then((res) => {
         if (res.success) {
           const mapped: Lansia[] = res.data.map((l) => ({
@@ -211,11 +231,18 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
             })),
           }));
           setLansias(mapped);
+          if (res.meta) {
+            setTotalItems(res.meta.total);
+            setTotalPages(res.meta.totalPages);
+          } else {
+            setTotalItems(mapped.length);
+            setTotalPages(1);
+          }
         }
       })
       .catch((err) => setApiError(err.message))
       .finally(() => setIsLoading(false));
-  }, [posyanduId, query]);
+  }, [posyanduId, query, ageFilter, diseaseFilter, currentPage, limit]);
 
   useEffect(() => {
     fetchLansias();
@@ -630,7 +657,10 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                   type="text"
                   placeholder="Cari nama, NIK, atau BPJS..."
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="w-full pl-10 pr-4 py-2 bg-gray-50/70 border border-gray-100 rounded-input text-sm text-saas-dark placeholder-saas-muted/70 focus:outline-none focus:border-saas-primary/50 focus:bg-white transition-all"
                 />
                 <Search className="absolute left-3.5 top-2.5 text-saas-muted/80 w-4 h-4" />
@@ -646,7 +676,10 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                 ].map((item) => (
                   <button
                     key={item.val}
-                    onClick={() => setDiseaseFilter(item.val as any)}
+                    onClick={() => {
+                      setDiseaseFilter(item.val as any);
+                      setCurrentPage(1);
+                    }}
                     className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap shrink-0 ${
                       diseaseFilter === item.val
                         ? "bg-saas-primary/10 text-saas-primary border border-saas-primary/20"
@@ -670,7 +703,10 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
               ].map((item) => (
                 <button
                   key={item.val}
-                  onClick={() => setAgeFilter(item.val as any)}
+                  onClick={() => {
+                    setAgeFilter(item.val as any);
+                    setCurrentPage(1);
+                  }}
                   className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all ${
                     ageFilter === item.val
                       ? "bg-saas-primary/10 text-saas-primary border border-saas-primary/20"
@@ -761,6 +797,50 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t border-gray-100 text-xs text-saas-muted">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>Tampilkan:</span>
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 bg-gray-50 border border-gray-200 rounded-md font-semibold text-saas-dark focus:outline-none focus:border-saas-primary/50"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span>data per halaman</span>
+                  <span className="ml-2 font-medium">
+                    (Menampilkan {totalItems === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalItems)} dari {totalItems} data)
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-md border border-gray-200 font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    Sebelumnya
+                  </button>
+                  <span className="px-3 py-1.5 font-bold text-saas-dark">
+                    Halaman {currentPage} dari {totalPages || 1}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                    disabled={currentPage >= totalPages}
+                    className="px-3 py-1.5 rounded-md border border-gray-200 font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
               </div>
             </div>
           )}

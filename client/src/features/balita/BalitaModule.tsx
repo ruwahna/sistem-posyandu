@@ -163,16 +163,31 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   const [editExamImunisasi, setEditExamImunisasi] = useState("");
   const [editExamError, setEditExamError] = useState("");
 
-  // Search & Filter State
+  // Search, Filter & Pagination State
   const [query, setQuery] = useState("");
   const [ageFilter, setAgeFilter] = useState<"semua" | "0-6" | "7-12" | "13-24" | "25-60">("semua");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Fetch balita from API
   const fetchBalitas = useCallback(() => {
     setIsLoading(true);
     setApiError(null);
+    const kelompokUsiaParam =
+      ageFilter === "0-6" ? "0-6 bulan" :
+      ageFilter === "7-12" ? "7-12 bulan" :
+      ageFilter === "13-24" ? "13-24 bulan" :
+      ageFilter === "25-60" ? "25-60 bulan" : undefined;
+
     balitaApi
-      .getAll(posyanduId, query ? { search: query } : undefined)
+      .getAll(posyanduId, {
+        search: query || undefined,
+        kelompokUsia: kelompokUsiaParam,
+        page: currentPage,
+        limit: limit,
+      })
       .then((res) => {
         if (res.success) {
           // Map API shape to local shape (pemeriksaans → pemeriksaan)
@@ -188,11 +203,18 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
             })),
           }));
           setBalitas(mapped);
+          if (res.meta) {
+            setTotalItems(res.meta.total);
+            setTotalPages(res.meta.totalPages);
+          } else {
+            setTotalItems(mapped.length);
+            setTotalPages(1);
+          }
         }
       })
       .catch((err) => setApiError(err.message))
       .finally(() => setIsLoading(false));
-  }, [posyanduId, query]);
+  }, [posyanduId, query, ageFilter, currentPage, limit]);
 
   useEffect(() => {
     fetchBalitas();
@@ -639,7 +661,10 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                 type="text"
                 placeholder="Cari nama, NIK, atau nama ibu..."
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full pl-10 pr-4 py-2 bg-gray-50/70 border border-gray-100 rounded-input text-sm text-saas-dark placeholder-saas-muted/70 focus:outline-none focus:border-saas-primary/50 focus:bg-white transition-all"
               />
               <Search className="absolute left-3.5 top-2.5 text-saas-muted/80 w-4 h-4" />
@@ -656,7 +681,10 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
               ].map((item) => (
                 <button
                   key={item.val}
-                  onClick={() => setAgeFilter(item.val as any)}
+                  onClick={() => {
+                    setAgeFilter(item.val as any);
+                    setCurrentPage(1);
+                  }}
                   className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap shrink-0 ${
                     ageFilter === item.val
                       ? "bg-saas-primary/10 text-saas-primary border border-saas-primary/20"
@@ -745,6 +773,50 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t border-gray-100 text-xs text-saas-muted">
+              <div className="flex flex-wrap items-center gap-2">
+                <span>Tampilkan:</span>
+                <select
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-2 py-1 bg-gray-50 border border-gray-200 rounded-md font-semibold text-saas-dark focus:outline-none focus:border-saas-primary/50"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>data per halaman</span>
+                <span className="ml-2 font-medium">
+                  (Menampilkan {totalItems === 0 ? 0 : (currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalItems)} dari {totalItems} data)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-md border border-gray-200 font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Sebelumnya
+                </button>
+                <span className="px-3 py-1.5 font-bold text-saas-dark">
+                  Halaman {currentPage} dari {totalPages || 1}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="px-3 py-1.5 rounded-md border border-gray-200 font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Selanjutnya
+                </button>
+              </div>
             </div>
           </div>
           )}

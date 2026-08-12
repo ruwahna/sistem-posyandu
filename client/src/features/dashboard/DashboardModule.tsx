@@ -169,34 +169,6 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Trend Chart Timeframe State (Bulanan vs Tahunan)
-  const [trendTimeframe, setTrendTimeframe] = useState<"bulanan" | "tahunan">("bulanan");
-
-  const monthlyTrendData = [
-    { label: "Jan", normal: 82, kurang: 18 },
-    { label: "Feb", normal: 85, kurang: 15 },
-    { label: "Mar", normal: 88, kurang: 12 },
-    { label: "Apr", normal: 78, kurang: 22 },
-    { label: "Mei", normal: 92, kurang: 8 },
-    { label: "Jun", normal: 87, kurang: 13 },
-    { label: "Jul", normal: 90, kurang: 10 },
-    { label: "Ags", normal: 93, kurang: 7 },
-    { label: "Sep", normal: 91, kurang: 9 },
-    { label: "Okt", normal: 94, kurang: 6 },
-    { label: "Nov", normal: 89, kurang: 11 },
-    { label: "Des", normal: 95, kurang: 5 },
-  ];
-
-  const yearlyTrendData = [
-    { label: "2022", normal: 74, kurang: 26 },
-    { label: "2023", normal: 79, kurang: 21 },
-    { label: "2024", normal: 84, kurang: 16 },
-    { label: "2025", normal: 88, kurang: 12 },
-    { label: "2026", normal: 93, kurang: 7 },
-  ];
-
-  const currentTrendData = trendTimeframe === "bulanan" ? monthlyTrendData : yearlyTrendData;
-
   const toggleMenu = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setOpenMenuId(openMenuId === id ? null : id);
@@ -501,9 +473,9 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
           <div>
             <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-white/80 font-medium">Perhatian Gizi</span>
             <h3 className="text-2xl sm:text-3xl font-mono font-medium mt-0.5 sm:mt-1">
-              {isSummaryLoading ? "…" : `${(summary?.statusGizi?.bbU?.["Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["Sangat Kurang"] ?? 0)}`}
+              {isSummaryLoading ? "…" : `${(summary?.statusGizi?.bbU?.["Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["Sangat Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["K"] ?? 0) + (summary?.statusGizi?.bbU?.["SK"] ?? 0)}`}
             </h3>
-            <span className="text-[11px] sm:text-xs text-white/70 font-sans block">Gizi Kurang</span>
+            <span className="text-[11px] sm:text-xs text-white/70 font-sans block">Gizi Kurang / Buruk</span>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium text-white/90 z-10">
@@ -788,25 +760,25 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
-                  <th className="pb-3 text-left">Nama</th>
-                  <th className="pb-3">Kategori</th>
-                  <th className="pb-3">Keterangan</th>
-                  <th className="pb-3 text-center">Status</th>
-                  <th className="pb-3 text-right">Jam Periksa</th>
-                  <th className="pb-3 text-center w-12">Aksi</th>
+                  <th className="px-4 pb-3 text-left whitespace-nowrap">Nama</th>
+                  <th className="px-4 pb-3 text-left whitespace-nowrap">Kategori</th>
+                  <th className="px-4 pb-3 text-left whitespace-nowrap">Keterangan</th>
+                  <th className="px-4 pb-3 text-center whitespace-nowrap">Status</th>
+                  <th className="px-4 pb-3 text-right whitespace-nowrap">Jam Periksa</th>
+                  <th className="px-4 pb-3 text-center whitespace-nowrap w-12">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredKunjungan.length > 0 ? (
                   filteredKunjungan.map((item) => (
                     <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
-                      <td className="py-4 font-bold text-saas-dark">{item.nama}</td>
-                      <td className="py-4 text-saas-muted font-medium">{item.tipe}</td>
-                      <td className="py-4 text-saas-muted font-medium">{item.detail}</td>
-                      <td className="py-4 text-center">
+                      <td className="px-4 py-3.5 font-bold text-saas-dark whitespace-nowrap">{item.nama}</td>
+                      <td className="px-4 py-3.5 text-saas-muted font-medium whitespace-nowrap">{item.tipe}</td>
+                      <td className="px-4 py-3.5 text-saas-muted font-medium whitespace-nowrap">{item.detail}</td>
+                      <td className="px-4 py-3.5 text-center whitespace-nowrap">
                         <span
                           className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1.5 ${
                             item.statusType === "success"
@@ -822,8 +794,8 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                           {item.status}
                         </span>
                       </td>
-                      <td className="py-4 text-right text-saas-muted font-semibold">{item.waktu}</td>
-                      <td className="py-4 text-center relative">
+                      <td className="px-4 py-3.5 text-right text-saas-muted font-semibold whitespace-nowrap">{item.waktu}</td>
+                      <td className="px-4 py-3.5 text-center relative whitespace-nowrap">
                         <button
                           onClick={(e) => toggleMenu(`row-${item.id}`, e)}
                           className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
