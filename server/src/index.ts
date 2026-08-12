@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import app from './app';
 import prisma from './shared/config/prisma';
+import { initEmailWorker } from './jobs/emailWorker';
 
 const PORT = process.env.PORT || 5001;
 
@@ -9,6 +10,9 @@ async function main() {
     // Verifikasi koneksi database sebelum server mulai
     await prisma.$connect();
     console.log('✅ Database terhubung');
+
+    // Inisialisasi Background Job Email Worker
+    initEmailWorker();
 
     app.listen(PORT, () => {
       console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
