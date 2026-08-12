@@ -10,20 +10,24 @@ export interface AppNotification {
   category: 'balita' | 'lansia' | 'system';
 }
 
-const readNotificationsMap = new Map<string, Set<string>>();
-
 export const notificationService = {
+  /**
+   * Sync and retrieve notifications from Database for a specific Posyandu
+   */
   async getNotifications(posyanduId: string): Promise<{
     notifications: AppNotification[];
     unreadCount: number;
   }> {
-    const notifications: AppNotification[] = [];
-
     const posyandu = await prisma.posyandu.findUnique({
       where: { id: posyanduId },
       select: { nama: true },
     });
 
+    if (!posyandu) {
+      return { notifications: [], unreadCount: 0 };
+    }
+
+    // 1. Sync Balita Peringatan Gizi
     const alertBalita = await prisma.pemeriksaanBalita.findMany({
       where: {
         balita: { posyanduId },
@@ -42,30 +46,38 @@ export const notificationService = {
       },
     });
 
-    alertBalita.forEach((pem) => {
-      let issues: string[] = [];
-      if (pem.statusBbU === 'SK' || pem.statusBbU === 'K') {
-        issues.push(`BB/U: ${pem.statusBbU === 'SK' ? 'Sangat Kurang' : 'Kurang'}`);
-      }
-      if (pem.statusTbU === 'SP' || pem.statusTbU === 'P') {
-        issues.push(`TB/U: ${pem.statusTbU === 'SP' ? 'Sangat Pendek (Stunting)' : 'Pendek'}`);
-      }
-      if (pem.statusBbTb === 'SK' || pem.statusBbTb === 'G') {
-        issues.push(`BB/TB: ${pem.statusBbTb === 'SK' ? 'Gizi Severely Wasted' : 'Gizi Kurang'}`);
-      }
-
-      const id = `balita-alert-${pem.id}`;
-      notifications.push({
-        id,
-        title: `Peringatan Gizi: ${pem.balita.nama}`,
-        message: `Usia ${pem.usiaBulan} bln (Ibu ${pem.balita.namaIbu}). Status: ${issues.join(', ')}. Butuh perhatian gizi.`,
-        type: 'DANGER',
-        createdAt: pem.tanggalPeriksa.toISOString(),
-        isRead: false,
-        category: 'balita',
+    for (const pem of alertBalita) {
+      const title = `Peringatan Gizi: ${pem.balita.nama}`;
+      const existing = await prisma.notification.findFirst({
+        where: { posyanduId, title },
       });
-    });
 
+      if (!existing) {
+        const issues: string[] = [];
+        if (pem.statusBbU === 'SK' || pem.statusBbU === 'K') {
+          issues.push(`BB/U: ${pem.statusBbU === 'SK' ? 'Sangat Kurang' : 'Kurang'}`);
+        }
+        if (pem.statusTbU === 'SP' || pem.statusTbU === 'P') {
+          issues.push(`TB/U: ${pem.statusTbU === 'SP' ? 'Sangat Pendek (Stunting)' : 'Pendek'}`);
+        }
+        if (pem.statusBbTb === 'SK' || pem.statusBbTb === 'G') {
+          issues.push(`BB/TB: ${pem.statusBbTb === 'SK' ? 'Gizi Buruk' : 'Gizi Kurang'}`);
+        }
+
+        await prisma.notification.create({
+          data: {
+            posyanduId,
+            title,
+            message: `Usia ${pem.usiaBulan} bln (Ibu ${pem.balita.namaIbu}). Status: ${issues.join(', ')}. Butuh perhatian gizi.`,
+            type: 'DANGER',
+            category: 'balita',
+            createdAt: pem.tanggalPeriksa,
+          },
+        });
+      }
+    }
+
+    // 2. Sync Lansia Peringatan Kesehatan
     const alertLansia = await prisma.pemeriksaanLansia.findMany({
       where: {
         lansia: { posyanduId },
@@ -83,100 +95,110 @@ export const notificationService = {
       },
     });
 
-    alertLansia.forEach((pem) => {
-      let issues: string[] = [];
-      if (pem.tekananDarahSistol >= 140) {
-        issues.push(`TD: ${pem.tekananDarahSistol}/${pem.tekananDarahDiastol} mmHg (Hipertensi)`);
-      }
-      if (Number(pem.gulaDarahSewaktu) >= 200) {
-        issues.push(`Gula Darah: ${pem.gulaDarahSewaktu} mg/dL (Tinggi)`);
-      }
-
-      const id = `lansia-alert-${pem.id}`;
-      notifications.push({
-        id,
-        title: `Peringatan Kesehatan: ${pem.lansia.nama}`,
-        message: `RT/RW ${pem.lansia.rtRw}. Hasil periksa: ${issues.join(' | ')}. Berikan rujukan/konsultasi.`,
-        type: 'WARNING',
-        createdAt: pem.tanggalPeriksa.toISOString(),
-        isRead: false,
-        category: 'lansia',
+    for (const pem of alertLansia) {
+      const title = `Peringatan Kesehatan: ${pem.lansia.nama}`;
+      const existing = await prisma.notification.findFirst({
+        where: { posyanduId, title },
       });
-    });
 
-    const recentBalitaCheck = await prisma.pemeriksaanBalita.findMany({
-      where: { balita: { posyanduId } },
-      take: 2,
-      orderBy: { createdAt: 'desc' },
-      include: { balita: { select: { nama: true } } },
-    });
+      if (!existing) {
+        const issues: string[] = [];
+        if (pem.tekananDarahSistol >= 140) {
+          issues.push(`TD: ${pem.tekananDarahSistol}/${pem.tekananDarahDiastol} mmHg (Hipertensi)`);
+        }
+        if (Number(pem.gulaDarahSewaktu) >= 200) {
+          issues.push(`Gula Darah: ${pem.gulaDarahSewaktu} mg/dL (Tinggi)`);
+        }
 
-    recentBalitaCheck.forEach((pem) => {
-      const id = `balita-recent-${pem.id}`;
-      if (!notifications.some((n) => n.id === id || n.id === `balita-alert-${pem.id}`)) {
-        notifications.push({
-          id,
-          title: `Pemeriksaan Balita Dicatat`,
-          message: `Pemeriksaan ${pem.balita.nama} (Usia ${pem.usiaBulan} bln) berhasil dicatat ke database.`,
-          type: 'SUCCESS',
-          createdAt: pem.createdAt.toISOString(),
-          isRead: false,
-          category: 'balita',
+        await prisma.notification.create({
+          data: {
+            posyanduId,
+            title,
+            message: `RT/RW ${pem.lansia.rtRw}. Hasil periksa: ${issues.join(' | ')}. Berikan rujukan/konsultasi.`,
+            type: 'WARNING',
+            category: 'lansia',
+            createdAt: pem.tanggalPeriksa,
+          },
         });
       }
+    }
+
+    // 3. Ensure System Connected Notification
+    const sysTitle = `Terhubung ke ${posyandu.nama}`;
+    const existingSys = await prisma.notification.findFirst({
+      where: { posyanduId, title: sysTitle },
+    });
+    if (!existingSys) {
+      await prisma.notification.create({
+        data: {
+          posyanduId,
+          title: sysTitle,
+          message: `Data tersinkronisasi otomatis dengan server PostgreSQL database.`,
+          type: 'INFO',
+          category: 'system',
+        },
+      });
+    }
+
+    // Fetch all notifications from DB
+    const dbNotifications = await prisma.notification.findMany({
+      where: { posyanduId },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
     });
 
-    notifications.push({
-      id: `demo-balita-${posyanduId}`,
-      title: `Peringatan Gizi Balita: Anisa Rahma`,
-      message: `Usia 18 bln (Ibu Siti). Status BB/U: Sangat Kurang. Klik untuk membuka modul Balita.`,
-      type: 'DANGER',
-      createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      isRead: false,
-      category: 'balita',
+    const unreadCount = await prisma.notification.count({
+      where: { posyanduId, isRead: false },
     });
 
-    notifications.push({
-      id: `demo-lansia-${posyanduId}`,
-      title: `Perhatian Kesehatan Lansia: Pak Ahmad`,
-      message: `Tekanan Darah: 155/95 mmHg (Hipertensi). Klik untuk membuka modul Lansia.`,
-      type: 'WARNING',
-      createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      isRead: false,
-      category: 'lansia',
-    });
-
-    notifications.push({
-      id: `sys-conn-${posyanduId}`,
-      title: `Terhubung ke ${posyandu?.nama || 'Posyandu'}`,
-      message: `Data tersinkronisasi otomatis dengan server PostgreSQL.`,
-      type: 'INFO',
-      createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      isRead: false,
-      category: 'system',
-    });
-
-    notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    const readSet = readNotificationsMap.get(posyanduId) || new Set<string>();
-    let unreadCount = 0;
-
-    notifications.forEach((n) => {
-      if (readSet.has(n.id)) {
-        n.isRead = true;
-      } else {
-        unreadCount++;
-      }
-    });
+    const notifications: AppNotification[] = dbNotifications.map((n) => ({
+      id: n.id,
+      title: n.title,
+      message: n.message,
+      type: n.type as 'DANGER' | 'WARNING' | 'SUCCESS' | 'INFO',
+      createdAt: n.createdAt.toISOString(),
+      isRead: n.isRead,
+      category: n.category as 'balita' | 'lansia' | 'system',
+    }));
 
     return { notifications, unreadCount };
   },
 
+  /**
+   * Create a new notification directly into DB
+   */
+  async createNotification(data: {
+    posyanduId: string;
+    title: string;
+    message: string;
+    type?: 'DANGER' | 'WARNING' | 'SUCCESS' | 'INFO';
+    category?: 'balita' | 'lansia' | 'system';
+  }) {
+    return prisma.notification.create({
+      data: {
+        posyanduId: data.posyanduId,
+        title: data.title,
+        message: data.message,
+        type: data.type || 'INFO',
+        category: data.category || 'system',
+      },
+    });
+  },
+
+  /**
+   * Mark notifications as read in Database
+   */
   async markAllAsRead(posyanduId: string, notificationIds: string[]): Promise<void> {
-    if (!readNotificationsMap.has(posyanduId)) {
-      readNotificationsMap.set(posyanduId, new Set<string>());
+    if (notificationIds.length === 0) {
+      await prisma.notification.updateMany({
+        where: { posyanduId, isRead: false },
+        data: { isRead: true },
+      });
+    } else {
+      await prisma.notification.updateMany({
+        where: { posyanduId, id: { in: notificationIds } },
+        data: { isRead: true },
+      });
     }
-    const readSet = readNotificationsMap.get(posyanduId)!;
-    notificationIds.forEach((id) => readSet.add(id));
   },
 };
