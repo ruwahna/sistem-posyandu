@@ -739,6 +739,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Contoh: 60"
                       value={examBB}
                       onChange={(e) => setExamBB(e.target.value)}
@@ -752,6 +753,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Contoh: 160"
                       value={examTB}
                       onChange={(e) => setExamTB(e.target.value)}
@@ -781,6 +783,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <label className="text-xs font-bold text-saas-muted">Sistol (mmHg)</label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="TD atas, cth: 130"
                       value={examSistol}
                       onChange={(e) => {
@@ -796,6 +799,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <label className="text-xs font-bold text-saas-muted">Diastol (mmHg)</label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="TD bawah, cth: 85"
                       value={examDiastol}
                       onChange={(e) => setExamDiastol(e.target.value)}
@@ -808,6 +812,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <label className="text-xs font-bold text-saas-muted">GDS (mg/dL)</label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="Contoh: 120"
                       value={examGds}
                       onChange={(e) => {
@@ -823,6 +828,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <label className="text-xs font-bold text-saas-muted">Lingkar Perut (cm)</label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="Contoh: 90"
                       value={examLp}
                       onChange={(e) => setExamLp(e.target.value)}
@@ -837,6 +843,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <label className="text-xs font-bold text-saas-muted">Kolesterol (mg/dL - opsional)</label>
                     <input
                       type="number"
+                      min="0"
                       placeholder="cth: 180"
                       value={examCholesterol}
                       onChange={(e) => setExamCholesterol(e.target.value)}
@@ -850,6 +857,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="cth: 6.2"
                       value={examUricAcid}
                       onChange={(e) => setExamUricAcid(e.target.value)}

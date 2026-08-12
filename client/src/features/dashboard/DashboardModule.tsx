@@ -795,6 +795,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Cth: 8.5"
                       value={examBB}
                       onChange={(e) => {
@@ -811,6 +812,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Cth: 72"
                       value={examTB}
                       onChange={(e) => setExamTB(e.target.value)}
@@ -846,6 +848,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <input
                           type="number"
                           step="0.1"
+                          min="0"
                           placeholder="Opsional, cth: 44"
                           value={examLK}
                           onChange={(e) => setExamLK(e.target.value)}
@@ -859,6 +862,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <input
                           type="number"
                           step="0.1"
+                          min="0"
                           placeholder="Cth: 12.5"
                           value={examLiLA}
                           onChange={(e) => setExamLiLA(e.target.value)}
@@ -990,6 +994,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Sistol (mmHg)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="TD atas, cth: 130"
                           value={examSistol}
                           onChange={(e) => {
@@ -1005,6 +1010,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Diastol (mmHg)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="TD bawah, cth: 85"
                           value={examDiastol}
                           onChange={(e) => setExamDiastol(e.target.value)}
@@ -1017,6 +1023,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">GDS (mg/dL)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="Cth: 120"
                           value={examGds}
                           onChange={(e) => setExamGds(e.target.value)}
@@ -1029,6 +1036,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Lingkar Perut (cm)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="Cth: 90"
                           value={examLp}
                           onChange={(e) => setExamLp(e.target.value)}
@@ -1043,6 +1051,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Kolesterol (mg/dL)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="cth: 180"
                           value={examCholesterol}
                           onChange={(e) => setExamCholesterol(e.target.value)}
@@ -1056,6 +1065,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <input
                           type="number"
                           step="0.1"
+                          min="0"
                           placeholder="cth: 6.2"
                           value={examUricAcid}
                           onChange={(e) => setExamUricAcid(e.target.value)}

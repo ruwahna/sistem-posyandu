@@ -71,10 +71,10 @@ export const createPemeriksaanBalitaSchema = z.object({
     const date = new Date(val);
     return !isNaN(date.getTime()) && date <= new Date();
   }, 'Tanggal periksa tidak valid atau melebihi hari ini'), // BR-01
-  beratBadan: z.number().positive('Berat badan harus angka positif'), // BR-03
-  tinggiBadan: z.number().positive('Tinggi badan harus angka positif'), // BR-03
-  lingkarKepala: z.number().positive('Lingkar kepala harus angka positif').optional().nullable(),
-  lingkarLengan: z.number().positive('Lingkar lengan harus angka positif').optional().nullable(),
+  beratBadan: z.number().nonnegative('Berat badan tidak boleh bernilai negatif').refine((val) => val > 0, 'Berat badan harus lebih dari 0'), // BR-03
+  tinggiBadan: z.number().nonnegative('Tinggi badan tidak boleh bernilai negatif').refine((val) => val > 0, 'Tinggi badan harus lebih dari 0'), // BR-03
+  lingkarKepala: z.number().nonnegative('Lingkar kepala tidak boleh bernilai negatif').refine((val) => val > 0, 'Lingkar kepala harus lebih dari 0').optional().nullable(),
+  lingkarLengan: z.number().nonnegative('Lingkar lengan tidak boleh bernilai negatif').refine((val) => val > 0, 'Lingkar lengan harus lebih dari 0').optional().nullable(),
   statusBbU: statusBbUEnum.optional(),
   statusTbU: statusTbUEnum.optional(),
   statusBbTb: statusBbTbEnum.optional(),
@@ -84,7 +84,7 @@ export const createPemeriksaanBalitaSchema = z.object({
   obatCacing: z.boolean().optional().nullable(),
   statusImunisasi: z.string().optional().nullable(),
   usiaBulan: z.number().optional(), // Frontend mengirim tapi backend ignore (hitung sendiri)
-}).strict(false); // Allow extra fields dari frontend
+}).passthrough(); // Allow extra fields dari frontend
 
 export const updatePemeriksaanBalitaSchema = createPemeriksaanBalitaSchema.partial();
 
@@ -120,14 +120,14 @@ export const createPemeriksaanLansiaSchema = z.object({
     const date = new Date(val);
     return !isNaN(date.getTime()) && date <= new Date();
   }, 'Tanggal periksa tidak valid atau melebihi hari ini'), // BR-01
-  beratBadan: z.number().positive('Berat badan harus angka positif'), // BR-03
-  tinggiBadan: z.number().positive('Tinggi badan harus angka positif'), // BR-03
-  tekananDarahSistol: z.number().int().positive('Tekanan darah sistol harus angka positif'),
-  tekananDarahDiastol: z.number().int().positive('Tekanan darah diastol harus angka positif'),
-  gulaDarahSewaktu: z.number().positive('GDS harus angka positif'),
-  lingkarPerut: z.number().positive('Lingkar perut harus angka positif'),
-  kolesterol: z.number().positive('Kolesterol harus angka positif').optional().nullable(),
-  asamUrat: z.number().positive('Asam urat harus angka positif').optional().nullable(),
+  beratBadan: z.number().nonnegative('Berat badan tidak boleh bernilai negatif').refine((val) => val > 0, 'Berat badan harus lebih dari 0'), // BR-03
+  tinggiBadan: z.number().nonnegative('Tinggi badan tidak boleh bernilai negatif').refine((val) => val > 0, 'Tinggi badan harus lebih dari 0'), // BR-03
+  tekananDarahSistol: z.number().int().nonnegative('Tekanan darah sistol tidak boleh bernilai negatif').refine((val) => val > 0, 'Tekanan darah sistol harus lebih dari 0'),
+  tekananDarahDiastol: z.number().int().nonnegative('Tekanan darah diastol tidak boleh bernilai negatif').refine((val) => val > 0, 'Tekanan darah diastol harus lebih dari 0'),
+  gulaDarahSewaktu: z.number().nonnegative('GDS tidak boleh bernilai negatif').refine((val) => val > 0, 'GDS harus lebih dari 0'),
+  lingkarPerut: z.number().nonnegative('Lingkar perut tidak boleh bernilai negatif').refine((val) => val > 0, 'Lingkar perut harus lebih dari 0'),
+  kolesterol: z.number().nonnegative('Kolesterol tidak boleh bernilai negatif').refine((val) => val > 0, 'Kolesterol harus lebih dari 0').optional().nullable(),
+  asamUrat: z.number().nonnegative('Asam urat tidak boleh bernilai negatif').refine((val) => val > 0, 'Asam urat harus lebih dari 0').optional().nullable(),
   keluhan: z.string().optional().nullable(),
   tindakan: z.string().optional().nullable(),
 });
