@@ -24,9 +24,11 @@ model Posyandu {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   // Relations
-  kaders  Kader[]
-  balitas Balita[]
-  lansias Lansia[]
+  kaders        Kader[]
+  balitas       Balita[]
+  lansias       Lansia[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
 
   @@map("posyandu")
 }
@@ -189,4 +191,41 @@ enum Kemandirian {
   A
   B
   C
+}
+
+// ─────────────────────────────────────────────────────────────
+// NOTIFICATION
+// ─────────────────────────────────────────────────────────────
+model Notification {
+  id         String   @id @default(uuid())
+  posyanduId String   @map("posyandu_id")
+  title      String
+  message    String   @db.Text
+  type       String   @default("INFO") // DANGER | WARNING | SUCCESS | INFO
+  category   String   @default("system") // balita | lansia | system
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  posyandu Posyandu @relation(fields: [posyanduId], references: [id], onDelete: Cascade)
+
+  @@map("notification")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────────────────────
+model AuditLog {
+  id         String   @id @default(uuid())
+  posyanduId String?  @map("posyandu_id")
+  kaderId    String?  @map("kader_id")
+  kaderNama  String?  @map("kader_nama")
+  action     String   // E.g. LOGIN, BACKUP_DATA, RESET_POSYANDU
+  details    String?  @db.Text
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  posyandu Posyandu? @relation(fields: [posyanduId], references: [id], onDelete: SetNull)
+
+  @@map("audit_log")
 }

@@ -443,6 +443,5 @@ MIT License — bebas digunakan untuk keperluan pendidikan dan non-komersial.
 ---
 
 <div align="center">
-  <p>Dibuat dengan ❤️ untuk Indonesia Sehat</p>
   <p>© 2026 PosyanduKita</p>
 </div>
