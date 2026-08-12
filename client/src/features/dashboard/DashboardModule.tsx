@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { dashboardApi, DashboardSummary, balitaApi, lansiaApi, TrenGiziItem } from "../../lib/api";
+import { dashboardApi, DashboardSummary, DistribusiKehadiran, balitaApi, lansiaApi, TrenGiziItem } from "../../lib/api";
 import { formatTanggalIndonesia } from "../../lib/dateUtils";
 import Modal from "../../components/Modal";
 import PageHelmet from "../../components/PageHelmet";
@@ -74,6 +74,8 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const [dbPasiens, setDbPasiens] = useState<Pasien[]>([]);
+  const [distribusiKehadiran, setDistribusiKehadiran] = useState<DistribusiKehadiran[]>([]);
+  const [isDistribusiLoading, setIsDistribusiLoading] = useState(false);
 
   // ── Tren Gizi & Z-Score State ──
   const [trenPeriod, setTrenPeriod] = useState<"bulanan" | "tahunan">("bulanan");
@@ -134,6 +136,20 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
         setDbPasiens([...balitas, ...lansias]);
       })
       .catch(console.error);
+  }, [posyanduId]);
+
+  // Fetch Distribusi Kehadiran RT/RW (Poin 20)
+  useEffect(() => {
+    setIsDistribusiLoading(true);
+    dashboardApi
+      .getDistribusiKehadiran(posyanduId)
+      .then((res) => {
+        if (res.success && res.data) {
+          setDistribusiKehadiran(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsDistribusiLoading(false));
   }, [posyanduId]);
 
   // Build kunjungan list from API data (recent pemeriksaan)
@@ -770,23 +786,39 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
           </div>
 
           <div className="space-y-6">
-            {[
-              { region: "RT 01 / RW 02", percent: 84, color: "bg-saas-primary" },
-              { region: "RT 02 / RW 02", percent: 72, color: "bg-green-500" },
-              { region: "RT 03 / RW 02", percent: 65, color: "bg-indigo-500" },
-              { region: "RT 04 / RW 02", percent: 48, color: "bg-yellow-400" },
-              { region: "RT 05 / RW 02", percent: 30, color: "bg-red-400" },
-            ].map((row, i) => (
-              <div key={i} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-saas-dark font-bold">{row.region}</span>
-                  <span className="text-saas-muted font-bold">{row.percent}%</span>
-                </div>
-                <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden border border-gray-100/20">
-                  <div style={{ width: `${row.percent}%` }} className={`h-full rounded-full ${row.color}`}></div>
-                </div>
+            {isDistribusiLoading ? (
+              <div className="flex items-center justify-center py-8 text-xs text-saas-muted">
+                Memuat data distribusi kehadiran...
               </div>
-            ))}
+            ) : distribusiKehadiran.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-xs text-saas-muted">
+                Belum ada data kehadiran tersedia.
+              </div>
+            ) : (
+              distribusiKehadiran.map((row, i) => {
+                // Dynamic color based on percentage
+                let color = "bg-saas-primary";
+                if (row.persentase < 30) color = "bg-red-400";
+                else if (row.persentase < 50) color = "bg-yellow-400";
+                else if (row.persentase < 70) color = "bg-indigo-500";
+                else if (row.persentase < 85) color = "bg-green-500";
+
+                return (
+                  <div key={i} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-saas-dark font-bold">{row.rtRw}</span>
+                      <span className="text-saas-muted font-bold">{row.persentase}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden border border-gray-100/20">
+                        <div style={{ width: `${row.persentase}%` }} className={`h-full rounded-full ${color}`}></div>
+                      </div>
+                      <span className="text-[10px] text-saas-muted font-semibold whitespace-nowrap">{row.hadir}/{row.total}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
