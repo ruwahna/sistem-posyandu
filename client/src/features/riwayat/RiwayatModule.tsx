@@ -13,9 +13,13 @@ import {
   Loader2,
   TrendingUp,
   FileSpreadsheet,
-  LineChart as LineChartIcon
+  LineChart as LineChartIcon,
+  Edit2,
+  Trash2,
+  Eye
 } from "lucide-react";
 import { riwayatApi, ItemRiwayat } from "@/lib/api";
+import ActionMenu from "@/components/ActionMenu";
 import {
   ResponsiveContainer,
   LineChart,
@@ -314,6 +318,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                     <th className="pb-3">Parameter Fisik & Medis</th>
                     <th className="pb-3">Kondisi Hasil</th>
                     <th className="pb-3">Petugas</th>
+                    <th className="pb-3 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -358,11 +363,44 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                           </span>
                         </td>
                         <td className="py-4 text-xs text-saas-muted font-bold">{log.petugas}</td>
+                        <td className="py-4 text-right">
+                          <ActionMenu
+                            items={[
+                              {
+                                label: "Lihat Detail",
+                                icon: <Eye className="w-4 h-4" />,
+                                onClick: () => {
+                                  console.log("View detail:", log.id);
+                                  // TODO: Implementasi view detail pemeriksaan
+                                }
+                              },
+                              {
+                                label: "Edit",
+                                icon: <Edit2 className="w-4 h-4" />,
+                                onClick: () => {
+                                  console.log("Edit:", log.id);
+                                  // TODO: Implementasi edit pemeriksaan
+                                }
+                              },
+                              {
+                                label: "Hapus",
+                                icon: <Trash2 className="w-4 h-4" />,
+                                variant: "danger",
+                                onClick: () => {
+                                  if (confirm("Yakin ingin menghapus pemeriksaan ini?")) {
+                                    console.log("Delete:", log.id);
+                                    // TODO: Implementasi hapus pemeriksaan
+                                  }
+                                }
+                              }
+                            ]}
+                          />
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-xs text-saas-muted font-medium">
+                      <td colSpan={7} className="py-12 text-center text-xs text-saas-muted font-medium">
                         Tidak ada catatan riwayat pemeriksaan yang cocok.
                       </td>
                     </tr>
