@@ -9,6 +9,7 @@ import dashboardRoutes from './modules/dashboard/dashboard.routes';
 import balitaRoutes from './modules/balita/balita.routes';
 import lansiaRoutes from './modules/lansia/lansia.routes';
 import notificationRoutes from './modules/notification/notification.routes';
+import ownerRoutes from './modules/owner/owner.routes';
 import { errorHandler, notFound } from './shared/middlewares/error.middleware';
 
 const app = express();
@@ -45,6 +46,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/posyandu', posyanduRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/owner', ownerRoutes);
 
 // Nested tenant routes
 app.use('/api/posyandu/:posyanduId/balita', balitaRoutes);

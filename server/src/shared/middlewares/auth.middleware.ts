@@ -3,8 +3,10 @@ import jwt from 'jsonwebtoken';
 
 export interface JwtPayload {
   userId: string;
+  id?: string;
   posyanduId: string;
   role: string;
+  nama?: string;
 }
 
 // Extend Express Request to include decoded JWT payload
@@ -56,3 +58,5 @@ export const authorize = (...roles: string[]) => {
     next();
   };
 };
+
+export const authorizeRole = authorize;

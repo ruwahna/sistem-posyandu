@@ -224,9 +224,26 @@ export const authApi = {
     }),
 };
 
+export interface TrenGiziItem {
+  periodKey: string;
+  label: string;
+  total: number;
+  normal: number;
+  kurang: number;
+  sangatKurang: number;
+  lebih: number;
+  stunting: number;
+  pctNormal: number;
+  pctKurang: number;
+  avgZScoreBBU: number;
+  avgZScoreTBU: number;
+}
+
 export const dashboardApi = {
   getSummary: (posyanduId: string) =>
     request<ApiResponse<DashboardSummary>>(`/api/dashboard/${posyanduId}`),
+  getTrenGizi: (posyanduId: string, period: 'bulanan' | 'tahunan' = 'bulanan') =>
+    request<ApiResponse<TrenGiziItem[]>>(`/api/dashboard/${posyanduId}/tren-gizi?period=${period}`),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -483,6 +500,34 @@ export const kaderApi = {
   delete: (posyanduId: string, kaderId: string) =>
     request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/kader/${kaderId}`, {
       method: 'DELETE',
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// API: OWNER / SYSTEM SECURITY & BACKUP
+// ─────────────────────────────────────────────────────────────
+
+export interface AuditLogItem {
+  id: string;
+  posyanduId?: string;
+  kaderId?: string;
+  kaderNama?: string;
+  action: string;
+  details?: string;
+  ipAddress?: string;
+  createdAt: string;
+}
+
+export const ownerApi = {
+  getAuditLogs: (posyanduId: string) =>
+    request<ApiResponse<AuditLogItem[]>>(`/api/owner/audit-logs/${posyanduId}`),
+
+  backupDataUrl: (posyanduId: string) => `/api/owner/backup/${posyanduId}`,
+
+  resetData: (posyanduId: string, data: { confirmText: string; password: string }) =>
+    request<ApiResponse<{ message: string }>>(`/api/owner/reset-data/${posyanduId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
     }),
 };
 
