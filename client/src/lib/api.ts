@@ -280,6 +280,12 @@ export const balitaApi = {
       body: JSON.stringify(data),
     }),
 
+  updatePemeriksaan: (posyanduId: string, balitaId: string, id: string, data: Partial<Omit<PemeriksaanBalita, 'id'>>) =>
+    request<ApiResponse<PemeriksaanBalita>>(`/api/posyandu/${posyanduId}/balita/${balitaId}/pemeriksaan/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   deletePemeriksaan: (posyanduId: string, balitaId: string, id: string) =>
     request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/balita/${balitaId}/pemeriksaan/${id}`, {
       method: 'DELETE',
@@ -323,6 +329,12 @@ export const lansiaApi = {
       body: JSON.stringify(data),
     }),
 
+  updatePemeriksaan: (posyanduId: string, lansiaId: string, id: string, data: Partial<Omit<PemeriksaanLansia, 'id'>>) =>
+    request<ApiResponse<PemeriksaanLansia>>(`/api/posyandu/${posyanduId}/lansia/${lansiaId}/pemeriksaan/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   deletePemeriksaan: (posyanduId: string, lansiaId: string, id: string) =>
     request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/lansia/${lansiaId}/pemeriksaan/${id}`, {
       method: 'DELETE',
@@ -335,6 +347,7 @@ export const lansiaApi = {
 
 export interface ItemRiwayat {
   id: string;
+  pasienId?: string;
   nama: string;
   tipe: 'Balita' | 'Lansia';
   tanggal: string;
@@ -342,6 +355,28 @@ export interface ItemRiwayat {
   parameter: string;
   status: string;
   statusType: 'success' | 'warning' | 'info';
+  tanggalLahir?: string;
+  jenisKelamin?: string;
+  beratBadan?: number;
+  tinggiBadan?: number;
+  lingkarKepala?: number;
+  lingkarLengan?: number;
+  statusBbU?: string;
+  statusTbU?: string;
+  statusBbTb?: string;
+  statusKms?: string;
+  vitaminA?: boolean;
+  asiEksklusif?: boolean;
+  obatCacing?: boolean;
+  statusImunisasi?: string;
+  tekananDarahSistol?: number;
+  tekananDarahDiastol?: number;
+  gulaDarahSewaktu?: number;
+  kolesterol?: number;
+  asamUrat?: number;
+  lingkarPerut?: number;
+  keluhan?: string;
+  tindakan?: string;
 }
 
 export const riwayatApi = {

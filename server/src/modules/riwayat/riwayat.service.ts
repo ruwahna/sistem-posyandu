@@ -12,6 +12,7 @@ export interface FilterRiwayat {
 
 export interface ItemRiwayat {
   id: string;
+  pasienId?: string;
   nama: string;
   tipe: 'Balita' | 'Lansia';
   tanggal: string;
@@ -19,6 +20,28 @@ export interface ItemRiwayat {
   parameter: string;
   status: string;
   statusType: 'success' | 'warning' | 'info';
+  tanggalLahir?: string;
+  jenisKelamin?: string;
+  beratBadan?: number;
+  tinggiBadan?: number;
+  lingkarKepala?: number;
+  lingkarLengan?: number;
+  statusBbU?: string;
+  statusTbU?: string;
+  statusBbTb?: string;
+  statusKms?: string;
+  vitaminA?: boolean;
+  asiEksklusif?: boolean;
+  obatCacing?: boolean;
+  statusImunisasi?: string;
+  tekananDarahSistol?: number;
+  tekananDarahDiastol?: number;
+  gulaDarahSewaktu?: number;
+  kolesterol?: number;
+  asamUrat?: number;
+  lingkarPerut?: number;
+  keluhan?: string;
+  tindakan?: string;
 }
 
 export const riwayatService = {
@@ -47,7 +70,7 @@ export const riwayatService = {
         },
         include: {
           balita: {
-            select: { nama: true, posyandu: { select: { nama: true } } },
+            select: { id: true, nama: true, tanggalLahir: true, jenisKelamin: true, posyandu: { select: { nama: true } } },
           },
         },
         orderBy: { tanggalPeriksa: 'desc' },
@@ -68,6 +91,7 @@ export const riwayatService = {
 
         results.push({
           id: item.id,
+          pasienId: item.balitaId,
           nama: item.balita.nama,
           tipe: 'Balita',
           tanggal: item.tanggalPeriksa.toISOString().split('T')[0],
@@ -75,6 +99,20 @@ export const riwayatService = {
           parameter: paramStr,
           status: statusDesc,
           statusType,
+          tanggalLahir: item.balita.tanggalLahir ? item.balita.tanggalLahir.toISOString().split('T')[0] : undefined,
+          jenisKelamin: item.balita.jenisKelamin,
+          beratBadan: Number(item.beratBadan),
+          tinggiBadan: Number(item.tinggiBadan),
+          lingkarKepala: item.lingkarKepala ? Number(item.lingkarKepala) : undefined,
+          lingkarLengan: item.lingkarLengan ? Number(item.lingkarLengan) : undefined,
+          statusBbU: item.statusBbU,
+          statusTbU: item.statusTbU,
+          statusBbTb: item.statusBbTb,
+          statusKms: item.statusKms || undefined,
+          vitaminA: item.vitaminA,
+          asiEksklusif: item.asiEksklusif || undefined,
+          obatCacing: item.obatCacing || undefined,
+          statusImunisasi: item.statusImunisasi || undefined,
         });
       }
     }
@@ -90,7 +128,7 @@ export const riwayatService = {
         },
         include: {
           lansia: {
-            select: { nama: true },
+            select: { id: true, nama: true, tanggalLahir: true, jenisKelamin: true },
           },
         },
         orderBy: { tanggalPeriksa: 'desc' },
@@ -111,6 +149,7 @@ export const riwayatService = {
 
         results.push({
           id: item.id,
+          pasienId: item.lansiaId,
           nama: item.lansia.nama,
           tipe: 'Lansia',
           tanggal: item.tanggalPeriksa.toISOString().split('T')[0],
@@ -118,6 +157,18 @@ export const riwayatService = {
           parameter: paramStr,
           status: statusDesc,
           statusType,
+          tanggalLahir: item.lansia.tanggalLahir ? item.lansia.tanggalLahir.toISOString().split('T')[0] : undefined,
+          jenisKelamin: item.lansia.jenisKelamin,
+          beratBadan: Number(item.beratBadan),
+          tinggiBadan: Number(item.tinggiBadan),
+          tekananDarahSistol: item.tekananDarahSistol,
+          tekananDarahDiastol: item.tekananDarahDiastol,
+          gulaDarahSewaktu: Number(item.gulaDarahSewaktu),
+          kolesterol: item.kolesterol ? Number(item.kolesterol) : undefined,
+          asamUrat: item.asamUrat ? Number(item.asamUrat) : undefined,
+          lingkarPerut: Number(item.lingkarPerut),
+          keluhan: item.keluhan || undefined,
+          tindakan: item.tindakan || undefined,
         });
       }
     }
