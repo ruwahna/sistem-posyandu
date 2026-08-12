@@ -470,7 +470,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
               onChange={(e) => setQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 focus:bg-white transition-all"
             />
-            <Search className="absolute left-3 top-2.5 text-saas-muted w-4.5 h-4.5" />
+            <Search className="absolute left-3.5 top-2.5 text-saas-muted/80 w-4 h-4" />
           </div>
 
           <div className="flex gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100/50">
