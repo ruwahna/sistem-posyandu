@@ -7,35 +7,71 @@ export const lansiaService = {
     search?: string,
     kelompokUmur?: string,
     filterHt?: boolean,
-    filterDm?: boolean
+    filterDm?: boolean,
+    page: number = 1,
+    limit: number = 10
   ) {
-    const lansias = await prisma.lansia.findMany({
-      where: {
-        posyanduId,
-        ...(search && { nama: { contains: search, mode: 'insensitive' } }),
-        ...(filterHt !== undefined && { riwayatHt: filterHt }),
-        ...(filterDm !== undefined && { riwayatDm: filterDm }),
-      },
-      orderBy: { nama: 'asc' },
-      include: {
-        pemeriksaans: {
-          orderBy: { tanggalPeriksa: 'desc' },
-          take: 1,
+    const skip = (page - 1) * limit;
+    const where: any = {
+      posyanduId,
+      ...(search && { nama: { contains: search, mode: 'insensitive' } }),
+      ...(filterHt !== undefined && { riwayatHt: filterHt }),
+      ...(filterDm !== undefined && { riwayatDm: filterDm }),
+    };
+
+    if (!kelompokUmur) {
+      const [total, lansias] = await Promise.all([
+        prisma.lansia.count({ where }),
+        prisma.lansia.findMany({
+          where,
+          orderBy: { nama: 'asc' },
+          skip,
+          take: limit,
+          include: {
+            pemeriksaans: {
+              orderBy: { tanggalPeriksa: 'desc' },
+              take: 1,
+            },
+          },
+        }),
+      ]);
+
+      const data = lansias.map((l) => {
+        const now = new Date();
+        const tahun = now.getFullYear() - l.tanggalLahir.getFullYear();
+        const kelompok = kelompokUmurLansia(tahun);
+        return { ...l, usiaTahun: tahun, kelompokUmur: kelompok };
+      });
+
+      const totalPages = Math.ceil(total / limit) || 1;
+      return { data, meta: { page, limit, total, totalPages } };
+    } else {
+      const allLansias = await prisma.lansia.findMany({
+        where,
+        orderBy: { nama: 'asc' },
+        include: {
+          pemeriksaans: {
+            orderBy: { tanggalPeriksa: 'desc' },
+            take: 1,
+          },
         },
-      },
-    });
+      });
 
-    const result = lansias.map((l) => {
-      const now = new Date();
-      const tahun = now.getFullYear() - l.tanggalLahir.getFullYear();
-      const kelompok = kelompokUmurLansia(tahun);
-      return { ...l, usiaTahun: tahun, kelompokUmur: kelompok };
-    });
+      const filtered = allLansias
+        .map((l) => {
+          const now = new Date();
+          const tahun = now.getFullYear() - l.tanggalLahir.getFullYear();
+          const kelompok = kelompokUmurLansia(tahun);
+          return { ...l, usiaTahun: tahun, kelompokUmur: kelompok };
+        })
+        .filter((l) => l.kelompokUmur === kelompokUmur);
 
-    if (kelompokUmur) {
-      return result.filter((l) => l.kelompokUmur === kelompokUmur);
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / limit) || 1;
+      const data = filtered.slice(skip, skip + limit);
+
+      return { data, meta: { page, limit, total, totalPages } };
     }
-    return result;
   },
 
   async findById(id: string, posyanduId: string) {
