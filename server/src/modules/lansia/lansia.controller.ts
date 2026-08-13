@@ -9,18 +9,30 @@ import { kelompokUmurLansia } from './lansia.helper';
 export const getAllLansia = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = req.params.posyanduId as string;
-    const { search, kelompokUmur, ht, dm } = req.query as {
+    const { search, kelompokUmur, ht, dm, page, limit } = req.query as {
       search?: string;
       kelompokUmur?: string;
       ht?: string;
       dm?: string;
+      page?: string;
+      limit?: string;
     };
 
     const filterHt = ht !== undefined ? ht === 'true' : undefined;
     const filterDm = dm !== undefined ? dm === 'true' : undefined;
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
 
-    const data = await lansiaService.findAll(posyanduId, search, kelompokUmur, filterHt, filterDm);
-    res.json({ success: true, data });
+    const { data, meta } = await lansiaService.findAll(
+      posyanduId,
+      search,
+      kelompokUmur,
+      filterHt,
+      filterDm,
+      pageNum,
+      limitNum
+    );
+    res.json({ success: true, data, meta });
   } catch (err) {
     next(err);
   }

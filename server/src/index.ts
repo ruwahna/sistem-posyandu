@@ -6,21 +6,17 @@ import { initEmailWorker } from './jobs/emailWorker';
 const PORT = process.env.PORT || 5001;
 
 async function main() {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
+    console.log(`   Mode: ${process.env.NODE_ENV || 'development'}`);
+  });
+
   try {
-    // Verifikasi koneksi database sebelum server mulai
     await prisma.$connect();
     console.log('✅ Database terhubung');
-
-    // Inisialisasi Background Job Email Worker
     initEmailWorker();
-
-    app.listen(PORT, () => {
-      console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
-      console.log(`   Mode: ${process.env.NODE_ENV || 'development'}`);
-    });
   } catch (error) {
-    console.error('❌ Gagal menghubungkan ke database:', error);
-    process.exit(1);
+    console.error('⚠️ Warning: Gagal menghubungkan ke database saat startup:', error);
   }
 }
 

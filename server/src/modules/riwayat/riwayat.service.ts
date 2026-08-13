@@ -273,88 +273,130 @@ export const riwayatService = {
     }
 
     const data = await this.getRiwayat(posyanduId, filter);
-
     const doc = new PDFDocument({ margin: 50, bufferPages: true });
 
-    doc.fontSize(18).font('Helvetica-Bold').text('LAPORAN RIWAYAT PEMERIKSAAN BULANAN', { align: 'center' });
-    doc.fontSize(18).font('Helvetica-Bold').text('POSYANDU', { align: 'center' });
+    // Header Kop Resmi
+    doc.fontSize(16).font('Helvetica-Bold').text('SISTEM INFORMASI POSYANDU', { align: 'center' });
+    doc.fontSize(14).font('Helvetica-Bold').text(`POSYANDU ${posyandu.nama.toUpperCase()}`, { align: 'center' });
+    doc.fontSize(10).font('Helvetica').text(`Desa/Kelurahan: ${posyandu.desa || '-'}, Kecamatan: ${posyandu.kecamatan || '-'}`, { align: 'center' });
+    doc.fontSize(9).font('Helvetica').text(`Alamat: ${posyandu.alamat || '-'}`, { align: 'center' });
+
+    // Draw Kop Line Separator
     doc.moveDown(0.5);
+    const startX = 50;
+    const endX = doc.page.width - 50;
+    const currentY = doc.y;
+    doc.lineWidth(2).moveTo(startX, currentY).lineTo(endX, currentY).stroke();
+    doc.lineWidth(0.5).moveTo(startX, currentY + 3).lineTo(endX, currentY + 3).stroke();
+    doc.moveDown(0.8);
 
-    doc.fontSize(11).font('Helvetica').text(`Posyandu: ${posyandu?.nama || '-'}`, { align: 'center' });
-    doc.fontSize(11).font('Helvetica').text(`Desa: ${posyandu?.desa || '-'}, Kecamatan: ${posyandu?.kecamatan || '-'}`, { align: 'center' });
-    doc.fontSize(11).font('Helvetica').text(`Alamat: ${posyandu?.alamat || '-'}`, { align: 'center' });
-    doc.fontSize(10).font('Helvetica-Oblique').text(`Tanggal Cetak: ${new Date().toISOString().split('T')[0]}`, { align: 'center' });
-    doc.moveDown(1);
+    // Title Laporan
+    doc.fontSize(12).font('Helvetica-Bold').text('LAPORAN REKAPITULASI PEMERIKSAAN BULANAN', { align: 'center' });
+    const todayFormatted = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    doc.fontSize(9).font('Helvetica-Oblique').text(`Tanggal Cetak: ${todayFormatted}`, { align: 'center' });
+    doc.moveDown(0.8);
 
-    const tableTop = doc.y;
-    const col1 = 50;
-    const col2 = 100;
-    const col3 = 180;
-    const col4 = 250;
-    const col5 = 320;
-    const col6 = 450;
+    // Rekapitulasi Stats Box
+    const totalBalita = data.filter((d) => d.tipe === 'Balita').length;
+    const totalLansia = data.filter((d) => d.tipe === 'Lansia').length;
+    const totalWarning = data.filter((d) => d.statusType === 'warning').length;
+
+    const statsY = doc.y;
+    doc.rect(startX, statsY, endX - startX, 32).fillAndStroke('#f8fafc', '#cbd5e1');
+    doc.fillColor('#0f172a').fontSize(9).font('Helvetica-Bold');
+    doc.text(`Total Data: ${data.length} Orang`, startX + 15, statsY + 11);
+    doc.text(`Balita: ${totalBalita} Anak`, startX + 140, statsY + 11);
+    doc.text(`Lansia: ${totalLansia} Orang`, startX + 250, statsY + 11);
+    doc.fillColor('#dc2626').text(`Perlu Perhatian: ${totalWarning} Kasus`, startX + 360, statsY + 11);
+    doc.fillColor('#000000');
+
+    doc.y = statsY + 42;
+
+    // Table Setup
+    const colNo = 50;
+    const colTgl = 80;
+    const colNama = 150;
+    const colTipe = 250;
+    const colParam = 310;
+    const colStatus = 440;
+    const tableWidth = 512;
 
     const drawTableHeader = (y: number) => {
-      doc.rect(col1 - 5, y, 455, 25).stroke();
-      
-      doc.fontSize(10).font('Helvetica-Bold');
-      doc.text('No', col1, y + 7);
-      doc.text('Tanggal', col2, y + 7);
-      doc.text('Nama', col3, y + 7);
-      doc.text('Kategori', col4, y + 7);
-      doc.text('Parameter', col5, y + 7);
-      doc.text('Status', col6, y + 7);
+      doc.rect(colNo, y, tableWidth, 22).fillAndStroke('#0f766e', '#0f766e');
+      doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold');
+      doc.text('No', colNo + 5, y + 6);
+      doc.text('Tanggal', colTgl + 2, y + 6);
+      doc.text('Nama Peserta', colNama + 2, y + 6);
+      doc.text('Kategori', colTipe + 2, y + 6);
+      doc.text('Parameter Fisik & Medis', colParam + 2, y + 6);
+      doc.text('Kondisi Hasil', colStatus + 2, y + 6);
+      doc.fillColor('#000000');
     };
 
-    drawTableHeader(tableTop);
-    doc.moveDown(1.5);
-
     let yPosition = doc.y;
-    const rowHeight = 18;
+    drawTableHeader(yPosition);
+    yPosition += 22;
+
+    const rowHeight = 22;
 
     data.forEach((item, index) => {
-      if (yPosition > doc.page.height - 80) {
+      if (yPosition > doc.page.height - 140) {
         doc.addPage();
         yPosition = 50;
         drawTableHeader(yPosition);
-        yPosition += 30;
+        yPosition += 22;
       }
 
-      doc.fontSize(9).font('Helvetica');
-      
       if (index % 2 === 0) {
-        doc.rect(col1 - 5, yPosition, 455, rowHeight).fillAndStroke('f3f4f6', 'e5e7eb');
+        doc.rect(colNo, yPosition, tableWidth, rowHeight).fillAndStroke('#f8fafc', '#e2e8f0');
       } else {
-        doc.rect(col1 - 5, yPosition, 455, rowHeight).stroke();
+        doc.rect(colNo, yPosition, tableWidth, rowHeight).fillAndStroke('#ffffff', '#e2e8f0');
       }
 
-      doc.font('Helvetica').fontSize(9);
+      doc.font('Helvetica').fontSize(8.5);
 
       if (item.statusType === 'warning') {
-        doc.fillColor('#dc2626');
+        doc.fillColor('#b91c1c');
       } else {
-        doc.fillColor('#000000');
+        doc.fillColor('#1e293b');
       }
 
-      doc.text(String(index + 1), col1, yPosition + 3);
-      doc.text(item.tanggal, col2, yPosition + 3);
-      doc.text(item.nama, col3, yPosition + 3);
-      doc.text(item.tipe, col4, yPosition + 3);
-      doc.text(item.parameter.substring(0, 30), col5, yPosition + 3);
-      doc.text(item.status.substring(0, 25), col6, yPosition + 3);
+      doc.text(String(index + 1), colNo + 5, yPosition + 6);
+      doc.text(item.tanggal, colTgl + 2, yPosition + 6);
+      doc.font('Helvetica-Bold').text(item.nama.substring(0, 18), colNama + 2, yPosition + 6);
+      doc.font('Helvetica').text(item.tipe, colTipe + 2, yPosition + 6);
+      doc.text(item.parameter.substring(0, 24), colParam + 2, yPosition + 6);
+      doc.text(item.status.substring(0, 18), colStatus + 2, yPosition + 6);
 
       doc.fillColor('#000000');
       yPosition += rowHeight;
     });
 
-    doc.moveDown(2);
-    doc.fontSize(9).font('Helvetica').text(`Total Pemeriksaan: ${data.length} data`, { align: 'right' });
-    doc.fontSize(8).font('Helvetica-Oblique').text('Dokumen ini dibuat otomatis oleh Sistem Informasi Posyandu', { align: 'center' });
+    // Signature Block
+    if (yPosition > doc.page.height - 140) {
+      doc.addPage();
+      yPosition = 50;
+    }
 
+    yPosition += 20;
+    const signX = 350;
+
+    doc.fontSize(9).font('Helvetica').text(`${posyandu.desa || 'Desa'}, ${todayFormatted}`, signX, yPosition, { align: 'center' });
+    doc.text('Mengetahui,', signX, yPosition + 12, { align: 'center' });
+    doc.font('Helvetica-Bold').text('Ketua / Kader Posyandu', signX, yPosition + 24, { align: 'center' });
+
+    doc.font('Helvetica-Bold').text('( ............................................ )', signX, yPosition + 75, { align: 'center' });
+
+    // Page Numbers
     const pages = doc.bufferedPageRange().count;
     for (let i = 0; i < pages; i++) {
       doc.switchToPage(i);
-      doc.fontSize(8).text(`Halaman ${i + 1} dari ${pages}`, 50, doc.page.height - 30, { align: 'center' });
+      doc.fontSize(8).font('Helvetica-Oblique').fillColor('#64748b').text(
+        `Halaman ${i + 1} dari ${pages} — Sistem Informasi Posyandu`,
+        50,
+        doc.page.height - 30,
+        { align: 'center' }
+      );
     }
 
     return doc;
