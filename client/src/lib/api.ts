@@ -3,7 +3,7 @@
  * All requests automatically attach the JWT token from localStorage.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 // ─────────────────────────────────────────────────────────────
 // TOKEN MANAGEMENT
@@ -39,9 +39,17 @@ export interface LoginResponse {
   kader: KaderInfo;
 }
 
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
+  meta?: PaginationMeta;
   message?: string;
 }
 
@@ -265,8 +273,16 @@ export const posyanduApi = {
 // ─────────────────────────────────────────────────────────────
 
 export const balitaApi = {
-  getAll: (posyanduId: string, params?: { search?: string; kelompokUsia?: string }) => {
-    const q = new URLSearchParams(params as Record<string, string>).toString();
+  getAll: (posyanduId: string, params?: { search?: string; kelompokUsia?: string; page?: number; limit?: number }) => {
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") {
+          cleanParams[k] = String(v);
+        }
+      });
+    }
+    const q = new URLSearchParams(cleanParams).toString();
     return request<ApiResponse<Balita[]>>(`/api/posyandu/${posyanduId}/balita${q ? `?${q}` : ''}`);
   },
 
@@ -314,8 +330,16 @@ export const balitaApi = {
 // ─────────────────────────────────────────────────────────────
 
 export const lansiaApi = {
-  getAll: (posyanduId: string, params?: { search?: string; kelompokUmur?: string; ht?: string; dm?: string }) => {
-    const q = new URLSearchParams(params as Record<string, string>).toString();
+  getAll: (posyanduId: string, params?: { search?: string; kelompokUmur?: string; ht?: string; dm?: string; page?: number; limit?: number }) => {
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") {
+          cleanParams[k] = String(v);
+        }
+      });
+    }
+    const q = new URLSearchParams(cleanParams).toString();
     return request<ApiResponse<Lansia[]>>(`/api/posyandu/${posyanduId}/lansia${q ? `?${q}` : ''}`);
   },
 
@@ -436,6 +460,37 @@ export const riwayatApi = {
     const a = document.createElement('a');
     a.href = url;
     a.download = `Laporan_Posyandu_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  downloadPdf: async (
+    posyanduId: string,
+    params?: { tipe?: string; search?: string; status?: string; bulan?: string; tahun?: string }
+  ) => {
+    const token = getToken();
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v && v !== 'semua') cleanParams[k] = v;
+      });
+    }
+    const q = new URLSearchParams(cleanParams).toString();
+    const res = await fetch(`${BASE_URL}/api/posyandu/${posyanduId}/export-pdf${q ? `?${q}` : ''}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!res.ok) throw new Error('Gagal mengunduh file PDF');
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Laporan_Posyandu_${new Date().toISOString().slice(0, 10)}.pdf`;
     document.body.appendChild(a);
     a.click();
     a.remove();

@@ -35,6 +35,9 @@ import {
   UserCheck2,
   TrendingUp,
   Activity,
+  RefreshCw,
+  Filter,
+  Eye,
 } from "lucide-react";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
 
@@ -161,6 +164,26 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   // Real-time additions from quick-exam modal go here
   const [localKunjungans, setLocalKunjungans] = useState<Kunjungan[]>([]);
   const kunjungans = [...localKunjungans, ...apiKunjungans];
+
+  // Popover State 3-Dots Menu
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const toggleMenu = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === id ? null : id);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => setOpenMenuId(null);
+    window.addEventListener("click", handleClickOutside);
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   // Modal State
   const [isOpenModal, setIsOpenModal] = useState(false);
@@ -450,9 +473,9 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
           <div>
             <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-white/80 font-medium">Perhatian Gizi</span>
             <h3 className="text-2xl sm:text-3xl font-mono font-medium mt-0.5 sm:mt-1">
-              {isSummaryLoading ? "…" : `${(summary?.statusGizi?.bbU?.["Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["Sangat Kurang"] ?? 0)}`}
+              {isSummaryLoading ? "…" : `${(summary?.statusGizi?.bbU?.["Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["Sangat Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["K"] ?? 0) + (summary?.statusGizi?.bbU?.["SK"] ?? 0)}`}
             </h3>
-            <span className="text-[11px] sm:text-xs text-white/70 font-sans block">Gizi Kurang</span>
+            <span className="text-[11px] sm:text-xs text-white/70 font-sans block">Gizi Kurang / Buruk</span>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium text-white/90 z-10">
@@ -625,9 +648,37 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Aktivitas Kunjungan</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat partisipasi kader & posyandu</p>
             </div>
-            <button className="text-saas-muted hover:text-saas-dark transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={(e) => toggleMenu("aktivitas-kunjungan", e)}
+                className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
+                title="Opsi Aktivitas Kunjungan"
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
+              {openMenuId === "aktivitas-kunjungan" && (
+                <div className="absolute right-0 top-8 z-30 w-52 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs">
+                  <button
+                    onClick={() => {
+                      fetchSummary();
+                      showToast("Data aktivitas kunjungan berhasil diperbarui");
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Refresh Data
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("Semua");
+                      showToast("Tampilan difilter ke Semua Kategori");
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
+                  >
+                    <Filter className="w-3.5 h-3.5" /> Tampilkan Semua Kategori
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col items-center justify-center">
@@ -709,24 +760,25 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
-                  <th className="pb-3 text-left">Nama</th>
-                  <th className="pb-3">Kategori</th>
-                  <th className="pb-3">Keterangan</th>
-                  <th className="pb-3 text-center">Status</th>
-                  <th className="pb-3 text-right">Jam Periksa</th>
+                  <th className="px-4 pb-3 text-left whitespace-nowrap">Nama</th>
+                  <th className="px-4 pb-3 text-left whitespace-nowrap">Kategori</th>
+                  <th className="px-4 pb-3 text-left whitespace-nowrap">Keterangan</th>
+                  <th className="px-4 pb-3 text-center whitespace-nowrap">Status</th>
+                  <th className="px-4 pb-3 text-right whitespace-nowrap">Jam Periksa</th>
+                  <th className="px-4 pb-3 text-center whitespace-nowrap w-12">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredKunjungan.length > 0 ? (
                   filteredKunjungan.map((item) => (
                     <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
-                      <td className="py-4 font-bold text-saas-dark">{item.nama}</td>
-                      <td className="py-4 text-saas-muted font-medium">{item.tipe}</td>
-                      <td className="py-4 text-saas-muted font-medium">{item.detail}</td>
-                      <td className="py-4 text-center">
+                      <td className="px-4 py-3.5 font-bold text-saas-dark whitespace-nowrap">{item.nama}</td>
+                      <td className="px-4 py-3.5 text-saas-muted font-medium whitespace-nowrap">{item.tipe}</td>
+                      <td className="px-4 py-3.5 text-saas-muted font-medium whitespace-nowrap">{item.detail}</td>
+                      <td className="px-4 py-3.5 text-center whitespace-nowrap">
                         <span
                           className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1.5 ${
                             item.statusType === "success"
@@ -742,12 +794,47 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                           {item.status}
                         </span>
                       </td>
-                      <td className="py-4 text-right text-saas-muted font-semibold">{item.waktu}</td>
+                      <td className="px-4 py-3.5 text-right text-saas-muted font-semibold whitespace-nowrap">{item.waktu}</td>
+                      <td className="px-4 py-3.5 text-center relative whitespace-nowrap">
+                        <button
+                          onClick={(e) => toggleMenu(`row-${item.id}`, e)}
+                          className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
+                          title="Aksi Kunjungan"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                        {openMenuId === `row-${item.id}` && (
+                          <div className="absolute right-0 top-10 z-30 w-48 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs text-left">
+                            <button
+                              onClick={() => {
+                                onNavigate(item.tipe === "Balita" ? "balita" : "lansia");
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all"
+                            >
+                              <ArrowUpRight className="w-3.5 h-3.5" /> Buka Data {item.tipe}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedPasien({
+                                  id: item.id,
+                                  nama: item.nama,
+                                  tipe: item.tipe as "Balita" | "Lansia",
+                                  detailInfo: item.detail,
+                                });
+                                setIsOpenModal(true);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Input Pemeriksaan
+                            </button>
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-xs text-saas-muted font-medium">
+                    <td colSpan={6} className="py-8 text-center text-xs text-saas-muted font-medium">
                       Tidak menemukan data kunjungan yang cocok
                     </td>
                   </tr>
@@ -764,9 +851,28 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Distribusi Kehadiran RT/RW</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat kehadiran per wilayah</p>
             </div>
-            <button className="text-saas-muted hover:text-saas-dark transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={(e) => toggleMenu("distribusi-rtrw", e)}
+                className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
+                title="Opsi Distribusi RT/RW"
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
+              {openMenuId === "distribusi-rtrw" && (
+                <div className="absolute right-0 top-8 z-30 w-52 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs">
+                  <button
+                    onClick={() => {
+                      fetchSummary();
+                      showToast("Statistik kehadiran wilayah diperbarui");
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Refresh Statistik Wilayah
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -889,8 +995,9 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                     <input
                       type="date"
                       value={examDate}
+                      onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                       onChange={(e) => setExamDate(e.target.value)}
-                      className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                      className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50 cursor-pointer"
                     />
                   </div>
 
@@ -900,11 +1007,14 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Cth: 8.5"
                       value={examBB}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
                       onChange={(e) => {
-                        setExamBB(e.target.value);
-                        checkWarnings(e.target.value, examSistol);
+                        const val = e.target.value.replace(/-/g, "");
+                        setExamBB(val);
+                        checkWarnings(val, examSistol);
                       }}
                       className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
@@ -916,9 +1026,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                     <input
                       type="number"
                       step="0.1"
+                      min="0"
                       placeholder="Cth: 72"
                       value={examTB}
-                      onChange={(e) => setExamTB(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                      onChange={(e) => setExamTB(e.target.value.replace(/-/g, ""))}
                       className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                     />
                   </div>
@@ -951,9 +1063,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <input
                           type="number"
                           step="0.1"
+                          min="0"
                           placeholder="Opsional, cth: 44"
                           value={examLK}
-                          onChange={(e) => setExamLK(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamLK(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -964,9 +1078,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <input
                           type="number"
                           step="0.1"
+                          min="0"
                           placeholder="Cth: 12.5"
                           value={examLiLA}
-                          onChange={(e) => setExamLiLA(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamLiLA(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -1095,11 +1211,14 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Sistol (mmHg)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="TD atas, cth: 130"
                           value={examSistol}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
                           onChange={(e) => {
-                            setExamSistol(e.target.value);
-                            checkWarnings(examBB, e.target.value);
+                            const val = e.target.value.replace(/-/g, "");
+                            setExamSistol(val);
+                            checkWarnings(examBB, val);
                           }}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
@@ -1110,9 +1229,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Diastol (mmHg)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="TD bawah, cth: 85"
                           value={examDiastol}
-                          onChange={(e) => setExamDiastol(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamDiastol(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -1122,9 +1243,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">GDS (mg/dL)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="Cth: 120"
                           value={examGds}
-                          onChange={(e) => setExamGds(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamGds(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -1134,9 +1257,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Lingkar Perut (cm)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="Cth: 90"
                           value={examLp}
-                          onChange={(e) => setExamLp(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamLp(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -1148,9 +1273,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <label className="text-[10px] font-bold text-saas-muted uppercase">Kolesterol (mg/dL)</label>
                         <input
                           type="number"
+                          min="0"
                           placeholder="cth: 180"
                           value={examCholesterol}
-                          onChange={(e) => setExamCholesterol(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamCholesterol(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -1161,9 +1288,11 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                         <input
                           type="number"
                           step="0.1"
+                          min="0"
                           placeholder="cth: 6.2"
                           value={examUricAcid}
-                          onChange={(e) => setExamUricAcid(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                          onChange={(e) => setExamUricAcid(e.target.value.replace(/-/g, ""))}
                           className="w-full p-2 bg-gray-50 border border-gray-150 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                         />
                       </div>
@@ -1219,6 +1348,13 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               </form>
             )}
       </Modal>
+
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-saas-dark text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -46,6 +46,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
   const [logs, setLogs] = useState<ItemRiwayat[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"semua" | "Balita" | "Lansia">("semua");
   const [statusFilter, setStatusFilter] = useState<"semua" | "success" | "warning">("semua");
@@ -273,6 +274,22 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
     }
   };
 
+  // Handler Export PDF
+  const handleExportPdf = async () => {
+    try {
+      setExportingPdf(true);
+      await riwayatApi.downloadPdf(posyanduId, {
+        tipe: typeFilter,
+        search: query,
+        status: statusFilter,
+      });
+    } catch (err) {
+      console.error("Gagal export PDF:", err);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   // Olah data untuk Grafik Trend Pertumbuhan / Pemeriksaan (Agregasi Tanggal)
   const chartData = (() => {
     const dateMap: Record<string, { tanggal: string; balita: number; lansia: number; warning: number }> = {};
@@ -298,47 +315,60 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
         description="Laporan riwayat pemeriksaan bulanan terpadu dengan fitur cetak Excel dan PDF."
       />
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-saas-dark tracking-tight">Riwayat Pemeriksaan Bulanan</h2>
-          <p className="text-sm text-saas-muted mt-0.5">
+          <h2 className="text-xl sm:text-2xl font-bold text-saas-dark tracking-tight">Riwayat Pemeriksaan Bulanan</h2>
+          <p className="text-xs sm:text-sm text-saas-muted mt-0.5">
             Data terpadu perkembangan kesehatan Balita & Lansia beserta statistik grafik bulanan.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           {/* Switch Mode Tabel / Grafik */}
-          <div className="bg-gray-100 p-1 rounded-xl flex gap-1">
+          <div className="bg-gray-100 p-1 rounded-xl flex gap-1 w-full sm:w-auto">
             <button
               onClick={() => setViewMode("tabel")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
                 viewMode === "tabel"
                   ? "bg-white text-saas-dark shadow-sm"
                   : "text-saas-muted hover:text-saas-dark"
               }`}
             >
-              <FileSpreadsheet className="w-3.5 h-3.5" /> Tabel Riwayat
+              <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" /> Tabel Riwayat
             </button>
             <button
               onClick={() => setViewMode("grafik")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
                 viewMode === "grafik"
                   ? "bg-white text-saas-dark shadow-sm"
                   : "text-saas-muted hover:text-saas-dark"
               }`}
             >
-              <LineChartIcon className="w-3.5 h-3.5" /> Grafik Trend
+              <LineChartIcon className="w-3.5 h-3.5 shrink-0" /> Grafik Trend
             </button>
           </div>
 
           <button
+            onClick={handleExportPdf}
+            disabled={exportingPdf}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3.5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-input shadow-md shadow-red-600/10 transition-all disabled:opacity-50 whitespace-nowrap"
+          >
+            {exportingPdf ? (
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            ) : (
+              <Download className="w-4 h-4 shrink-0" />
+            )}
+            Cetak PDF (.pdf)
+          </button>
+
+          <button
             onClick={handleExport}
             disabled={exporting}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-all disabled:opacity-50"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-3.5 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-all disabled:opacity-50 whitespace-nowrap"
           >
             {exporting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
             ) : (
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4 shrink-0" />
             )}
             Export Excel (.xlsx)
           </button>
@@ -346,10 +376,10 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
       </div>
 
       {/* Filters Card */}
-      <div className="bg-white p-6 rounded-card border border-gray-100/50 shadow-soft-card space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-white p-4 sm:p-6 rounded-card border border-gray-100/50 shadow-soft-card space-y-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
           {/* Search bar */}
-          <div className="relative w-full md:w-80">
+          <div className="relative w-full lg:w-80">
             <input
               type="text"
               placeholder="Cari nama warga atau parameter..."
@@ -360,16 +390,16 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
             <Search className="absolute left-3.5 top-3 text-saas-muted/80 w-4 h-4" />
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-4">
             {/* Tipe filter */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-saas-muted">Kategori:</span>
-              <div className="flex gap-1">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs font-bold text-saas-muted shrink-0">Kategori:</span>
+              <div className="flex gap-1 w-full sm:w-auto overflow-x-auto pb-0.5">
                 {(["semua", "Balita", "Lansia"] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setTypeFilter(t)}
-                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all ${
+                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap shrink-0 ${
                       typeFilter === t
                         ? "bg-saas-primary/10 text-saas-primary border border-saas-primary/20"
                         : "bg-gray-50 text-saas-muted hover:text-saas-dark border border-transparent"
@@ -382,9 +412,9 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
             </div>
 
             {/* Status filter */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-saas-muted">Kondisi Hasil:</span>
-              <div className="flex gap-1">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs font-bold text-saas-muted shrink-0">Kondisi Hasil:</span>
+              <div className="flex gap-1 w-full sm:w-auto overflow-x-auto pb-0.5">
                 {[
                   { label: "Semua", val: "semua" },
                   { label: "Normal / Sehat", val: "success" },
@@ -393,7 +423,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                   <button
                     key={s.val}
                     onClick={() => setStatusFilter(s.val as any)}
-                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all ${
+                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap shrink-0 ${
                       statusFilter === s.val
                         ? "bg-saas-primary/10 text-saas-primary border border-saas-primary/20"
                         : "bg-gray-50 text-saas-muted hover:text-saas-dark border border-transparent"
@@ -476,7 +506,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
 
       {/* VIEW: TABEL RIWAYAT */}
       {viewMode === "tabel" && (
-        <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 overflow-hidden">
+        <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-4 sm:p-6 overflow-hidden">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2">
               <Loader2 className="w-7 h-7 text-saas-primary animate-spin" />
@@ -484,16 +514,16 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full min-w-[700px] text-left border-collapse">
                 <thead>
                   <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
-                    <th className="pb-3">Tanggal Periksa</th>
-                    <th className="pb-3">Nama Lengkap</th>
-                    <th className="pb-3">Kategori</th>
-                    <th className="pb-3">Parameter Fisik & Medis</th>
-                    <th className="pb-3">Kondisi Hasil</th>
-                    <th className="pb-3">Petugas</th>
-                    <th className="pb-3 text-right">Aksi</th>
+                    <th className="pb-3 px-3 whitespace-nowrap">Tanggal Periksa</th>
+                    <th className="pb-3 px-3 whitespace-nowrap">Nama Lengkap</th>
+                    <th className="pb-3 px-3 whitespace-nowrap">Kategori</th>
+                    <th className="pb-3 px-3 whitespace-nowrap">Parameter Fisik & Medis</th>
+                    <th className="pb-3 px-3 whitespace-nowrap">Kondisi Hasil</th>
+                    <th className="pb-3 px-3 whitespace-nowrap">Petugas</th>
+                    <th className="pb-3 px-3 text-right whitespace-nowrap">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -503,25 +533,27 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                         key={log.id}
                         className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm"
                       >
-                        <td className="py-4 font-bold text-saas-dark">
+                        <td className="py-4 px-3 font-bold text-saas-dark whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <Calendar className="w-3.5 h-3.5 text-saas-muted" />
+                            <Calendar className="w-3.5 h-3.5 text-saas-muted shrink-0" />
                             {formatTanggalIndonesia(log.tanggal)}
                           </div>
                         </td>
-                        <td className="py-4 font-bold text-saas-dark">{log.nama}</td>
-                        <td className="py-4 font-semibold text-saas-muted flex items-center gap-1.5 mt-2">
-                          {log.tipe === "Balita" ? (
-                            <Baby className="w-3.5 h-3.5 text-saas-primary" />
-                          ) : (
-                            <Heart className="w-3.5 h-3.5 text-red-500" />
-                          )}
-                          {log.tipe}
+                        <td className="py-4 px-3 font-bold text-saas-dark whitespace-nowrap">{log.nama}</td>
+                        <td className="py-4 px-3 font-semibold text-saas-muted whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            {log.tipe === "Balita" ? (
+                              <Baby className="w-3.5 h-3.5 text-saas-primary shrink-0" />
+                            ) : (
+                              <Heart className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                            )}
+                            {log.tipe}
+                          </div>
                         </td>
-                        <td className="py-4 text-xs font-semibold text-saas-dark/95 leading-normal max-w-xs truncate">
+                        <td className="py-4 px-3 text-xs font-semibold text-saas-dark/95 leading-normal max-w-xs truncate whitespace-nowrap">
                           {log.parameter}
                         </td>
-                        <td className="py-4">
+                        <td className="py-4 px-3 whitespace-nowrap">
                           <span
                             className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
                               log.statusType === "success"
@@ -531,14 +563,14 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                                 : "bg-blue-50 text-saas-primary"
                             }`}
                           >
-                            {log.statusType === "success" && <CheckCircle2 className="w-3 h-3" />}
-                            {log.statusType === "warning" && <AlertCircle className="w-3 h-3" />}
-                            {log.statusType === "info" && <Clock className="w-3 h-3" />}
+                            {log.statusType === "success" && <CheckCircle2 className="w-3 h-3 shrink-0" />}
+                            {log.statusType === "warning" && <AlertCircle className="w-3 h-3 shrink-0" />}
+                            {log.statusType === "info" && <Clock className="w-3 h-3 shrink-0" />}
                             {log.status}
                           </span>
                         </td>
-                        <td className="py-4 text-xs text-saas-muted font-bold">{log.petugas}</td>
-                        <td className="py-4 text-right">
+                        <td className="py-4 px-3 text-xs text-saas-muted font-bold whitespace-nowrap">{log.petugas}</td>
+                        <td className="py-4 px-3 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => openEditModal(log)}
@@ -558,7 +590,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-xs text-saas-muted font-medium">
+                      <td colSpan={7} className="py-12 text-center text-xs text-saas-muted font-medium whitespace-nowrap">
                         Tidak ada catatan riwayat pemeriksaan yang cocok.
                       </td>
                     </tr>
