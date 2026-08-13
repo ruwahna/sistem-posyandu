@@ -38,6 +38,7 @@ interface AuthContextValue {
     email: string;
     password: string;
   }) => Promise<void>;
+  updateUser: (updated: Partial<AuthUser>) => void;
   logout: () => void;
 }
 
@@ -89,6 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.data.kader as AuthUser);
   }, []);
 
+  const updateUser = useCallback((updated: Partial<AuthUser>) => {
+    setUser((prev) => (prev ? { ...prev, ...updated } : null));
+  }, []);
+
   const logout = useCallback(() => {
     removeToken();
     setUser(null);
@@ -100,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     login,
     registerPosyandu,
+    updateUser,
     logout,
   };
 

@@ -22,6 +22,7 @@ import {
   UserX,
   ListTodo
 } from "lucide-react";
+import PageHelmet from "../../components/PageHelmet";
 
 interface Guide {
   id: string;
@@ -140,7 +141,11 @@ export default function BantuanModule() {
   const selectedGuide = guides.find((g) => g.id === activeGuideId);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-10">
+      <PageHelmet
+        title="Pusat Bantuan & Dokumen"
+        description="Panduan penggunaan sistem posyandu, FAQ, dan kontak dukungan teknis."
+      />
       {/* View Detail Panduan */}
       {selectedGuide ? (
         <div className="space-y-6 max-w-3xl">
