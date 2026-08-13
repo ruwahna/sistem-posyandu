@@ -45,6 +45,16 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'DANGER' | 'WARNING' | 'SUCCESS' | 'INFO';
+  createdAt: string;
+  isRead: boolean;
+  category?: 'balita' | 'lansia' | 'system';
+}
+
 export interface DashboardSummary {
   totalBalita: number;
   totalLansia: number;
@@ -206,15 +216,57 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify({ token, newPassword }),
     }),
+
+  updateProfile: (data: { nama: string; email: string; password?: string }) =>
+    request<ApiResponse<KaderInfo>>('/api/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 };
 
-// ─────────────────────────────────────────────────────────────
-// DASHBOARD API
-// ─────────────────────────────────────────────────────────────
+export interface TrenGiziItem {
+  periodKey: string;
+  label: string;
+  total: number;
+  normal: number;
+  kurang: number;
+  sangatKurang: number;
+  lebih: number;
+  stunting: number;
+  pctNormal: number;
+  pctKurang: number;
+  avgZScoreBBU: number;
+  avgZScoreTBU: number;
+}
+
+export interface DistribusiKehadiran {
+  rtRw: string;
+  total: number;
+  hadir: number;
+  persentase: number;
+}
 
 export const dashboardApi = {
   getSummary: (posyanduId: string) =>
     request<ApiResponse<DashboardSummary>>(`/api/dashboard/${posyanduId}`),
+  getTrenGizi: (posyanduId: string, period: 'bulanan' | 'tahunan' = 'bulanan') =>
+    request<ApiResponse<TrenGiziItem[]>>(`/api/dashboard/${posyanduId}/tren-gizi?period=${period}`),
+  getDistribusiKehadiran: (posyanduId: string) =>
+    request<ApiResponse<DistribusiKehadiran[]>>(`/api/dashboard/${posyanduId}/distribusi-kehadiran`),
+};
+
+// ─────────────────────────────────────────────────────────────
+// POSYANDU API
+// ─────────────────────────────────────────────────────────────
+
+export const posyanduApi = {
+  getById: (id: string) =>
+    request<ApiResponse<{ id: string; nama: string; desa: string; kecamatan: string; alamat: string }>>(`/api/posyandu/${id}`),
+  update: (id: string, data: { nama?: string; desa?: string; kecamatan?: string; alamat?: string }) =>
+    request<ApiResponse<{ id: string; nama: string; desa: string; kecamatan: string; alamat: string }>>(`/api/posyandu/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -251,6 +303,12 @@ export const balitaApi = {
   createPemeriksaan: (posyanduId: string, balitaId: string, data: Omit<PemeriksaanBalita, 'id'>) =>
     request<ApiResponse<PemeriksaanBalita>>(`/api/posyandu/${posyanduId}/balita/${balitaId}/pemeriksaan`, {
       method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updatePemeriksaan: (posyanduId: string, balitaId: string, id: string, data: Partial<Omit<PemeriksaanBalita, 'id'>>) =>
+    request<ApiResponse<PemeriksaanBalita>>(`/api/posyandu/${posyanduId}/balita/${balitaId}/pemeriksaan/${id}`, {
+      method: 'PATCH',
       body: JSON.stringify(data),
     }),
 
@@ -297,6 +355,12 @@ export const lansiaApi = {
       body: JSON.stringify(data),
     }),
 
+  updatePemeriksaan: (posyanduId: string, lansiaId: string, id: string, data: Partial<Omit<PemeriksaanLansia, 'id'>>) =>
+    request<ApiResponse<PemeriksaanLansia>>(`/api/posyandu/${posyanduId}/lansia/${lansiaId}/pemeriksaan/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   deletePemeriksaan: (posyanduId: string, lansiaId: string, id: string) =>
     request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/lansia/${lansiaId}/pemeriksaan/${id}`, {
       method: 'DELETE',
@@ -309,6 +373,7 @@ export const lansiaApi = {
 
 export interface ItemRiwayat {
   id: string;
+  pasienId?: string;
   nama: string;
   tipe: 'Balita' | 'Lansia';
   tanggal: string;
@@ -316,6 +381,28 @@ export interface ItemRiwayat {
   parameter: string;
   status: string;
   statusType: 'success' | 'warning' | 'info';
+  tanggalLahir?: string;
+  jenisKelamin?: string;
+  beratBadan?: number;
+  tinggiBadan?: number;
+  lingkarKepala?: number;
+  lingkarLengan?: number;
+  statusBbU?: string;
+  statusTbU?: string;
+  statusBbTb?: string;
+  statusKms?: string;
+  vitaminA?: boolean;
+  asiEksklusif?: boolean;
+  obatCacing?: boolean;
+  statusImunisasi?: string;
+  tekananDarahSistol?: number;
+  tekananDarahDiastol?: number;
+  gulaDarahSewaktu?: number;
+  kolesterol?: number;
+  asamUrat?: number;
+  lingkarPerut?: number;
+  keluhan?: string;
+  tindakan?: string;
 }
 
 export const riwayatApi = {
@@ -364,4 +451,93 @@ export const riwayatApi = {
     window.URL.revokeObjectURL(url);
   },
 };
+
+// ─────────────────────────────────────────────────────────────
+// API: NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────
+export const notificationApi = {
+  getNotifications: async (posyanduId: string): Promise<{ notifications: AppNotification[]; unreadCount: number }> => {
+    const res = await request<ApiResponse<{ notifications: AppNotification[]; unreadCount: number }>>(
+      `/api/posyandu/${posyanduId}/notifications`
+    );
+    return res.data;
+  },
+
+  markAsRead: async (posyanduId: string, notificationIds: string[]): Promise<void> => {
+    await request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/notifications/read`, {
+      method: 'POST',
+      body: JSON.stringify({ notificationIds }),
+    });
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
+// API: KADER MANAGEMENT
+// ─────────────────────────────────────────────────────────────
+
+export interface KaderMember {
+  id: string;
+  nama: string;
+  email: string;
+  role: 'OWNER' | 'KADER';
+  isActive: boolean;
+  createdAt: string;
+}
+
+export const kaderApi = {
+  getAll: (posyanduId: string) =>
+    request<ApiResponse<KaderMember[]>>(`/api/posyandu/${posyanduId}/kader`),
+
+  create: (posyanduId: string, data: { nama: string; email: string; password: string; role: 'OWNER' | 'KADER' }) =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateRole: (posyanduId: string, kaderId: string, role: 'OWNER' | 'KADER') =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader/${kaderId}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    }),
+
+  toggleStatus: (posyanduId: string, kaderId: string, isActive: boolean) =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader/${kaderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
+    }),
+
+  delete: (posyanduId: string, kaderId: string) =>
+    request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/kader/${kaderId}`, {
+      method: 'DELETE',
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// API: OWNER / SYSTEM SECURITY & BACKUP
+// ─────────────────────────────────────────────────────────────
+
+export interface AuditLogItem {
+  id: string;
+  posyanduId?: string;
+  kaderId?: string;
+  kaderNama?: string;
+  action: string;
+  details?: string;
+  ipAddress?: string;
+  createdAt: string;
+}
+
+export const ownerApi = {
+  getAuditLogs: (posyanduId: string) =>
+    request<ApiResponse<AuditLogItem[]>>(`/api/owner/audit-logs/${posyanduId}`),
+
+  backupDataUrl: (posyanduId: string) => `/api/owner/backup/${posyanduId}`,
+
+  resetData: (posyanduId: string, data: { confirmText: string; password: string }) =>
+    request<ApiResponse<{ message: string }>>(`/api/owner/reset-data/${posyanduId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+};
+
 

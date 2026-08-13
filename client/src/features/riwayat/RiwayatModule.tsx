@@ -1,6 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
+import Modal from "../../components/Modal";
+import { riwayatApi, ItemRiwayat, balitaApi, lansiaApi } from "@/lib/api";
+import {
+  hitungStatusBbU,
+  hitungStatusTbU,
+  hitungStatusBbTb,
+  convertStatusBbUToCode,
+  convertStatusTbUToCode,
+  convertStatusBbTbToCode,
+} from "../../lib/zScoreCalculator";
 import {
   Search,
   Download,
@@ -18,8 +29,8 @@ import {
   Trash2,
   Eye
 } from "lucide-react";
-import { riwayatApi, ItemRiwayat } from "@/lib/api";
 import ActionMenu from "@/components/ActionMenu";
+import PageHelmet from "@/components/PageHelmet";
 import {
   ResponsiveContainer,
   LineChart,
@@ -45,6 +56,170 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
 
   // Tab mode: "tabel" vs "grafik"
   const [viewMode, setViewMode] = useState<"tabel" | "grafik">("tabel");
+
+  // Modal Edit & Delete State
+  const [selectedLog, setSelectedLog] = useState<ItemRiwayat | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  // Form Fields - Balita
+  const [bDate, setBDate] = useState("");
+  const [bBB, setBBB] = useState("");
+  const [bTB, setBTB] = useState("");
+  const [bLK, setBLK] = useState("");
+  const [bLiLA, setBLiLA] = useState("");
+  const [bBBU, setBBBU] = useState<any>("Normal");
+  const [bTBU, setBTBU] = useState<any>("Normal");
+  const [bBBTB, setBBBTB] = useState<any>("Normal");
+  const [bKms, setBKms] = useState("N (Naik)");
+  const [bVitA, setBVitA] = useState(false);
+  const [bAsi, setBAsi] = useState(false);
+  const [bCacing, setBCacing] = useState(false);
+  const [bImunisasi, setBImunisasi] = useState("");
+
+  // Form Fields - Lansia
+  const [lDate, setLDate] = useState("");
+  const [lBB, setLBB] = useState("");
+  const [lTB, setLTB] = useState("");
+  const [lSistol, setLSistol] = useState("");
+  const [lDiastol, setLDiastol] = useState("");
+  const [lGds, setLGds] = useState("");
+  const [lLp, setLLp] = useState("");
+  const [lKol, setLKol] = useState("");
+  const [lUrat, setLUrat] = useState("");
+  const [lKeluhan, setLKeluhan] = useState("");
+  const [lTindakan, setLTindakan] = useState("");
+
+  // Open Edit Modal
+  const openEditModal = (log: ItemRiwayat) => {
+    setSelectedLog(log);
+    setFormError("");
+    if (log.tipe === "Balita") {
+      setBDate(formatTanggalInput(log.tanggal));
+      setBBB(log.beratBadan ? String(log.beratBadan) : "");
+      setBTB(log.tinggiBadan ? String(log.tinggiBadan) : "");
+      setBLK(log.lingkarKepala ? String(log.lingkarKepala) : "");
+      setBLiLA(log.lingkarLengan ? String(log.lingkarLengan) : "");
+      setBBBU((log.statusBbU as any) || "Normal");
+      setBTBU((log.statusTbU as any) || "Normal");
+      setBBBTB((log.statusBbTb as any) || "Normal");
+      setBKms(log.statusKms || "N (Naik)");
+      setBVitA(Boolean(log.vitaminA));
+      setBAsi(Boolean(log.asiEksklusif));
+      setBCacing(Boolean(log.obatCacing));
+      setBImunisasi(log.statusImunisasi || "");
+    } else {
+      setLDate(formatTanggalInput(log.tanggal));
+      setLBB(log.beratBadan ? String(log.beratBadan) : "");
+      setLTB(log.tinggiBadan ? String(log.tinggiBadan) : "");
+      setLSistol(log.tekananDarahSistol ? String(log.tekananDarahSistol) : "");
+      setLDiastol(log.tekananDarahDiastol ? String(log.tekananDarahDiastol) : "");
+      setLGds(log.gulaDarahSewaktu ? String(log.gulaDarahSewaktu) : "");
+      setLLp(log.lingkarPerut ? String(log.lingkarPerut) : "");
+      setLKol(log.kolesterol ? String(log.kolesterol) : "");
+      setLUrat(log.asamUrat ? String(log.asamUrat) : "");
+      setLKeluhan(log.keluhan || "");
+      setLTindakan(log.tindakan || "");
+    }
+    setIsEditModalOpen(true);
+  };
+
+  // Open Delete Modal
+  const openDeleteModal = (log: ItemRiwayat) => {
+    setSelectedLog(log);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Handle Edit Submit
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLog) return;
+    setFormError("");
+    setSaving(true);
+    try {
+      if (selectedLog.tipe === "Balita") {
+        const bb = parseFloat(bBB);
+        const tb = parseFloat(bTB);
+        if (isNaN(bb) || bb <= 0 || isNaN(tb) || tb <= 0) {
+          setFormError("Berat Badan dan Tinggi Badan harus diisi angka positif yang valid.");
+          setSaving(false);
+          return;
+        }
+        const pasienId = selectedLog.pasienId || selectedLog.id;
+        await balitaApi.updatePemeriksaan(posyanduId, pasienId, selectedLog.id, {
+          tanggalPeriksa: bDate,
+          beratBadan: bb,
+          tinggiBadan: tb,
+          lingkarKepala: bLK ? parseFloat(bLK) : undefined,
+          lingkarLengan: bLiLA ? parseFloat(bLiLA) : undefined,
+          statusBbU: convertStatusBbUToCode(bBBU),
+          statusTbU: convertStatusTbUToCode(bTBU),
+          statusBbTb: convertStatusBbTbToCode(bBBTB),
+          statusKms: bKms,
+          vitaminA: bVitA,
+          asiEksklusif: bAsi,
+          obatCacing: bCacing,
+          statusImunisasi: bImunisasi || undefined,
+        } as any);
+      } else {
+        const bb = parseFloat(lBB);
+        const tb = parseFloat(lTB);
+        const sistol = parseInt(lSistol);
+        const diastol = parseInt(lDiastol);
+        const gds = parseFloat(lGds);
+        const lp = parseFloat(lLp);
+        if (isNaN(bb) || bb <= 0 || isNaN(tb) || tb <= 0 || isNaN(sistol) || isNaN(diastol) || isNaN(gds) || isNaN(lp)) {
+          setFormError("Mohon isi semua data pemeriksaan lansia dengan angka positif yang valid.");
+          setSaving(false);
+          return;
+        }
+        const pasienId = selectedLog.pasienId || selectedLog.id;
+        await lansiaApi.updatePemeriksaan(posyanduId, pasienId, selectedLog.id, {
+          tanggalPeriksa: lDate,
+          beratBadan: bb,
+          tinggiBadan: tb,
+          tekananDarahSistol: sistol,
+          tekananDarahDiastol: diastol,
+          gulaDarahSewaktu: gds,
+          lingkarPerut: lp,
+          kolesterol: lKol ? parseFloat(lKol) : undefined,
+          asamUrat: lUrat ? parseFloat(lUrat) : undefined,
+          keluhan: lKeluhan || undefined,
+          tindakan: lTindakan || undefined,
+        } as any);
+      }
+      fetchRiwayat();
+      window.dispatchEvent(new Event("pemeriksaanSaved"));
+      setIsEditModalOpen(false);
+    } catch (err: any) {
+      setFormError(err.message || "Gagal mengedit data pemeriksaan.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle Delete Submit
+  const handleDeleteSubmit = async () => {
+    if (!selectedLog) return;
+    setSaving(true);
+    try {
+      const pasienId = selectedLog.pasienId || selectedLog.id;
+      if (selectedLog.tipe === "Balita") {
+        await balitaApi.deletePemeriksaan(posyanduId, pasienId, selectedLog.id);
+      } else {
+        await lansiaApi.deletePemeriksaan(posyanduId, pasienId, selectedLog.id);
+      }
+      fetchRiwayat();
+      window.dispatchEvent(new Event("pemeriksaanSaved"));
+      setIsDeleteModalOpen(false);
+    } catch (err: any) {
+      alert(err.message || "Gagal menghapus riwayat periksa.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Load data riwayat dari backend API
   const fetchRiwayat = async () => {
@@ -122,6 +297,10 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
 
   return (
     <div className="space-y-6">
+      <PageHelmet
+        title="Riwayat & Laporan"
+        description="Laporan riwayat pemeriksaan bulanan terpadu dengan fitur cetak Excel dan PDF."
+      />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -331,7 +510,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                         <td className="py-4 font-bold text-saas-dark">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-3.5 h-3.5 text-saas-muted" />
-                            {log.tanggal}
+                            {formatTanggalIndonesia(log.tanggal)}
                           </div>
                         </td>
                         <td className="py-4 font-bold text-saas-dark">{log.nama}</td>
@@ -370,28 +549,19 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                                 label: "Lihat Detail",
                                 icon: <Eye className="w-4 h-4" />,
                                 onClick: () => {
-                                  console.log("View detail:", log.id);
-                                  // TODO: Implementasi view detail pemeriksaan
+                                  openEditModal(log);
                                 }
                               },
                               {
                                 label: "Edit",
                                 icon: <Edit2 className="w-4 h-4" />,
-                                onClick: () => {
-                                  console.log("Edit:", log.id);
-                                  // TODO: Implementasi edit pemeriksaan
-                                }
+                                onClick: () => openEditModal(log)
                               },
                               {
                                 label: "Hapus",
                                 icon: <Trash2 className="w-4 h-4" />,
                                 variant: "danger",
-                                onClick: () => {
-                                  if (confirm("Yakin ingin menghapus pemeriksaan ini?")) {
-                                    console.log("Delete:", log.id);
-                                    // TODO: Implementasi hapus pemeriksaan
-                                  }
-                                }
+                                onClick: () => openDeleteModal(log)
                               }
                             ]}
                           />
@@ -411,6 +581,299 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
           )}
         </div>
       )}
+
+      {/* MODAL EDIT PEMERIKSAAN (BALITA / LANSIA) */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title={`Edit Riwayat Periksa - ${selectedLog?.nama || ""}`}
+      >
+        <form onSubmit={handleEditSubmit} className="space-y-4">
+          {formError && (
+            <div className="p-3 bg-red-50 text-trend-dangerText border border-red-100 rounded-lg text-xs font-bold flex gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" /> {formError}
+            </div>
+          )}
+
+          {selectedLog?.tipe === "Balita" ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Tanggal Periksa</label>
+                  <input
+                    type="date"
+                    required
+                    value={bDate}
+                    onChange={(e) => setBDate(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Berat Badan (kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    required
+                    value={bBB}
+                    onChange={(e) => setBBB(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Tinggi Badan (cm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    required
+                    value={bTB}
+                    onChange={(e) => setBTB(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Lingkar Kepala (cm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={bLK}
+                    onChange={(e) => setBLK(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">LiLA (cm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={bLiLA}
+                    onChange={(e) => setBLiLA(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                <label className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-150 rounded text-xs font-semibold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={bVitA}
+                    onChange={(e) => setBVitA(e.target.checked)}
+                    className="w-4 h-4 text-saas-primary rounded"
+                  />
+                  Vitamin A
+                </label>
+                <label className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-150 rounded text-xs font-semibold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={bAsi}
+                    onChange={(e) => setBAsi(e.target.checked)}
+                    className="w-4 h-4 text-saas-primary rounded"
+                  />
+                  ASI Eksklusif
+                </label>
+                <label className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-150 rounded text-xs font-semibold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={bCacing}
+                    onChange={(e) => setBCacing(e.target.checked)}
+                    className="w-4 h-4 text-saas-primary rounded"
+                  />
+                  Obat Cacing
+                </label>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Imunisasi..."
+                    value={bImunisasi}
+                    onChange={(e) => setBImunisasi(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Tanggal Periksa</label>
+                  <input
+                    type="date"
+                    required
+                    value={lDate}
+                    onChange={(e) => setLDate(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Berat Badan (kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    required
+                    value={lBB}
+                    onChange={(e) => setLBB(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Tinggi Badan (cm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    required
+                    value={lTB}
+                    onChange={(e) => setLTB(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Sistol (mmHg)</label>
+                  <input
+                    type="number"
+                    required
+                    value={lSistol}
+                    onChange={(e) => setLSistol(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Diastol (mmHg)</label>
+                  <input
+                    type="number"
+                    required
+                    value={lDiastol}
+                    onChange={(e) => setLDiastol(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">GDS (mg/dL)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    required
+                    value={lGds}
+                    onChange={(e) => setLGds(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Lingkar Perut (cm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    required
+                    value={lLp}
+                    onChange={(e) => setLLp(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Kolesterol (mg/dL)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={lKol}
+                    onChange={(e) => setLKol(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Asam Urat (mg/dL)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={lUrat}
+                    onChange={(e) => setLUrat(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Keluhan</label>
+                  <textarea
+                    rows={2}
+                    value={lKeluhan}
+                    onChange={(e) => setLKeluhan(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-saas-muted">Tindakan</label>
+                  <textarea
+                    rows={2}
+                    value={lTindakan}
+                    onChange={(e) => setLTindakan(e.target.value)}
+                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-end gap-2 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="px-4 py-2 border border-hairline rounded-pill text-xs font-semibold text-saas-dark hover:bg-surface-soft"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-4 py-2 bg-saas-primary text-white rounded-pill text-xs font-semibold hover:bg-saas-primary-active disabled:opacity-50"
+            >
+              {saving ? "Menyimpan..." : "Simpan Perubahan"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL KONFIRMASI HAPUS PEMERIKSAAN */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Hapus Record Riwayat Periksa"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-saas-dark font-medium">
+            Apakah Anda yakin ingin menghapus catatan riwayat pemeriksaan untuk{" "}
+            <span className="font-bold text-trend-dangerText">{selectedLog?.nama}</span>?
+          </p>
+          <p className="text-xs text-saas-muted">
+            Catatan pemeriksaan ini akan terhapus secara permanen dari sistem Posyandu.
+          </p>
+          <div className="flex justify-end gap-2 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="px-4 py-2 border border-hairline rounded-pill text-xs font-semibold text-saas-dark hover:bg-surface-soft"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteSubmit}
+              disabled={saving}
+              className="px-4 py-2 bg-trend-dangerText text-white rounded-pill text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
+            >
+              {saving ? "Menghapus..." : "Ya, Hapus Record"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

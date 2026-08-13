@@ -100,13 +100,27 @@ export function hitungZScore(
   return (val - median) / sd;
 }
 
+export function hitungZScoreBBU(beratBadan: number, usiaBulan: number, jenisKelamin: 'L' | 'P'): number {
+  const milestones = jenisKelamin === 'L' ? BBU_BOYS : BBU_GIRLS;
+  return Number(hitungZScore(beratBadan, usiaBulan, milestones).toFixed(2));
+}
+
+export function hitungZScoreTBU(tinggiBadan: number, usiaBulan: number, jenisKelamin: 'L' | 'P'): number {
+  const milestones = jenisKelamin === 'L' ? TBU_BOYS : TBU_GIRLS;
+  return Number(hitungZScore(tinggiBadan, usiaBulan, milestones).toFixed(2));
+}
+
+export function hitungZScoreBBTB(beratBadan: number, tinggiBadan: number, jenisKelamin: 'L' | 'P'): number {
+  const milestones = jenisKelamin === 'L' ? BBTB_BOYS : BBTB_GIRLS;
+  return Number(hitungZScore(beratBadan, tinggiBadan, milestones).toFixed(2));
+}
+
 export function hitungStatusBbU(
   beratBadan: number,
   usiaBulan: number,
   jenisKelamin: 'L' | 'P'
 ): 'Sangat Kurang' | 'Kurang' | 'Normal' | 'Lebih' {
-  const milestones = jenisKelamin === 'L' ? BBU_BOYS : BBU_GIRLS;
-  const zScore = hitungZScore(beratBadan, usiaBulan, milestones);
+  const zScore = hitungZScoreBBU(beratBadan, usiaBulan, jenisKelamin);
 
   if (zScore < -3) return 'Sangat Kurang';
   if (zScore < -2) return 'Kurang';
@@ -119,8 +133,7 @@ export function hitungStatusTbU(
   usiaBulan: number,
   jenisKelamin: 'L' | 'P'
 ): 'Sangat Pendek' | 'Pendek' | 'Normal' | 'Tinggi' {
-  const milestones = jenisKelamin === 'L' ? TBU_BOYS : TBU_GIRLS;
-  const zScore = hitungZScore(tinggiBadan, usiaBulan, milestones);
+  const zScore = hitungZScoreTBU(tinggiBadan, usiaBulan, jenisKelamin);
 
   if (zScore < -3) return 'Sangat Pendek';
   if (zScore < -2) return 'Pendek';
@@ -133,8 +146,7 @@ export function hitungStatusBbTb(
   tinggiBadan: number,
   jenisKelamin: 'L' | 'P'
 ): 'Sangat Kurus' | 'Kurus' | 'Normal' | 'Gemuk' {
-  const milestones = jenisKelamin === 'L' ? BBTB_BOYS : BBTB_GIRLS;
-  const zScore = hitungZScore(beratBadan, tinggiBadan, milestones);
+  const zScore = hitungZScoreBBTB(beratBadan, tinggiBadan, jenisKelamin);
 
   if (zScore < -3) return 'Sangat Kurus';
   if (zScore < -2) return 'Kurus';

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Modal from "../../components/Modal";
+import PageHelmet from "../../components/PageHelmet";
 import {
   ArrowLeft,
   Plus,
@@ -19,6 +20,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, convertStatusBbUToCode, convertStatusTbUToCode, convertStatusBbTbToCode } from "../../lib/zScoreCalculator";
+import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
 
 // Tipe Data
 export interface PemeriksaanBalita {
@@ -140,6 +142,27 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   const [editAlamat, setEditAlamat] = useState("");
   const [editError, setEditError] = useState("");
 
+  // Edit & Delete Examination State
+  const [isEditExamModalOpen, setIsEditExamModalOpen] = useState(false);
+  const [isDeleteExamModalOpen, setIsDeleteExamModalOpen] = useState(false);
+  const [editingExamId, setEditingExamId] = useState<string | null>(null);
+  const [deletingExamId, setDeletingExamId] = useState<string | null>(null);
+
+  const [editExamDate, setEditExamDate] = useState("");
+  const [editExamBB, setEditExamBB] = useState("");
+  const [editExamTB, setEditExamTB] = useState("");
+  const [editExamLK, setEditExamLK] = useState("");
+  const [editExamLiLA, setEditExamLiLA] = useState("");
+  const [editExamBBU, setEditExamBBU] = useState<PemeriksaanBalita["statusBBU"]>("Normal");
+  const [editExamTBU, setEditExamTBU] = useState<PemeriksaanBalita["statusTBU"]>("Normal");
+  const [editExamBBTB, setEditExamBBTB] = useState<PemeriksaanBalita["statusBBTB"]>("Normal");
+  const [editExamKms, setEditExamKms] = useState("N (Naik)");
+  const [editExamVitA, setEditExamVitA] = useState(false);
+  const [editExamAsi, setEditExamAsi] = useState(false);
+  const [editExamCacing, setEditExamCacing] = useState(false);
+  const [editExamImunisasi, setEditExamImunisasi] = useState("");
+  const [editExamError, setEditExamError] = useState("");
+
   // Search & Filter State
   const [query, setQuery] = useState("");
   const [ageFilter, setAgeFilter] = useState<"semua" | "0-6" | "7-12" | "13-24" | "25-60">("semua");
@@ -231,7 +254,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   const openEditModal = (b: Balita) => {
     setEditNama(b.nama);
     setEditNik(b.nik || "");
-    setEditTglLahir(b.tanggalLahir);
+    setEditTglLahir(formatTanggalInput(b.tanggalLahir));
     setEditJk(b.jenisKelamin);
     setEditNamaIbu(b.namaIbu);
     setEditAlamat(b.alamat);
@@ -281,6 +304,172 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
       setView("list");
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Gagal menghapus profil balita.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Open Edit Exam Modal
+  const openEditExamModal = (exam: PemeriksaanBalita) => {
+    setEditingExamId(exam.id);
+    setEditExamDate(formatTanggalInput(exam.tanggalPeriksa));
+    setEditExamBB(String(exam.beratBadan));
+    setEditExamTB(String(exam.tinggiBadan));
+    setEditExamLK(exam.lingkarKepala ? String(exam.lingkarKepala) : "");
+    setEditExamLiLA(exam.lingkarLengan ? String(exam.lingkarLengan) : "");
+    setEditExamBBU(exam.statusBBU || "Normal");
+    setEditExamTBU(exam.statusTBU || "Normal");
+    setEditExamBBTB(exam.statusBBTB || "Normal");
+    setEditExamKms(exam.statusKms || "N (Naik)");
+    setEditExamVitA(Boolean(exam.vitaminA));
+    setEditExamAsi(Boolean(exam.asiEksklusif));
+    setEditExamCacing(Boolean(exam.obatCacing));
+    setEditExamImunisasi(exam.statusImunisasi || "");
+    setEditExamError("");
+    setIsEditExamModalOpen(true);
+  };
+
+  // Open Delete Exam Modal
+  const openDeleteExamModal = (examId: string) => {
+    setDeletingExamId(examId);
+    setIsDeleteExamModalOpen(true);
+  };
+
+  // Auto Recalculate Z-Score when BB/TB changes in Edit Exam Form
+  const handleEditExamMeasurementsChange = (newBB: string, newTB: string, dateStr: string) => {
+    setEditExamBB(newBB);
+    setEditExamTB(newTB);
+    const bb = parseFloat(newBB);
+    const tb = parseFloat(newTB);
+    if (!isNaN(bb) && !isNaN(tb) && activeBalita) {
+      const age = calculateAgeInMonths(activeBalita.tanggalLahir, new Date(dateStr));
+      const jk = activeBalita.jenisKelamin;
+      setEditExamBBU(hitungStatusBbU(bb, age, jk));
+      setEditExamTBU(hitungStatusTbU(tb, age, jk));
+      setEditExamBBTB(hitungStatusBbTb(bb, tb, jk));
+    }
+  };
+
+  // Handle Edit Exam Submit
+  const handleEditExamSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditExamError("");
+
+    const bb = parseFloat(editExamBB);
+    const tb = parseFloat(editExamTB);
+    const lk = editExamLK ? parseFloat(editExamLK) : undefined;
+    const lila = editExamLiLA ? parseFloat(editExamLiLA) : undefined;
+
+    if (isNaN(bb) || bb <= 0 || isNaN(tb) || tb <= 0) {
+      setEditExamError("Berat Badan dan Tinggi Badan harus diisi angka positif yang valid.");
+      return;
+    }
+
+    if (!activeBalita || !editingExamId) return;
+
+    setIsSaving(true);
+    try {
+      const payload = {
+        tanggalPeriksa: editExamDate,
+        usiaBulan: calculateAgeInMonths(activeBalita.tanggalLahir, new Date(editExamDate)),
+        beratBadan: bb,
+        tinggiBadan: tb,
+        lingkarKepala: lk,
+        lingkarLengan: lila,
+        statusBbU: convertStatusBbUToCode(editExamBBU),
+        statusTbU: convertStatusTbUToCode(editExamTBU),
+        statusBbTb: convertStatusBbTbToCode(editExamBBTB),
+        statusKms: editExamKms,
+        vitaminA: editExamVitA,
+        asiEksklusif: editExamAsi,
+        obatCacing: editExamCacing,
+        statusImunisasi: editExamImunisasi || undefined,
+      };
+
+      await balitaApi.updatePemeriksaan(posyanduId, activeBalita.id, editingExamId, payload as any);
+
+      // Refresh balita detail
+      const res = await balitaApi.getById(posyanduId, activeBalita.id);
+      if (res.success) {
+        const updated: Balita = {
+          ...res.data,
+          pemeriksaan: (res.data.pemeriksaans ?? []).map((p) => ({
+            ...p,
+            statusBBU: (p as unknown as Record<string, string>).statusBbU as PemeriksaanBalita["statusBBU"] ?? "Normal",
+            statusTBU: (p as unknown as Record<string, string>).statusTbU as PemeriksaanBalita["statusTBU"] ?? "Normal",
+            statusBBTB: (p as unknown as Record<string, string>).statusBbTb as PemeriksaanBalita["statusBBTB"] ?? "Normal",
+          })),
+        };
+        setBalitas((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+      }
+      setIsEditExamModalOpen(false);
+    } catch {
+      // Fallback local update
+      setBalitas((prev) =>
+        prev.map((b) => {
+          if (b.id !== activeBalita.id) return b;
+          return {
+            ...b,
+            pemeriksaan: b.pemeriksaan.map((p) => {
+              if (p.id !== editingExamId) return p;
+              return {
+                ...p,
+                tanggalPeriksa: editExamDate,
+                usiaBulan: calculateAgeInMonths(activeBalita.tanggalLahir, new Date(editExamDate)),
+                beratBadan: bb,
+                tinggiBadan: tb,
+                lingkarKepala: lk,
+                lingkarLengan: lila,
+                statusBBU: editExamBBU,
+                statusTBU: editExamTBU,
+                statusBBTB: editExamBBTB,
+                statusKms: editExamKms,
+                vitaminA: editExamVitA,
+                asiEksklusif: editExamAsi,
+                obatCacing: editExamCacing,
+                statusImunisasi: editExamImunisasi,
+              };
+            }),
+          };
+        })
+      );
+      setIsEditExamModalOpen(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle Delete Exam Submit
+  const handleDeleteExamSubmit = async () => {
+    if (!activeBalita || !deletingExamId) return;
+    setIsSaving(true);
+    try {
+      await balitaApi.deletePemeriksaan(posyanduId, activeBalita.id, deletingExamId);
+      const res = await balitaApi.getById(posyanduId, activeBalita.id);
+      if (res.success) {
+        const updated: Balita = {
+          ...res.data,
+          pemeriksaan: (res.data.pemeriksaans ?? []).map((p) => ({
+            ...p,
+            statusBBU: (p as unknown as Record<string, string>).statusBbU as PemeriksaanBalita["statusBBU"] ?? "Normal",
+            statusTBU: (p as unknown as Record<string, string>).statusTbU as PemeriksaanBalita["statusTBU"] ?? "Normal",
+            statusBBTB: (p as unknown as Record<string, string>).statusBbTb as PemeriksaanBalita["statusBBTB"] ?? "Normal",
+          })),
+        };
+        setBalitas((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+      }
+      setIsDeleteExamModalOpen(false);
+    } catch {
+      setBalitas((prev) =>
+        prev.map((b) => {
+          if (b.id !== activeBalita.id) return b;
+          return {
+            ...b,
+            pemeriksaan: b.pemeriksaan.filter((p) => p.id !== deletingExamId),
+          };
+        })
+      );
+      setIsDeleteExamModalOpen(false);
     } finally {
       setIsSaving(false);
     }
@@ -411,6 +600,10 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
 
   return (
     <div className="space-y-6">
+      <PageHelmet
+        title={activeBalita ? `Balita: ${activeBalita.nama}` : "Manajemen Data Balita"}
+        description="Pengelolaan data identitas, pengukuran fisik, dan grafik tumbuh kembang anak/balita."
+      />
       {/* API Error Banner */}
       {apiError && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
@@ -603,7 +796,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                   <div>
                     <p className="text-xs text-saas-muted">Tanggal Lahir & Usia</p>
                     <p className="text-saas-dark text-xs mt-0.5">
-                      {activeBalita.tanggalLahir} ({calculateAgeInMonths(activeBalita.tanggalLahir)} Bulan)
+                      {formatTanggalIndonesia(activeBalita.tanggalLahir)} ({calculateAgeInMonths(activeBalita.tanggalLahir)} Bulan)
                     </p>
                   </div>
                 </div>
@@ -870,13 +1063,14 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     <th className="pb-3">ASI Eksk.</th>
                     <th className="pb-3">Obat Cacing</th>
                     <th className="pb-3">Imunisasi</th>
+                    <th className="pb-3 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {activeBalita.pemeriksaan.length > 0 ? (
                     activeBalita.pemeriksaan.map((exam) => (
                       <tr key={exam.id} className="border-b border-gray-50 last:border-b-0 text-xs text-saas-dark">
-                        <td className="py-4 font-bold">{exam.tanggalPeriksa}</td>
+                        <td className="py-4 font-bold">{formatTanggalIndonesia(exam.tanggalPeriksa)}</td>
                         <td className="py-4 font-semibold">{exam.usiaBulan} Bulan</td>
                         <td className="py-4 font-bold">{exam.beratBadan} kg</td>
                         <td className="py-4 font-bold">{exam.tinggiBadan} cm</td>
@@ -920,11 +1114,27 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                         <td className="py-4 font-semibold text-saas-muted">{exam.asiEksklusif ? "Ya" : "Tidak"}</td>
                         <td className="py-4 font-semibold text-saas-muted">{exam.obatCacing ? "Ya" : "Tidak"}</td>
                         <td className="py-4 font-semibold text-saas-muted">{exam.statusImunisasi || "-"}</td>
+                        <td className="py-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => openEditExamModal(exam)}
+                              className="px-2.5 py-1 text-xs font-bold border border-gray-200 text-saas-dark rounded hover:bg-saas-primary/10 hover:text-saas-primary transition-all"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => openDeleteExamModal(exam.id)}
+                              className="px-2.5 py-1 text-xs font-bold border border-red-200 text-trend-dangerText rounded hover:bg-red-50 transition-all"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={14} className="py-8 text-center text-xs text-saas-muted font-medium">
+                      <td colSpan={15} className="py-8 text-center text-xs text-saas-muted font-medium">
                         Belum ada riwayat pemeriksaan. Silakan input pada form di atas.
                       </td>
                     </tr>
@@ -1195,6 +1405,188 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
               className="px-4 py-2 bg-trend-dangerText text-white rounded-pill text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
             >
               {isSaving ? "Menghapus..." : "Ya, Hapus Permanen"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL EDIT PEMERIKSAAN BALITA */}
+      <Modal
+        isOpen={isEditExamModalOpen}
+        onClose={() => setIsEditExamModalOpen(false)}
+        title="Edit Riwayat Pemeriksaan Balita"
+      >
+        <form onSubmit={handleEditExamSubmit} className="space-y-4">
+          {editExamError && (
+            <div className="p-3 bg-red-50 text-trend-dangerText border border-red-100 rounded-lg text-xs font-bold flex gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" /> {editExamError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Tanggal Periksa</label>
+              <input
+                type="date"
+                required
+                value={editExamDate}
+                onChange={(e) => setEditExamDate(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Berat Badan (kg)</label>
+              <input
+                type="number"
+                step="0.1"
+                required
+                value={editExamBB}
+                onChange={(e) => handleEditExamMeasurementsChange(e.target.value, editExamTB, editExamDate)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Tinggi Badan (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                required
+                value={editExamTB}
+                onChange={(e) => handleEditExamMeasurementsChange(editExamBB, e.target.value, editExamDate)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Lingkar Kepala (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={editExamLK}
+                onChange={(e) => setEditExamLK(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Lingkar Lengan LiLA (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={editExamLiLA}
+                onChange={(e) => setEditExamLiLA(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+          </div>
+
+          {/* Status Gizi Auto Z-Score */}
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 space-y-2">
+            <p className="text-[11px] font-bold text-saas-muted uppercase tracking-wider">Status Gizi (Otomatis)</p>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="text-saas-muted block text-[10px]">BB/U:</span>
+                <span className="font-bold text-saas-dark">{editExamBBU}</span>
+              </div>
+              <div>
+                <span className="text-saas-muted block text-[10px]">TB/U:</span>
+                <span className="font-bold text-saas-dark">{editExamTBU}</span>
+              </div>
+              <div>
+                <span className="text-saas-muted block text-[10px]">BB/TB:</span>
+                <span className="font-bold text-saas-dark">{editExamBBTB}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Intervensi Tambahan */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+            <label className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-150 rounded text-xs font-semibold cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editExamVitA}
+                onChange={(e) => setEditExamVitA(e.target.checked)}
+                className="w-4 h-4 text-saas-primary rounded"
+              />
+              Vitamin A
+            </label>
+            <label className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-150 rounded text-xs font-semibold cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editExamAsi}
+                onChange={(e) => setEditExamAsi(e.target.checked)}
+                className="w-4 h-4 text-saas-primary rounded"
+              />
+              ASI Eksklusif
+            </label>
+            <label className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-150 rounded text-xs font-semibold cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editExamCacing}
+                onChange={(e) => setEditExamCacing(e.target.checked)}
+                className="w-4 h-4 text-saas-primary rounded"
+              />
+              Obat Cacing
+            </label>
+            <div>
+              <input
+                type="text"
+                placeholder="Imunisasi..."
+                value={editExamImunisasi}
+                onChange={(e) => setEditExamImunisasi(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsEditExamModalOpen(false)}
+              className="px-4 py-2 border border-hairline rounded-pill text-xs font-semibold text-saas-dark hover:bg-surface-soft"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="px-4 py-2 bg-saas-primary text-white rounded-pill text-xs font-semibold hover:bg-saas-primary-active disabled:opacity-50"
+            >
+              {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL KONFIRMASI HAPUS PEMERIKSAAN BALITA */}
+      <Modal
+        isOpen={isDeleteExamModalOpen}
+        onClose={() => setIsDeleteExamModalOpen(false)}
+        title="Hapus Data Pemeriksaan"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-saas-dark font-medium">
+            Apakah Anda yakin ingin menghapus data catatan pemeriksaan bulanan balita ini?
+          </p>
+          <p className="text-xs text-saas-muted">
+            Tindakan ini tidak dapat dibatalkan dan catatan pemeriksaan akan terhapus dari riwayat balita.
+          </p>
+          <div className="flex justify-end gap-2 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsDeleteExamModalOpen(false)}
+              className="px-4 py-2 border border-hairline rounded-pill text-xs font-semibold text-saas-dark hover:bg-surface-soft"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteExamSubmit}
+              disabled={isSaving}
+              className="px-4 py-2 bg-trend-dangerText text-white rounded-pill text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
+            >
+              {isSaving ? "Menghapus..." : "Ya, Hapus Record"}
             </button>
           </div>
         </div>

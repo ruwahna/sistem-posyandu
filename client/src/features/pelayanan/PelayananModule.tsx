@@ -17,6 +17,7 @@ import { balitaApi, lansiaApi, Balita, Lansia } from "../../lib/api";
 
 // Reusable Modal Component
 import Modal from "../../components/Modal";
+import PageHelmet from "../../components/PageHelmet";
 
 // Tipe Data Pasien
 interface Pasien {
@@ -419,6 +420,10 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
 
   return (
     <div className="space-y-6">
+      <PageHelmet
+        title="Pelayanan Posyandu"
+        description="Pencatatan cepat pelayanan dan pemeriksaan fisik balita & lansia PosyanduKita."
+      />
       {/* Success Toast */}
       {successToast && (
         <div className="fixed bottom-6 right-6 z-50 p-4 bg-green-50 text-trend-successText border border-green-150 rounded-card shadow-lg flex items-center gap-2.5">
@@ -465,7 +470,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
               onChange={(e) => setQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 focus:bg-white transition-all"
             />
-            <Search className="absolute left-3 top-2.5 text-saas-muted w-4.5 h-4.5" />
+            <Search className="absolute left-3.5 top-2.5 text-saas-muted/80 w-4 h-4" />
           </div>
 
           <div className="flex gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100/50">
@@ -605,6 +610,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                       <input
                         type="number"
                         step="0.1"
+                        min="0"
                         placeholder="Contoh: 9.5"
                         value={examBB}
                         onChange={(e) => {
@@ -620,6 +626,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                       <input
                         type="number"
                         step="0.1"
+                        min="0"
                         placeholder="Contoh: 74.2"
                         value={examTB}
                         onChange={(e) => setExamTB(e.target.value)}
@@ -652,6 +659,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <input
                             type="number"
                             step="0.1"
+                            min="0"
                             placeholder="Cth: 45"
                             value={examLK}
                             onChange={(e) => setExamLK(e.target.value)}
@@ -664,6 +672,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <input
                             type="number"
                             step="0.1"
+                            min="0"
                             placeholder="Cth: 12.5"
                             value={examLiLA}
                             onChange={(e) => setExamLiLA(e.target.value)}
@@ -789,6 +798,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <label className="text-xs font-bold text-saas-muted">Sistol (mmHg)</label>
                           <input
                             type="number"
+                            min="0"
                             placeholder="cth: 120"
                             value={examSistol}
                             onChange={(e) => {
@@ -803,6 +813,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <label className="text-xs font-bold text-saas-muted">Diastol (mmHg)</label>
                           <input
                             type="number"
+                            min="0"
                             placeholder="cth: 80"
                             value={examDiastol}
                             onChange={(e) => setExamDiastol(e.target.value)}
@@ -814,6 +825,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <label className="text-xs font-bold text-saas-muted">GDS (mg/dL)</label>
                           <input
                             type="number"
+                            min="0"
                             placeholder="cth: 120"
                             value={examGds}
                             onChange={(e) => {
@@ -828,6 +840,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <label className="text-xs font-bold text-saas-muted">Lingkar Perut (cm)</label>
                           <input
                             type="number"
+                            min="0"
                             placeholder="cth: 90"
                             value={examLp}
                             onChange={(e) => setExamLp(e.target.value)}
@@ -841,6 +854,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <label className="text-xs font-bold text-saas-muted">Kolesterol (mg/dL)</label>
                           <input
                             type="number"
+                            min="0"
                             placeholder="cth: 180"
                             value={examCholesterol}
                             onChange={(e) => setExamCholesterol(e.target.value)}
@@ -853,6 +867,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           <input
                             type="number"
                             step="0.1"
+                            min="0"
                             placeholder="cth: 6.2"
                             value={examUricAcid}
                             onChange={(e) => setExamUricAcid(e.target.value)}

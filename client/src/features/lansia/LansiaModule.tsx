@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Modal from "../../components/Modal";
+import PageHelmet from "../../components/PageHelmet";
 import { TableSkeleton, DetailViewSkeleton } from "../../components/Skeleton";
 import { lansiaApi } from "../../lib/api";
+import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
 import {
   ArrowLeft,
   Plus,
@@ -173,6 +175,25 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
   const [editMental, setEditMental] = useState("");
   const [editError, setEditError] = useState("");
 
+  // Edit & Delete Examination State
+  const [isEditExamModalOpen, setIsEditExamModalOpen] = useState(false);
+  const [isDeleteExamModalOpen, setIsDeleteExamModalOpen] = useState(false);
+  const [editingExamId, setEditingExamId] = useState<string | null>(null);
+  const [deletingExamId, setDeletingExamId] = useState<string | null>(null);
+
+  const [editExamDate, setEditExamDate] = useState("");
+  const [editExamBB, setEditExamBB] = useState("");
+  const [editExamTB, setEditExamTB] = useState("");
+  const [editExamSistol, setEditExamSistol] = useState("");
+  const [editExamDiastol, setEditExamDiastol] = useState("");
+  const [editExamGds, setEditExamGds] = useState("");
+  const [editExamLp, setEditExamLp] = useState("");
+  const [editExamCholesterol, setEditExamCholesterol] = useState("");
+  const [editExamUricAcid, setEditExamUricAcid] = useState("");
+  const [editExamKeluhan, setEditExamKeluhan] = useState("");
+  const [editExamTindakan, setEditExamTindakan] = useState("");
+  const [editExamError, setEditExamError] = useState("");
+
   // Fetch lansia from API
   const fetchLansias = useCallback(() => {
     setIsLoading(true);
@@ -249,7 +270,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
     setEditNama(l.nama);
     setEditNik(l.nik);
     setEditBpjs(l.noBpjs || "");
-    setEditTglLahir(l.tanggalLahir);
+    setEditTglLahir(formatTanggalInput(l.tanggalLahir));
     setEditJk(l.jenisKelamin);
     setEditRtRw(l.rtRw);
     setEditAlamat(l.alamat);
@@ -308,6 +329,147 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
       setView("list");
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Gagal menghapus data lansia.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Open Edit Exam Modal
+  const openEditExamModal = (exam: PemeriksaanLansia) => {
+    setEditingExamId(exam.id);
+    setEditExamDate(formatTanggalInput(exam.tanggalPeriksa));
+    setEditExamBB(String(exam.beratBadan));
+    setEditExamTB(String(exam.tinggiBadan));
+    setEditExamSistol(String(exam.tekananDarahSistol));
+    setEditExamDiastol(String(exam.tekananDarahDiastol));
+    setEditExamGds(String(exam.gulaDarahSewaktu));
+    setEditExamLp(String(exam.lingkarPerut));
+    setEditExamCholesterol(exam.kolesterol ? String(exam.kolesterol) : "");
+    setEditExamUricAcid(exam.asamUrat ? String(exam.asamUrat) : "");
+    setEditExamKeluhan(exam.keluhan || "");
+    setEditExamTindakan(exam.tindakan || "");
+    setEditExamError("");
+    setIsEditExamModalOpen(true);
+  };
+
+  // Open Delete Exam Modal
+  const openDeleteExamModal = (examId: string) => {
+    setDeletingExamId(examId);
+    setIsDeleteExamModalOpen(true);
+  };
+
+  // Handle Edit Exam Submit
+  const handleEditExamSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditExamError("");
+
+    const bb = parseFloat(editExamBB);
+    const tb = parseFloat(editExamTB);
+    const sistol = parseInt(editExamSistol);
+    const diastol = parseInt(editExamDiastol);
+    const gds = parseFloat(editExamGds);
+    const lp = parseFloat(editExamLp);
+    const kol = editExamCholesterol ? parseFloat(editExamCholesterol) : undefined;
+    const urat = editExamUricAcid ? parseFloat(editExamUricAcid) : undefined;
+
+    if (isNaN(bb) || bb <= 0 || isNaN(tb) || tb <= 0 || isNaN(sistol) || isNaN(diastol) || isNaN(gds) || isNaN(lp)) {
+      setEditExamError("Mohon isi semua data pemeriksaan dengan angka positif yang valid.");
+      return;
+    }
+
+    if (!activeLansia || !editingExamId) return;
+
+    setIsSaving(true);
+    try {
+      await lansiaApi.updatePemeriksaan(posyanduId, activeLansia.id, editingExamId, {
+        tanggalPeriksa: editExamDate,
+        beratBadan: bb,
+        tinggiBadan: tb,
+        tekananDarahSistol: sistol,
+        tekananDarahDiastol: diastol,
+        gulaDarahSewaktu: gds,
+        lingkarPerut: lp,
+        kolesterol: kol,
+        asamUrat: urat,
+        keluhan: editExamKeluhan || undefined,
+        tindakan: editExamTindakan || undefined,
+      } as any);
+
+      const res = await lansiaApi.getById(posyanduId, activeLansia.id);
+      if (res.success) {
+        const updated: Lansia = {
+          ...res.data,
+          tanggalLahir: formatTanggalInput(res.data.tanggalLahir),
+          pemeriksaan: (res.data.pemeriksaans ?? []).map((p) => ({
+            ...p,
+            tanggalPeriksa: formatTanggalInput(p.tanggalPeriksa),
+          })),
+        };
+        setLansias((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+      }
+      setIsEditExamModalOpen(false);
+    } catch {
+      setLansias((prev) =>
+        prev.map((l) => {
+          if (l.id !== activeLansia.id) return l;
+          return {
+            ...l,
+            pemeriksaan: l.pemeriksaan.map((p) => {
+              if (p.id !== editingExamId) return p;
+              return {
+                ...p,
+                tanggalPeriksa: editExamDate,
+                beratBadan: bb,
+                tinggiBadan: tb,
+                tekananDarahSistol: sistol,
+                tekananDarahDiastol: diastol,
+                gulaDarahSewaktu: gds,
+                lingkarPerut: lp,
+                kolesterol: kol,
+                asamUrat: urat,
+                keluhan: editExamKeluhan,
+                tindakan: editExamTindakan,
+              };
+            }),
+          };
+        })
+      );
+      setIsEditExamModalOpen(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle Delete Exam Submit
+  const handleDeleteExamSubmit = async () => {
+    if (!activeLansia || !deletingExamId) return;
+    setIsSaving(true);
+    try {
+      await lansiaApi.deletePemeriksaan(posyanduId, activeLansia.id, deletingExamId);
+      const res = await lansiaApi.getById(posyanduId, activeLansia.id);
+      if (res.success) {
+        const updated: Lansia = {
+          ...res.data,
+          tanggalLahir: formatTanggalInput(res.data.tanggalLahir),
+          pemeriksaan: (res.data.pemeriksaans ?? []).map((p) => ({
+            ...p,
+            tanggalPeriksa: formatTanggalInput(p.tanggalPeriksa),
+          })),
+        };
+        setLansias((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+      }
+      setIsDeleteExamModalOpen(false);
+    } catch {
+      setLansias((prev) =>
+        prev.map((l) => {
+          if (l.id !== activeLansia.id) return l;
+          return {
+            ...l,
+            pemeriksaan: l.pemeriksaan.filter((p) => p.id !== deletingExamId),
+          };
+        })
+      );
+      setIsDeleteExamModalOpen(false);
     } finally {
       setIsSaving(false);
     }
@@ -437,6 +599,10 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
 
   return (
     <div className="space-y-6">
+      <PageHelmet
+        title={activeLansia ? `Lansia: ${activeLansia.nama}` : "Manajemen Data Lansia"}
+        description="Pengelolaan data lansia, riwayat penyakit Hipertensi/Diabetes, dan tingkat kemandirian."
+      />
       {/* ========================================================================= */}
       {/* 1. VIEW: LIST LANSIA */}
       {/* ========================================================================= */}
@@ -652,7 +818,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                   <div>
                     <p className="text-xs text-saas-muted">Tanggal Lahir & Usia</p>
                     <p className="text-saas-dark text-xs mt-0.5">
-                      {activeLansia.tanggalLahir} ({calculateAgeInYears(activeLansia.tanggalLahir)} Tahun)
+                      {formatTanggalIndonesia(activeLansia.tanggalLahir)} ({calculateAgeInYears(activeLansia.tanggalLahir)} Tahun)
                     </p>
                   </div>
                 </div>
@@ -920,13 +1086,14 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     <th className="pb-3">Lingkar Perut</th>
                     <th className="pb-3">Keluhan</th>
                     <th className="pb-3">Tindakan</th>
+                    <th className="pb-3 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {activeLansia.pemeriksaan.length > 0 ? (
                     activeLansia.pemeriksaan.map((exam) => (
                       <tr key={exam.id} className="border-b border-gray-50 last:border-b-0 text-xs text-saas-dark">
-                        <td className="py-4 font-bold">{exam.tanggalPeriksa}</td>
+                        <td className="py-4 font-bold">{formatTanggalIndonesia(exam.tanggalPeriksa)}</td>
                         <td className="py-4 font-bold">{exam.beratBadan} kg</td>
                         <td className="py-4 font-bold">{exam.tinggiBadan} cm</td>
                         <td className="py-4 font-bold text-teal-600">
@@ -967,11 +1134,27 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                         <td className="py-4 text-saas-muted max-w-[150px] truncate" title={exam.tindakan}>
                           {exam.tindakan || "-"}
                         </td>
+                        <td className="py-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => openEditExamModal(exam)}
+                              className="px-2.5 py-1 text-xs font-bold border border-gray-200 text-saas-dark rounded hover:bg-saas-primary/10 hover:text-saas-primary transition-all"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => openDeleteExamModal(exam.id)}
+                              className="px-2.5 py-1 text-xs font-bold border border-red-200 text-trend-dangerText rounded hover:bg-red-50 transition-all"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={11} className="py-8 text-center text-xs text-saas-muted font-medium">
+                      <td colSpan={12} className="py-8 text-center text-xs text-saas-muted font-medium">
                         Belum ada riwayat pemeriksaan lansia. Silakan input pada form di atas.
                       </td>
                     </tr>
@@ -1362,6 +1545,201 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
               className="px-4 py-2 bg-trend-dangerText text-white rounded-pill text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
             >
               {isSaving ? "Menghapus..." : "Ya, Hapus Permanen"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL EDIT PEMERIKSAAN LANSIA */}
+      <Modal
+        isOpen={isEditExamModalOpen}
+        onClose={() => setIsEditExamModalOpen(false)}
+        title="Edit Riwayat Pemeriksaan Lansia"
+      >
+        <form onSubmit={handleEditExamSubmit} className="space-y-4">
+          {editExamError && (
+            <div className="p-3 bg-red-50 text-trend-dangerText border border-red-100 rounded-lg text-xs font-bold flex gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" /> {editExamError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Tanggal Periksa</label>
+              <input
+                type="date"
+                required
+                value={editExamDate}
+                onChange={(e) => setEditExamDate(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Berat Badan (kg)</label>
+              <input
+                type="number"
+                step="0.1"
+                required
+                value={editExamBB}
+                onChange={(e) => setEditExamBB(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Tinggi Badan (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                required
+                value={editExamTB}
+                onChange={(e) => setEditExamTB(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Tekanan Darah (Sistol)</label>
+              <input
+                type="number"
+                required
+                placeholder="mmHg"
+                value={editExamSistol}
+                onChange={(e) => setEditExamSistol(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Tekanan Darah (Diastol)</label>
+              <input
+                type="number"
+                required
+                placeholder="mmHg"
+                value={editExamDiastol}
+                onChange={(e) => setEditExamDiastol(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-saas-muted">GDS (mg/dL)</label>
+              <input
+                type="number"
+                step="0.1"
+                required
+                value={editExamGds}
+                onChange={(e) => setEditExamGds(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Lingkar Perut (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                required
+                value={editExamLp}
+                onChange={(e) => setEditExamLp(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Kolesterol Total (opsional)</label>
+              <input
+                type="number"
+                step="0.1"
+                placeholder="mg/dL"
+                value={editExamCholesterol}
+                onChange={(e) => setEditExamCholesterol(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Asam Urat (opsional)</label>
+              <input
+                type="number"
+                step="0.1"
+                placeholder="mg/dL"
+                value={editExamUricAcid}
+                onChange={(e) => setEditExamUricAcid(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Keluhan Utama</label>
+              <textarea
+                rows={2}
+                placeholder="Contoh: Pusing, keluhan sendi..."
+                value={editExamKeluhan}
+                onChange={(e) => setEditExamKeluhan(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-saas-muted">Tindakan / Intervensi</label>
+              <textarea
+                rows={2}
+                placeholder="Contoh: Edukasi pola makan, rujukan..."
+                value={editExamTindakan}
+                onChange={(e) => setEditExamTindakan(e.target.value)}
+                className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsEditExamModalOpen(false)}
+              className="px-4 py-2 border border-hairline rounded-pill text-xs font-semibold text-saas-dark hover:bg-surface-soft"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="px-4 py-2 bg-saas-primary text-white rounded-pill text-xs font-semibold hover:bg-saas-primary-active disabled:opacity-50"
+            >
+              {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL KONFIRMASI HAPUS PEMERIKSAAN LANSIA */}
+      <Modal
+        isOpen={isDeleteExamModalOpen}
+        onClose={() => setIsDeleteExamModalOpen(false)}
+        title="Hapus Data Pemeriksaan"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-saas-dark font-medium">
+            Apakah Anda yakin ingin menghapus catatan pemeriksaan kesehatan lansia ini?
+          </p>
+          <p className="text-xs text-saas-muted">
+            Tindakan ini tidak dapat dibatalkan dan catatan pemeriksaan akan terhapus dari riwayat lansia.
+          </p>
+          <div className="flex justify-end gap-2 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsDeleteExamModalOpen(false)}
+              className="px-4 py-2 border border-hairline rounded-pill text-xs font-semibold text-saas-dark hover:bg-surface-soft"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteExamSubmit}
+              disabled={isSaving}
+              className="px-4 py-2 bg-trend-dangerText text-white rounded-pill text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
+            >
+              {isSaving ? "Menghapus..." : "Ya, Hapus Record"}
             </button>
           </div>
         </div>

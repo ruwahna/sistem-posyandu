@@ -1,9 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { dashboardApi, DashboardSummary, balitaApi, lansiaApi } from "../../lib/api";
+import { dashboardApi, DashboardSummary, DistribusiKehadiran, balitaApi, lansiaApi, TrenGiziItem } from "../../lib/api";
+import { formatTanggalIndonesia } from "../../lib/dateUtils";
 import Modal from "../../components/Modal";
-import ActionMenu from "../../components/ActionMenu";
+import PageHelmet from "../../components/PageHelmet";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+  LineChart,
+  Line,
+  ComposedChart,
+  ReferenceLine,
+} from "recharts";
 import {
   ArrowUpRight,
   SlidersHorizontal,
@@ -18,9 +33,11 @@ import {
   Heart,
   X,
   UserCheck2,
+  TrendingUp,
+  Activity,
   Eye,
-  DownloadIcon
 } from "lucide-react";
+import ActionMenu from "../../components/ActionMenu";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
 
 interface DashboardModuleProps {
@@ -55,14 +72,45 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
 
   const [activeTab, setActiveTab] = useState<"Semua" | "Balita" | "Lansia">("Semua");
 
-  // ── Modal state untuk Action Menu ──────────────────────────
-  const [showDetailAktivitas, setShowDetailAktivitas] = useState(false);
-  const [showDetailDistribusi, setShowDetailDistribusi] = useState(false);
-
   // ── API state ──────────────────────────────────────────────
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const [dbPasiens, setDbPasiens] = useState<Pasien[]>([]);
+  const [distribusiKehadiran, setDistribusiKehadiran] = useState<DistribusiKehadiran[]>([]);
+  const [isDistribusiLoading, setIsDistribusiLoading] = useState(false);
+
+  // ── Action Menu & Detail Modals ──
+  const [showDetailAktivitas, setShowDetailAktivitas] = useState(false);
+  const [showDetailDistribusi, setShowDetailDistribusi] = useState(false);
+
+  const handleDetailAktivitas = () => setShowDetailAktivitas(true);
+  const handleExportAktivitas = () => {
+    window.print();
+  };
+
+  const handleDetailDistribusi = () => setShowDetailDistribusi(true);
+  const handleExportDistribusi = () => {
+    window.print();
+  };
+
+  // ── Tren Gizi & Z-Score State ──
+  const [trenPeriod, setTrenPeriod] = useState<"bulanan" | "tahunan">("bulanan");
+  const [trenViewMode, setTrenViewMode] = useState<"status" | "zscore">("status");
+  const [trenGiziData, setTrenGiziData] = useState<TrenGiziItem[]>([]);
+  const [isTrenGiziLoading, setIsTrenGiziLoading] = useState(false);
+
+  useEffect(() => {
+    setIsTrenGiziLoading(true);
+    dashboardApi
+      .getTrenGizi(posyanduId, trenPeriod)
+      .then((res) => {
+        if (res.success && res.data) {
+          setTrenGiziData(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsTrenGiziLoading(false));
+  }, [posyanduId, trenPeriod]);
 
   const fetchSummary = () => {
     dashboardApi
@@ -106,6 +154,20 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       .catch(console.error);
   }, [posyanduId]);
 
+  // Fetch Distribusi Kehadiran RT/RW (Poin 20)
+  useEffect(() => {
+    setIsDistribusiLoading(true);
+    dashboardApi
+      .getDistribusiKehadiran(posyanduId)
+      .then((res) => {
+        if (res.success && res.data) {
+          setDistribusiKehadiran(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsDistribusiLoading(false));
+  }, [posyanduId]);
+
   // Build kunjungan list from API data (recent pemeriksaan)
   const apiKunjungans: Kunjungan[] = [
     ...(summary?.pemeriksaanTerbaru.balita ?? []).map((p, i) => ({
@@ -115,7 +177,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       detail: p.statusBbU ?? "-",
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: new Date(p.tanggalPeriksa).toLocaleDateString("id-ID"),
+      waktu: formatTanggalIndonesia(p.tanggalPeriksa),
     })),
     ...(summary?.pemeriksaanTerbaru.lansia ?? []).map((p, i) => ({
       id: `l-${p.id ?? i}`,
@@ -124,7 +186,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       detail: `${p.tekananDarahSistol}/${p.tekananDarahDiastol} mmHg`,
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: new Date(p.tanggalPeriksa).toLocaleDateString("id-ID"),
+      waktu: formatTanggalIndonesia(p.tanggalPeriksa),
     })),
   ].sort((a, b) => b.waktu.localeCompare(a.waktu)); // sort by date
 
@@ -315,129 +377,16 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
     }
   };
 
-  // ── Handler Aktivitas Kunjungan Menu ──────────────────────
-  const handleDetailAktivitas = () => {
-    setShowDetailAktivitas(true);
-  };
-
-  const handleExportAktivitas = () => {
-    try {
-      const data = [
-        ["Aktivitas Kunjungan - Tingkat Partisipasi Kader & Posyandu"],
-        ["Tanggal Export", new Date().toLocaleString("id-ID")],
-        ["Posyandu ID", posyanduId],
-        [],
-        ["Kategori", "Jumlah", "Persentase"],
-        ["Balita Selesai Periksa", "45", "60%"],
-        ["Lansia Selesai Periksa", "23", "30%"],
-        ["Belum Mengisi Data", "12", "10%"],
-        [],
-        ["Total Partisipasi", "78%"]
-      ];
-
-      const csv = data.map(row => row.join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      
-      link.setAttribute("href", url);
-      link.setAttribute("download", `aktivitas-kunjungan-${new Date().getTime()}.csv`);
-      link.style.visibility = "hidden";
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error("Export gagal:", err);
-      alert("Gagal export data aktivitas kunjungan");
-    }
-  };
-
-  const handleShareAktivitas = () => {
-    try {
-      const text = `Aktivitas Kunjungan Posyandu\n\nTingkat Partisipasi: 78%\nBalita Selesai: 45 Anak\nLansia Selesai: 23 Lansia\nBelum Mengisi: 12 Orang`;
-      
-      if (navigator.share) {
-        navigator.share({ title: "Aktivitas Kunjungan", text });
-      } else {
-        // Fallback: copy ke clipboard
-        navigator.clipboard.writeText(text);
-        alert("Data disalin ke clipboard!");
-      }
-    } catch (err) {
-      console.error("Share gagal:", err);
-    }
-  };
-
-  const handleSettingsAktivitas = () => {
-    alert("Pengaturan Aktivitas Kunjungan akan segera hadir");
-    // TODO: Implementasi modal settings
-  };
-
-  // ── Handler Distribusi Kehadiran Menu ──────────────────────
-  const handleDetailDistribusi = () => {
-    setShowDetailDistribusi(true);
-  };
-
-  const handleExportDistribusi = () => {
-    try {
-      const data = [
-        ["Distribusi Kehadiran RT/RW"],
-        ["Tanggal Export", new Date().toLocaleString("id-ID")],
-        ["Posyandu ID", posyanduId],
-        [],
-        ["Wilayah", "Kehadiran", "Persentase"],
-        ["RT 01 / RW 02", "84 Orang", "84%"],
-        ["RT 02 / RW 02", "72 Orang", "72%"],
-        ["RT 03 / RW 02", "65 Orang", "65%"],
-        ["RT 04 / RW 02", "48 Orang", "48%"],
-        ["RT 05 / RW 02", "30 Orang", "30%"]
-      ];
-
-      const csv = data.map(row => row.join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      
-      link.setAttribute("href", url);
-      link.setAttribute("download", `distribusi-kehadiran-${new Date().getTime()}.csv`);
-      link.style.visibility = "hidden";
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error("Export gagal:", err);
-      alert("Gagal export data distribusi kehadiran");
-    }
-  };
-
-  const handleShareDistribusi = () => {
-    try {
-      const text = `Distribusi Kehadiran RT/RW\n\nRT 01: 84%\nRT 02: 72%\nRT 03: 65%\nRT 04: 48%\nRT 05: 30%`;
-      
-      if (navigator.share) {
-        navigator.share({ title: "Distribusi Kehadiran", text });
-      } else {
-        navigator.clipboard.writeText(text);
-        alert("Data disalin ke clipboard!");
-      }
-    } catch (err) {
-      console.error("Share gagal:", err);
-    }
-  };
-
-  const handleSettingsDistribusi = () => {
-    alert("Pengaturan Distribusi Kehadiran akan segera hadir");
-    // TODO: Implementasi modal settings
-  };
-
   if (isSummaryLoading) {
     return <DashboardSkeleton />;
   }
 
   return (
     <div className="space-y-8">
+      <PageHelmet
+        title="Dashboard Overview"
+        description="Ringkasan statistik data balita, lansia, dan grafik status gizi Posyandu."
+      />
       {/* Toast Success Alert */}
       {toastSuccess && (
         <div className="fixed bottom-6 right-6 z-50 p-4 bg-green-50 text-trend-successText border border-green-150 rounded-card shadow-lg flex items-center gap-2.5">
@@ -571,69 +520,133 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
 
       {/* Main Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Tren Status Gizi Balita (Bar Chart) */}
+        {/* Tren Status Gizi Balita (Recharts & WHO Z-Score) */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div>
-              <h3 className="font-bold text-base text-saas-dark">Tren Status Gizi Balita</h3>
-              <p className="text-xs text-saas-muted mt-0.5">Distribusi hasil pemeriksaan bulanan 2026</p>
+              <h3 className="font-bold text-base text-saas-dark flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-saas-primary" />
+                Tren Status Gizi & Z-Score Balita
+              </h3>
+              <p className="text-xs text-saas-muted mt-0.5">
+                Agregasi data historis {trenPeriod === "bulanan" ? "bulanan" : "tahunan"} & kurva presisi Z-score WHO
+              </p>
             </div>
-            <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-1">
-              <button className="text-xs px-3 py-1.5 rounded-md font-bold bg-white text-saas-dark shadow-sm">
-                Bulanan
-              </button>
-              <button className="text-xs px-3 py-1.5 rounded-md font-bold text-saas-muted hover:text-saas-dark">
-                Tahunan
-              </button>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Toggle Mode Display */}
+              <div className="flex items-center gap-1 bg-gray-100/80 rounded-lg p-1">
+                <button
+                  onClick={() => setTrenViewMode("status")}
+                  className={`text-xs px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    trenViewMode === "status"
+                      ? "bg-white text-saas-dark shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Status Gizi
+                </button>
+                <button
+                  onClick={() => setTrenViewMode("zscore")}
+                  className={`text-xs px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    trenViewMode === "zscore"
+                      ? "bg-white text-saas-dark shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Kurva Z-Score WHO
+                </button>
+              </div>
+
+              {/* Toggle Period */}
+              <div className="flex items-center gap-1 bg-gray-100/80 rounded-lg p-1">
+                <button
+                  onClick={() => setTrenPeriod("bulanan")}
+                  className={`text-xs px-3 py-1.5 rounded-md font-bold transition-all ${
+                    trenPeriod === "bulanan"
+                      ? "bg-saas-primary text-white shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Bulanan
+                </button>
+                <button
+                  onClick={() => setTrenPeriod("tahunan")}
+                  className={`text-xs px-3 py-1.5 rounded-md font-bold transition-all ${
+                    trenPeriod === "tahunan"
+                      ? "bg-saas-primary text-white shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Tahunan
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="h-64 flex flex-col justify-between">
-            <div className="flex-1 flex items-end justify-between px-4 pb-2 border-b border-gray-100 relative">
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-full border-t border-dashed border-gray-100/80"></div>
-                ))}
+          <div className="h-72 w-full">
+            {isTrenGiziLoading ? (
+              <div className="h-full flex items-center justify-center text-sm text-saas-muted">
+                Memuat data grafik tren gizi...
               </div>
-
-              {[
-                { bln: "Jan", val: 82, val2: 12 },
-                { bln: "Feb", val: 85, val2: 10 },
-                { bln: "Mar", val: 90, val2: 8 },
-                { bln: "Apr", val: 78, val2: 15 },
-                { bln: "Mei", val: 95, val2: 3 },
-                { bln: "Jun", val: 88, val2: 9 },
-                { bln: "Jul", val: 92, val2: 6 },
-              ].map((data, index) => (
-                <div key={index} className="flex flex-col items-center gap-2 z-10 w-8 group">
-                  <div className="w-full flex justify-center gap-0.5 items-end h-48 relative">
-                    <div className="absolute -top-10 bg-saas-dark text-white text-[10px] py-1 px-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none z-20">
-                      Normal: {data.val}% | Kurang: {data.val2}%
-                    </div>
-                    <div
-                      style={{ height: `${data.val * 0.45}%` }}
-                      className="w-3 bg-saas-primary rounded-t-full transition-all duration-700 hover:opacity-85"
-                    ></div>
-                    <div
-                      style={{ height: `${data.val2 * 0.45}%` }}
-                      className="w-3 bg-trend-dangerText/80 rounded-t-full transition-all duration-700 hover:opacity-85"
-                    ></div>
-                  </div>
-                  <span className="text-[10px] text-saas-muted font-semibold">{data.bln}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-4 mt-4 px-2">
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-saas-primary"></span>
-                <span className="text-xs text-saas-muted font-medium">Balita Gizi Normal</span>
+            ) : trenGiziData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-sm text-saas-muted">
+                Belum ada data pemeriksaan balita untuk periode ini.
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-trend-dangerText/80"></span>
-                <span className="text-xs text-saas-muted font-medium">Balita Gizi Kurang</span>
-              </div>
-            </div>
+            ) : trenViewMode === "status" ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={trenGiziData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "10px", border: "none", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", fontSize: "12px" }}
+                    formatter={(value: any, name: any) => [
+                      value,
+                      name === "normal"
+                        ? "Gizi Normal (BB/U)"
+                        : name === "kurang"
+                        ? "Gizi Kurang (BB/U)"
+                        : name === "sangatKurang"
+                        ? "Gizi Buruk/SK (BB/U)"
+                        : name === "stunting"
+                        ? "Stunting (TB/U)"
+                        : String(name || ""),
+                    ]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
+                  <Bar dataKey="normal" name="Gizi Normal" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="kurang" name="Gizi Kurang" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="sangatKurang" name="Gizi Buruk" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Line type="monotone" dataKey="stunting" name="Stunting (TB/U)" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trenGiziData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <YAxis domain={[-4, 4]} tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "10px", border: "none", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", fontSize: "12px" }}
+                    formatter={(val: any, name: any) => [
+                      `${val} SD`,
+                      name === "avgZScoreBBU"
+                        ? "Rata-rata Z-Score BB/U"
+                        : name === "avgZScoreTBU"
+                        ? "Rata-rata Z-Score TB/U"
+                        : String(name || ""),
+                    ]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
+                  <ReferenceLine y={0} label={{ value: "Median WHO (0 SD)", fill: "#10b981", fontSize: 10 }} stroke="#10b981" strokeDasharray="4 4" />
+                  <ReferenceLine y={-2} label={{ value: "Batas Stunting/K (-2 SD)", fill: "#ef4444", fontSize: 10 }} stroke="#ef4444" strokeDasharray="4 4" />
+                  <ReferenceLine y={2} label={{ value: "Batas Lebih (+2 SD)", fill: "#f59e0b", fontSize: 10 }} stroke="#f59e0b" strokeDasharray="4 4" />
+                  <Line type="monotone" dataKey="avgZScoreBBU" name="Rata-rata Z-Score BB/U" stroke="#0284c7" strokeWidth={2.5} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="avgZScoreTBU" name="Rata-rata Z-Score TB/U" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -649,13 +662,13 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                 {
                   label: "Lihat Detail",
                   icon: <Eye className="w-4 h-4" />,
-                  onClick: handleDetailAktivitas
+                  onClick: handleDetailAktivitas,
                 },
                 {
                   label: "Unduh Laporan",
-                  icon: <DownloadIcon className="w-4 h-4" />,
-                  onClick: handleExportAktivitas
-                }
+                  icon: <Download className="w-4 h-4" />,
+                  onClick: handleExportAktivitas,
+                },
               ]}
             />
           </div>
@@ -799,35 +812,51 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                 {
                   label: "Lihat Detail per RT",
                   icon: <Eye className="w-4 h-4" />,
-                  onClick: handleDetailDistribusi
+                  onClick: handleDetailDistribusi,
                 },
                 {
                   label: "Unduh Laporan",
-                  icon: <DownloadIcon className="w-4 h-4" />,
-                  onClick: handleExportDistribusi
-                }
+                  icon: <Download className="w-4 h-4" />,
+                  onClick: handleExportDistribusi,
+                },
               ]}
             />
           </div>
 
           <div className="space-y-6">
-            {[
-              { region: "RT 01 / RW 02", percent: 84, color: "bg-saas-primary" },
-              { region: "RT 02 / RW 02", percent: 72, color: "bg-green-500" },
-              { region: "RT 03 / RW 02", percent: 65, color: "bg-indigo-500" },
-              { region: "RT 04 / RW 02", percent: 48, color: "bg-yellow-400" },
-              { region: "RT 05 / RW 02", percent: 30, color: "bg-red-400" },
-            ].map((row, i) => (
-              <div key={i} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-saas-dark font-bold">{row.region}</span>
-                  <span className="text-saas-muted font-bold">{row.percent}%</span>
-                </div>
-                <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden border border-gray-100/20">
-                  <div style={{ width: `${row.percent}%` }} className={`h-full rounded-full ${row.color}`}></div>
-                </div>
+            {isDistribusiLoading ? (
+              <div className="flex items-center justify-center py-8 text-xs text-saas-muted">
+                Memuat data distribusi kehadiran...
               </div>
-            ))}
+            ) : distribusiKehadiran.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-xs text-saas-muted">
+                Belum ada data kehadiran tersedia.
+              </div>
+            ) : (
+              distribusiKehadiran.map((row, i) => {
+                // Dynamic color based on percentage
+                let color = "bg-saas-primary";
+                if (row.persentase < 30) color = "bg-red-400";
+                else if (row.persentase < 50) color = "bg-yellow-400";
+                else if (row.persentase < 70) color = "bg-indigo-500";
+                else if (row.persentase < 85) color = "bg-green-500";
+
+                return (
+                  <div key={i} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-saas-dark font-bold">{row.rtRw}</span>
+                      <span className="text-saas-muted font-bold">{row.persentase}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden border border-gray-100/20">
+                        <div style={{ width: `${row.persentase}%` }} className={`h-full rounded-full ${color}`}></div>
+                      </div>
+                      <span className="text-[10px] text-saas-muted font-semibold whitespace-nowrap">{row.hadir}/{row.total}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -1270,17 +1299,17 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-bold text-blue-900 mb-2">Selesai Periksa</h4>
-            <div className="space-y-2">
-              <div className="flex justify-between"><span>Balita Selesai</span><span className="font-bold">45 Anak</span></div>
-              <div className="flex justify-between"><span>Lansia Selesai</span><span className="font-bold">23 Lansia</span></div>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between"><span>Balita Selesai</span><span className="font-bold">{summary?.pemeriksaanTerbaru.balita.length ?? 0} Anak</span></div>
+              <div className="flex justify-between"><span>Lansia Selesai</span><span className="font-bold">{summary?.pemeriksaanTerbaru.lansia.length ?? 0} Lansia</span></div>
             </div>
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h4 className="font-bold text-yellow-900 mb-2">Belum Mengisi Data</h4>
-            <div className="flex justify-between"><span>Belum Input</span><span className="font-bold">12 Orang</span></div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-xs">
+            <h4 className="font-bold text-yellow-900 mb-2">Total Sasaran Posyandu</h4>
+            <div className="flex justify-between"><span>Total Terdaftar</span><span className="font-bold">{(summary?.totalBalita ?? 0) + (summary?.totalLansia ?? 0)} Warga</span></div>
           </div>
-          <div className="text-center pt-4">
-            <p className="text-sm text-saas-muted">Total Partisipasi: <span className="font-bold text-lg text-saas-primary">78%</span></p>
+          <div className="text-center pt-2">
+            <p className="text-xs text-saas-muted">Partisipasi Bulan Ini: <span className="font-bold text-sm text-saas-primary">{(summary?.pemeriksaanTerbaru.balita.length ?? 0) + (summary?.pemeriksaanTerbaru.lansia.length ?? 0)} Pemeriksaan</span></p>
           </div>
         </div>
       </Modal>
@@ -1291,24 +1320,23 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
         onClose={() => setShowDetailDistribusi(false)}
         title="Detail Distribusi Kehadiran per RT/RW"
       >
-        <div className="space-y-3">
-          {[
-            { region: "RT 01 / RW 02", count: 84 },
-            { region: "RT 02 / RW 02", count: 72 },
-            { region: "RT 03 / RW 02", count: 65 },
-            { region: "RT 04 / RW 02", count: 48 },
-            { region: "RT 05 / RW 02", count: 30 }
-          ].map((item, i) => (
-            <div key={i} className="border border-gray-200 rounded-lg p-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-semibold text-saas-dark">{item.region}</span>
-                <span className="bg-saas-primary/10 text-saas-primary px-2.5 py-1 rounded-full text-sm font-bold">{item.count}%</span>
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {distribusiKehadiran.length > 0 ? (
+            distribusiKehadiran.map((item, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-3 text-xs">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="font-semibold text-saas-dark">{item.rtRw}</span>
+                  <span className="bg-saas-primary/10 text-saas-primary px-2.5 py-0.5 rounded-full text-xs font-bold">{item.persentase}%</span>
+                </div>
+                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
+                  <div style={{ width: `${item.persentase}%` }} className="h-full bg-saas-primary rounded-full"></div>
+                </div>
+                <div className="text-[11px] text-saas-muted text-right font-medium">{item.hadir} dari {item.total} Warga Hadir</div>
               </div>
-              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div style={{ width: `${item.count}%` }} className="h-full bg-saas-primary rounded-full"></div>
-              </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-xs text-saas-muted text-center py-4">Belum ada data distribusi kehadiran.</p>
+          )}
         </div>
       </Modal>
     </div>

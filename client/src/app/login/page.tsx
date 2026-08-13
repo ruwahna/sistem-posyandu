@@ -21,6 +21,8 @@ import {
   User,
 } from "lucide-react";
 
+import PageHelmet from "../../components/PageHelmet";
+
 // ─────────────────────────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────────────────────────
@@ -717,6 +719,16 @@ export default function LoginPage() {
 
   return (
     <>
+      <PageHelmet
+        title={
+          mode === "login"
+            ? "Masuk ke Aplikasi"
+            : mode === "forgot"
+            ? "Lupa Kata Sandi"
+            : "Pendaftaran Posyandu Baru"
+        }
+        description="Portal masuk dan pendaftaran Posyandu digital untuk Kader dan Pengelola PosyanduKita."
+      />
       {/* Inject float animation */}
       <style>{`
         @keyframes float {
