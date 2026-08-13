@@ -35,7 +35,9 @@ import {
   UserCheck2,
   TrendingUp,
   Activity,
+  Eye,
 } from "lucide-react";
+import ActionMenu from "../../components/ActionMenu";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
 
 interface DashboardModuleProps {
@@ -76,6 +78,20 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   const [dbPasiens, setDbPasiens] = useState<Pasien[]>([]);
   const [distribusiKehadiran, setDistribusiKehadiran] = useState<DistribusiKehadiran[]>([]);
   const [isDistribusiLoading, setIsDistribusiLoading] = useState(false);
+
+  // ── Action Menu & Detail Modals ──
+  const [showDetailAktivitas, setShowDetailAktivitas] = useState(false);
+  const [showDetailDistribusi, setShowDetailDistribusi] = useState(false);
+
+  const handleDetailAktivitas = () => setShowDetailAktivitas(true);
+  const handleExportAktivitas = () => {
+    window.print();
+  };
+
+  const handleDetailDistribusi = () => setShowDetailDistribusi(true);
+  const handleExportDistribusi = () => {
+    window.print();
+  };
 
   // ── Tren Gizi & Z-Score State ──
   const [trenPeriod, setTrenPeriod] = useState<"bulanan" | "tahunan">("bulanan");
@@ -641,9 +657,20 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Aktivitas Kunjungan</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat partisipasi kader & posyandu</p>
             </div>
-            <button className="text-saas-muted hover:text-saas-dark transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
+            <ActionMenu
+              items={[
+                {
+                  label: "Lihat Detail",
+                  icon: <Eye className="w-4 h-4" />,
+                  onClick: handleDetailAktivitas,
+                },
+                {
+                  label: "Unduh Laporan",
+                  icon: <Download className="w-4 h-4" />,
+                  onClick: handleExportAktivitas,
+                },
+              ]}
+            />
           </div>
 
           <div className="flex flex-col items-center justify-center">
@@ -780,9 +807,20 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Distribusi Kehadiran RT/RW</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat kehadiran per wilayah</p>
             </div>
-            <button className="text-saas-muted hover:text-saas-dark transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
+            <ActionMenu
+              items={[
+                {
+                  label: "Lihat Detail per RT",
+                  icon: <Eye className="w-4 h-4" />,
+                  onClick: handleDetailDistribusi,
+                },
+                {
+                  label: "Unduh Laporan",
+                  icon: <Download className="w-4 h-4" />,
+                  onClick: handleExportDistribusi,
+                },
+              ]}
+            />
           </div>
 
           <div className="space-y-6">
@@ -1250,6 +1288,56 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                 </div>
               </form>
             )}
+      </Modal>
+
+      {/* Modal Detail Aktivitas Kunjungan */}
+      <Modal
+        isOpen={showDetailAktivitas}
+        onClose={() => setShowDetailAktivitas(false)}
+        title="Detail Aktivitas Kunjungan"
+      >
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-bold text-blue-900 mb-2">Selesai Periksa</h4>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between"><span>Balita Selesai</span><span className="font-bold">{summary?.pemeriksaanTerbaru.balita.length ?? 0} Anak</span></div>
+              <div className="flex justify-between"><span>Lansia Selesai</span><span className="font-bold">{summary?.pemeriksaanTerbaru.lansia.length ?? 0} Lansia</span></div>
+            </div>
+          </div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-xs">
+            <h4 className="font-bold text-yellow-900 mb-2">Total Sasaran Posyandu</h4>
+            <div className="flex justify-between"><span>Total Terdaftar</span><span className="font-bold">{(summary?.totalBalita ?? 0) + (summary?.totalLansia ?? 0)} Warga</span></div>
+          </div>
+          <div className="text-center pt-2">
+            <p className="text-xs text-saas-muted">Partisipasi Bulan Ini: <span className="font-bold text-sm text-saas-primary">{(summary?.pemeriksaanTerbaru.balita.length ?? 0) + (summary?.pemeriksaanTerbaru.lansia.length ?? 0)} Pemeriksaan</span></p>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Detail Distribusi Kehadiran */}
+      <Modal
+        isOpen={showDetailDistribusi}
+        onClose={() => setShowDetailDistribusi(false)}
+        title="Detail Distribusi Kehadiran per RT/RW"
+      >
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {distribusiKehadiran.length > 0 ? (
+            distribusiKehadiran.map((item, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-3 text-xs">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="font-semibold text-saas-dark">{item.rtRw}</span>
+                  <span className="bg-saas-primary/10 text-saas-primary px-2.5 py-0.5 rounded-full text-xs font-bold">{item.persentase}%</span>
+                </div>
+                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
+                  <div style={{ width: `${item.persentase}%` }} className="h-full bg-saas-primary rounded-full"></div>
+                </div>
+                <div className="text-[11px] text-saas-muted text-right font-medium">{item.hadir} dari {item.total} Warga Hadir</div>
+              </div>
+            ))
+          ) : (
+            <p className="text-xs text-saas-muted text-center py-4">Belum ada data distribusi kehadiran.</p>
+          )}
+        </div>
       </Modal>
     </div>
   );
