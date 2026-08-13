@@ -31,10 +31,10 @@ export const createPemeriksaanBalitaSchema = z.object({
     const date = new Date(val);
     return !isNaN(date.getTime()) && date <= new Date();
   }, 'Tanggal periksa tidak valid atau melebihi hari ini'),
-  beratBadan: z.number().positive('Berat badan harus angka positif'),
-  tinggiBadan: z.number().positive('Tinggi badan harus angka positif'),
-  lingkarKepala: z.number().positive('Lingkar kepala harus angka positif').optional().nullable(),
-  lingkarLengan: z.number().positive('Lingkar lengan harus angka positif').optional().nullable(),
+  beratBadan: z.number().nonnegative('Berat badan tidak boleh bernilai negatif').refine((val) => val > 0, 'Berat badan harus lebih dari 0'),
+  tinggiBadan: z.number().nonnegative('Tinggi badan tidak boleh bernilai negatif').refine((val) => val > 0, 'Tinggi badan harus lebih dari 0'),
+  lingkarKepala: z.number().nonnegative('Lingkar kepala tidak boleh bernilai negatif').refine((val) => val > 0, 'Lingkar kepala harus lebih dari 0').optional().nullable(),
+  lingkarLengan: z.number().nonnegative('Lingkar lengan tidak boleh bernilai negatif').refine((val) => val > 0, 'Lingkar lengan harus lebih dari 0').optional().nullable(),
   statusBbU: statusBbUEnum.optional(),
   statusTbU: statusTbUEnum.optional(),
   statusBbTb: statusBbTbEnum.optional(),

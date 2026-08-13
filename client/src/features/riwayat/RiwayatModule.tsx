@@ -24,8 +24,12 @@ import {
   Loader2,
   TrendingUp,
   FileSpreadsheet,
-  LineChart as LineChartIcon
+  LineChart as LineChartIcon,
+  Edit2,
+  Trash2,
+  Eye
 } from "lucide-react";
+import ActionMenu from "@/components/ActionMenu";
 import PageHelmet from "@/components/PageHelmet";
 import {
   ResponsiveContainer,
@@ -571,20 +575,28 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                         </td>
                         <td className="py-4 px-3 text-xs text-saas-muted font-bold whitespace-nowrap">{log.petugas}</td>
                         <td className="py-4 px-3 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => openEditModal(log)}
-                              className="px-2.5 py-1 text-xs font-bold border border-gray-200 text-saas-dark rounded hover:bg-saas-primary/10 hover:text-saas-primary transition-all"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => openDeleteModal(log)}
-                              className="px-2.5 py-1 text-xs font-bold border border-red-200 text-trend-dangerText rounded hover:bg-red-50 transition-all"
-                            >
-                              Hapus
-                            </button>
-                          </div>
+                          <ActionMenu
+                            items={[
+                              {
+                                label: "Lihat Detail",
+                                icon: <Eye className="w-4 h-4" />,
+                                onClick: () => {
+                                  openEditModal(log);
+                                }
+                              },
+                              {
+                                label: "Edit",
+                                icon: <Edit2 className="w-4 h-4" />,
+                                onClick: () => openEditModal(log)
+                              },
+                              {
+                                label: "Hapus",
+                                icon: <Trash2 className="w-4 h-4" />,
+                                variant: "danger",
+                                onClick: () => openDeleteModal(log)
+                              }
+                            ]}
+                          />
                         </td>
                       </tr>
                     ))

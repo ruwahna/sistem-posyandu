@@ -219,4 +219,102 @@ export const dashboardService = {
 
     return result;
   },
+
+  /**
+   * Poin 20: Agregasi distribusi kehadiran per RT/RW (menggantikan mockup)
+   */
+  async getDistribusiKehadiran(posyanduId: string) {
+    // Fetch semua Balita & Lansia
+    const [balitas, lansias] = await Promise.all([
+      prisma.balita.findMany({
+        where: { posyanduId },
+        select: { id: true, alamat: true },
+      }),
+      prisma.lansia.findMany({
+        where: { posyanduId },
+        select: { id: true, rtRw: true },
+      }),
+    ]);
+
+    // Fetch pemeriksaan terbaru untuk setiap Balita
+    const balitaExams = await prisma.pemeriksaanBalita.findMany({
+      where: { balita: { posyanduId } },
+      orderBy: { tanggalPeriksa: 'desc' },
+      distinct: ['balitaId'],
+      select: {
+        balitaId: true,
+        balita: { select: { alamat: true } },
+      },
+    });
+
+    // Fetch pemeriksaan terbaru untuk setiap Lansia
+    const lansiaExams = await prisma.pemeriksaanLansia.findMany({
+      where: { lansia: { posyanduId } },
+      orderBy: { tanggalPeriksa: 'desc' },
+      distinct: ['lansiaId'],
+      select: {
+        lansiaId: true,
+        lansia: { select: { rtRw: true } },
+      },
+    });
+
+    // Aggregate kehadiran per RT/RW
+    const rtRwMap = new Map<string, { total: number; hadir: number }>();
+
+    // Count dari Balita (extract RT/RW dari alamat)
+    balitaExams.forEach((exam) => {
+      const match = exam.balita.alamat?.match(/RT\s*\d+\s*\/\s*RW\s*\d+/);
+      const rtRw = match ? match[0] : 'RT ?/RW ?';
+      const current = rtRwMap.get(rtRw) || { total: 0, hadir: 0 };
+      current.hadir += 1;
+      rtRwMap.set(rtRw, current);
+    });
+
+    // Count dari Lansia
+    lansiaExams.forEach((exam) => {
+      const rtRw = exam.lansia.rtRw || 'RT ?/RW ?';
+      const current = rtRwMap.get(rtRw) || { total: 0, hadir: 0 };
+      current.hadir += 1;
+      rtRwMap.set(rtRw, current);
+    });
+
+    // Set total count untuk setiap RT/RW
+    const allRtRw = new Set<string>();
+    balitas.forEach((b) => {
+      const match = b.alamat?.match(/RT\s*\d+\s*\/\s*RW\s*\d+/);
+      const rtRw = match ? match[0] : 'RT ?/RW ?';
+      allRtRw.add(rtRw);
+    });
+    lansias.forEach((l) => {
+      allRtRw.add(l.rtRw || 'RT ?/RW ?');
+    });
+
+    allRtRw.forEach((rtRw) => {
+      const balitaCount = balitas.filter((b) => {
+        const match = b.alamat?.match(/RT\s*\d+\s*\/\s*RW\s*\d+/);
+        return (match ? match[0] : 'RT ?/RW ?') === rtRw;
+      }).length;
+      const lansiaCount = lansias.filter((l) => (l.rtRw || 'RT ?/RW ?') === rtRw).length;
+      const totalOrang = balitaCount + lansiaCount;
+
+      if (!rtRwMap.has(rtRw)) {
+        rtRwMap.set(rtRw, { total: totalOrang, hadir: 0 });
+      } else {
+        const current = rtRwMap.get(rtRw)!;
+        current.total = Math.max(current.total, totalOrang);
+      }
+    });
+
+    // Calculate persentase dan return
+    const result = Array.from(rtRwMap.entries())
+      .map(([rtRw, data]) => ({
+        rtRw,
+        total: data.total || 1,
+        hadir: data.hadir,
+        persentase: Math.round((data.hadir / (data.total || 1)) * 100),
+      }))
+      .sort((a, b) => b.persentase - a.persentase);
+
+    return result;
+  },
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { dashboardApi, DashboardSummary, balitaApi, lansiaApi, TrenGiziItem } from "../../lib/api";
+import { dashboardApi, DashboardSummary, DistribusiKehadiran, balitaApi, lansiaApi, TrenGiziItem } from "../../lib/api";
 import { formatTanggalIndonesia } from "../../lib/dateUtils";
 import Modal from "../../components/Modal";
 import PageHelmet from "../../components/PageHelmet";
@@ -39,6 +39,7 @@ import {
   Filter,
   Eye,
 } from "lucide-react";
+import ActionMenu from "../../components/ActionMenu";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
 
 interface DashboardModuleProps {
@@ -77,6 +78,22 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const [dbPasiens, setDbPasiens] = useState<Pasien[]>([]);
+  const [distribusiKehadiran, setDistribusiKehadiran] = useState<DistribusiKehadiran[]>([]);
+  const [isDistribusiLoading, setIsDistribusiLoading] = useState(false);
+
+  // ── Action Menu & Detail Modals ──
+  const [showDetailAktivitas, setShowDetailAktivitas] = useState(false);
+  const [showDetailDistribusi, setShowDetailDistribusi] = useState(false);
+
+  const handleDetailAktivitas = () => setShowDetailAktivitas(true);
+  const handleExportAktivitas = () => {
+    window.print();
+  };
+
+  const handleDetailDistribusi = () => setShowDetailDistribusi(true);
+  const handleExportDistribusi = () => {
+    window.print();
+  };
 
   // ── Tren Gizi & Z-Score State ──
   const [trenPeriod, setTrenPeriod] = useState<"bulanan" | "tahunan">("bulanan");
@@ -137,6 +154,20 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
         setDbPasiens([...balitas, ...lansias]);
       })
       .catch(console.error);
+  }, [posyanduId]);
+
+  // Fetch Distribusi Kehadiran RT/RW (Poin 20)
+  useEffect(() => {
+    setIsDistribusiLoading(true);
+    dashboardApi
+      .getDistribusiKehadiran(posyanduId)
+      .then((res) => {
+        if (res.success && res.data) {
+          setDistribusiKehadiran(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsDistribusiLoading(false));
   }, [posyanduId]);
 
   // Build kunjungan list from API data (recent pemeriksaan)
@@ -648,37 +679,34 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Aktivitas Kunjungan</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat partisipasi kader & posyandu</p>
             </div>
-            <div className="relative">
-              <button
-                onClick={(e) => toggleMenu("aktivitas-kunjungan", e)}
-                className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
-                title="Opsi Aktivitas Kunjungan"
-              >
-                <MoreHorizontal className="w-5 h-5" />
-              </button>
-              {openMenuId === "aktivitas-kunjungan" && (
-                <div className="absolute right-0 top-8 z-30 w-52 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs">
-                  <button
-                    onClick={() => {
-                      fetchSummary();
-                      showToast("Data aktivitas kunjungan berhasil diperbarui");
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" /> Refresh Data
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab("Semua");
-                      showToast("Tampilan difilter ke Semua Kategori");
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
-                  >
-                    <Filter className="w-3.5 h-3.5" /> Tampilkan Semua Kategori
-                  </button>
-                </div>
-              )}
-            </div>
+            <ActionMenu
+              items={[
+                {
+                  label: "Lihat Detail",
+                  icon: <Eye className="w-4 h-4" />,
+                  onClick: handleDetailAktivitas,
+                },
+                {
+                  label: "Refresh Data",
+                  icon: <RefreshCw className="w-4 h-4" />,
+                  onClick: () => {
+                    fetchSummary();
+                  },
+                },
+                {
+                  label: "Tampilkan Semua Kategori",
+                  icon: <Filter className="w-4 h-4" />,
+                  onClick: () => {
+                    setActiveTab("Semua");
+                  },
+                },
+                {
+                  label: "Unduh Laporan",
+                  icon: <Download className="w-4 h-4" />,
+                  onClick: handleExportAktivitas,
+                },
+              ]}
+            />
           </div>
 
           <div className="flex flex-col items-center justify-center">
@@ -851,48 +879,63 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Distribusi Kehadiran RT/RW</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat kehadiran per wilayah</p>
             </div>
-            <div className="relative">
-              <button
-                onClick={(e) => toggleMenu("distribusi-rtrw", e)}
-                className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
-                title="Opsi Distribusi RT/RW"
-              >
-                <MoreHorizontal className="w-5 h-5" />
-              </button>
-              {openMenuId === "distribusi-rtrw" && (
-                <div className="absolute right-0 top-8 z-30 w-52 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs">
-                  <button
-                    onClick={() => {
-                      fetchSummary();
-                      showToast("Statistik kehadiran wilayah diperbarui");
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" /> Refresh Statistik Wilayah
-                  </button>
-                </div>
-              )}
-            </div>
+            <ActionMenu
+              items={[
+                {
+                  label: "Lihat Detail per RT",
+                  icon: <Eye className="w-4 h-4" />,
+                  onClick: handleDetailDistribusi,
+                },
+                {
+                  label: "Refresh Statistik Wilayah",
+                  icon: <RefreshCw className="w-4 h-4" />,
+                  onClick: () => {
+                    fetchSummary();
+                  },
+                },
+                {
+                  label: "Unduh Laporan",
+                  icon: <Download className="w-4 h-4" />,
+                  onClick: handleExportDistribusi,
+                },
+              ]}
+            />
           </div>
 
           <div className="space-y-6">
-            {[
-              { region: "RT 01 / RW 02", percent: 84, color: "bg-saas-primary" },
-              { region: "RT 02 / RW 02", percent: 72, color: "bg-green-500" },
-              { region: "RT 03 / RW 02", percent: 65, color: "bg-indigo-500" },
-              { region: "RT 04 / RW 02", percent: 48, color: "bg-yellow-400" },
-              { region: "RT 05 / RW 02", percent: 30, color: "bg-red-400" },
-            ].map((row, i) => (
-              <div key={i} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-saas-dark font-bold">{row.region}</span>
-                  <span className="text-saas-muted font-bold">{row.percent}%</span>
-                </div>
-                <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden border border-gray-100/20">
-                  <div style={{ width: `${row.percent}%` }} className={`h-full rounded-full ${row.color}`}></div>
-                </div>
+            {isDistribusiLoading ? (
+              <div className="flex items-center justify-center py-8 text-xs text-saas-muted">
+                Memuat data distribusi kehadiran...
               </div>
-            ))}
+            ) : distribusiKehadiran.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-xs text-saas-muted">
+                Belum ada data kehadiran tersedia.
+              </div>
+            ) : (
+              distribusiKehadiran.map((row, i) => {
+                // Dynamic color based on percentage
+                let color = "bg-saas-primary";
+                if (row.persentase < 30) color = "bg-red-400";
+                else if (row.persentase < 50) color = "bg-yellow-400";
+                else if (row.persentase < 70) color = "bg-indigo-500";
+                else if (row.persentase < 85) color = "bg-green-500";
+
+                return (
+                  <div key={i} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-saas-dark font-bold">{row.rtRw}</span>
+                      <span className="text-saas-muted font-bold">{row.persentase}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden border border-gray-100/20">
+                        <div style={{ width: `${row.persentase}%` }} className={`h-full rounded-full ${color}`}></div>
+                      </div>
+                      <span className="text-[10px] text-saas-muted font-semibold whitespace-nowrap">{row.hadir}/{row.total}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -1347,6 +1390,56 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                 </div>
               </form>
             )}
+      </Modal>
+
+      {/* Modal Detail Aktivitas Kunjungan */}
+      <Modal
+        isOpen={showDetailAktivitas}
+        onClose={() => setShowDetailAktivitas(false)}
+        title="Detail Aktivitas Kunjungan"
+      >
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-bold text-blue-900 mb-2">Selesai Periksa</h4>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between"><span>Balita Selesai</span><span className="font-bold">{summary?.pemeriksaanTerbaru.balita.length ?? 0} Anak</span></div>
+              <div className="flex justify-between"><span>Lansia Selesai</span><span className="font-bold">{summary?.pemeriksaanTerbaru.lansia.length ?? 0} Lansia</span></div>
+            </div>
+          </div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-xs">
+            <h4 className="font-bold text-yellow-900 mb-2">Total Sasaran Posyandu</h4>
+            <div className="flex justify-between"><span>Total Terdaftar</span><span className="font-bold">{(summary?.totalBalita ?? 0) + (summary?.totalLansia ?? 0)} Warga</span></div>
+          </div>
+          <div className="text-center pt-2">
+            <p className="text-xs text-saas-muted">Partisipasi Bulan Ini: <span className="font-bold text-sm text-saas-primary">{(summary?.pemeriksaanTerbaru.balita.length ?? 0) + (summary?.pemeriksaanTerbaru.lansia.length ?? 0)} Pemeriksaan</span></p>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Detail Distribusi Kehadiran */}
+      <Modal
+        isOpen={showDetailDistribusi}
+        onClose={() => setShowDetailDistribusi(false)}
+        title="Detail Distribusi Kehadiran per RT/RW"
+      >
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {distribusiKehadiran.length > 0 ? (
+            distribusiKehadiran.map((item, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-3 text-xs">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="font-semibold text-saas-dark">{item.rtRw}</span>
+                  <span className="bg-saas-primary/10 text-saas-primary px-2.5 py-0.5 rounded-full text-xs font-bold">{item.persentase}%</span>
+                </div>
+                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
+                  <div style={{ width: `${item.persentase}%` }} className="h-full bg-saas-primary rounded-full"></div>
+                </div>
+                <div className="text-[11px] text-saas-muted text-right font-medium">{item.hadir} dari {item.total} Warga Hadir</div>
+              </div>
+            ))
+          ) : (
+            <p className="text-xs text-saas-muted text-center py-4">Belum ada data distribusi kehadiran.</p>
+          )}
+        </div>
       </Modal>
 
       {toastMessage && (

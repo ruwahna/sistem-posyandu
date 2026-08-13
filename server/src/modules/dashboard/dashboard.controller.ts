@@ -33,3 +33,19 @@ export const getTrenGizi = async (req: Request, res: Response, next: NextFunctio
     next(err);
   }
 };
+
+export const getDistribusiKehadiran = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const posyanduId = req.params.posyanduId as string;
+
+    if (req.user?.role !== 'OWNER' && req.user?.posyanduId !== posyanduId) {
+      res.status(403).json({ success: false, message: 'Akses ditolak ke posyandu ini' });
+      return;
+    }
+
+    const data = await dashboardService.getDistribusiKehadiran(posyanduId);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};

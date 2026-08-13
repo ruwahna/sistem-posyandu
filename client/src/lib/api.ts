@@ -247,11 +247,20 @@ export interface TrenGiziItem {
   avgZScoreTBU: number;
 }
 
+export interface DistribusiKehadiran {
+  rtRw: string;
+  total: number;
+  hadir: number;
+  persentase: number;
+}
+
 export const dashboardApi = {
   getSummary: (posyanduId: string) =>
     request<ApiResponse<DashboardSummary>>(`/api/dashboard/${posyanduId}`),
   getTrenGizi: (posyanduId: string, period: 'bulanan' | 'tahunan' = 'bulanan') =>
     request<ApiResponse<TrenGiziItem[]>>(`/api/dashboard/${posyanduId}/tren-gizi?period=${period}`),
+  getDistribusiKehadiran: (posyanduId: string) =>
+    request<ApiResponse<DistribusiKehadiran[]>>(`/api/dashboard/${posyanduId}/distribusi-kehadiran`),
 };
 
 // ─────────────────────────────────────────────────────────────
