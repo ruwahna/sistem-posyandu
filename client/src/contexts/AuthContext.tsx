@@ -29,6 +29,7 @@ interface AuthContextValue {
   posyanduId: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   registerPosyandu: (data: {
     namaPosyandu: string;
     desa: string;
@@ -81,6 +82,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.data.kader as AuthUser);
   }, []);
 
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    const res = await authApi.loginWithGoogle(idToken);
+    if (!res.success || !res.data) {
+      throw new Error(res.message || "Login dengan Google gagal");
+    }
+    setToken(res.data.token);
+    setUser(res.data.kader as AuthUser);
+  }, []);
+
   const registerPosyandu = useCallback(async (data: Parameters<typeof authApi.registerPosyandu>[0]) => {
     const res = await authApi.registerPosyandu(data);
     if (!res.success || !res.data) {
@@ -104,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     posyanduId: user?.posyandu?.id ?? null,
     isLoading,
     login,
+    loginWithGoogle,
     registerPosyandu,
     updateUser,
     logout,
@@ -111,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
 
 // ─────────────────────────────────────────────────────────────
 // HOOK

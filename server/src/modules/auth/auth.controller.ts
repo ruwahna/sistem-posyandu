@@ -125,3 +125,22 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     next(err);
   }
 };
+
+export const googleLogin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { idToken } = req.body;
+    const data = await authService.googleLogin(idToken);
+    res.json({
+      success: true,
+      message: 'Login Google berhasil',
+      data,
+    });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({ success: false, message: err.message });
+      return;
+    }
+    next(err);
+  }
+};
+

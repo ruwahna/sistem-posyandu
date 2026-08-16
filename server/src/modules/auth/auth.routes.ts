@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   register,
   login,
+  googleLogin,
   getMe,
   registerPosyandu,
   updateProfile,
@@ -11,7 +12,7 @@ import {
 } from './auth.controller';
 import { authenticate } from '../../shared/middlewares/auth.middleware';
 import { validate } from '../../shared/middlewares/validate.middleware';
-import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema';
+import { registerSchema, loginSchema, googleAuthSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema';
 
 const router = Router();
 
@@ -23,6 +24,9 @@ router.post('/register-posyandu', registerPosyandu);
 
 // POST /api/auth/login
 router.post('/login', validate(loginSchema), login);
+
+// POST /api/auth/google
+router.post('/google', validate(googleAuthSchema), googleLogin);
 
 // POST /api/auth/forgot-password
 router.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
@@ -40,3 +44,4 @@ router.get('/me', authenticate, getMe);
 router.put('/profile', authenticate, updateProfile);
 
 export default router;
+

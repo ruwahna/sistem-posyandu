@@ -193,6 +193,13 @@ export const authApi = {
       body: JSON.stringify({ email, password }),
     }),
 
+  loginWithGoogle: (idToken: string) =>
+    request<ApiResponse<LoginResponse>>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    }),
+
+
   registerPosyandu: (data: {
     namaPosyandu: string;
     desa: string;
