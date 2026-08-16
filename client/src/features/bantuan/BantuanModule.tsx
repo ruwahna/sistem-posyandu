@@ -8,7 +8,6 @@ import {
   ShieldAlert,
   UserCheck2,
   Users,
-  Building2,
   PhoneCall,
   ChevronDown,
   ChevronUp,
@@ -115,19 +114,6 @@ export default function BantuanModule() {
         { title: "Langkah 2: Klik Buat Akun", text: "Klik tombol 'Buat Akun Kader Baru' di kanan atas." },
         { title: "Langkah 3: Buat Username & Password", text: "Masukkan Nama Lengkap, Email, Kata Sandi awal (misal: 123456), dan tentukan perannya (Anggota/Owner)." },
         { title: "Langkah 4: Bagikan Akses", text: "Klik Simpan. Berikan email dan kata sandi tersebut kepada kader baru agar mereka bisa langsung masuk ke sistem." }
-      ]
-    },
-    {
-      id: "g6",
-      title: "Menggunakan Kode Undangan Mandiri",
-      category: "owner",
-      description: "Cara membagikan kode rahasia posyandu untuk kader mendaftar sendiri.",
-      icon: Building2,
-      steps: [
-        { title: "Langkah 1: Salin Kode Undangan", text: "Masuk ke menu 'Manajemen Akun' di sisi kiri, lihat kotak 'Kode Undangan Mandiri' di sebelah kanan." },
-        { title: "Langkah 2: Klik Ikon Salin", text: "Klik tombol salin (ikon kertas ganda) di samping kode (misal: SRILESTARI-KADER-99A8)." },
-        { title: "Langkah 3: Bagikan ke Kader Baru", text: "Kirim kode tersebut ke WhatsApp kader baru." },
-        { title: "Langkah 4: Kader Baru Mendaftar", text: "Saat kader baru mendaftar di halaman registrasi, mereka cukup memasukkan kode ini agar otomatis terhubung ke posyandu Anda." }
       ]
     }
   ];

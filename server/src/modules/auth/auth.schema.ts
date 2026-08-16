@@ -21,5 +21,11 @@ export const resetPasswordSchema = z.object({
   newPassword: z.string().min(8, 'Password baru minimal 8 karakter'),
 });
 
+export const googleAuthSchema = z.object({
+  idToken: z.string().min(1, 'Token Google wajib diisi'),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
+

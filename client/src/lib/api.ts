@@ -3,7 +3,7 @@
  * All requests automatically attach the JWT token from localStorage.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 // ─────────────────────────────────────────────────────────────
 // TOKEN MANAGEMENT
@@ -192,6 +192,13 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+
+  loginWithGoogle: (idToken: string) =>
+    request<ApiResponse<LoginResponse>>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    }),
+
 
   registerPosyandu: (data: {
     namaPosyandu: string;
