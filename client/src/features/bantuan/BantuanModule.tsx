@@ -58,10 +58,10 @@ export default function BantuanModule() {
       description: "Cara mencatat berat badan, tinggi badan, dan vit A saat pelayanan posyandu berlangsung.",
       icon: FileText,
       steps: [
-        { title: "Langkah 1: Masuk Menu Pelayanan", text: "Klik tombol bertuliskan 'Pelayanan' di menu sebelah kiri (ikon kertas catatan)." },
-        { title: "Langkah 2: Cari Nama Warga", text: "Ketik nama anak atau lansia pada kolom pencarian di sebelah kiri, lalu klik nama warga tersebut." },
-        { title: "Langkah 3: Isi Formulir di Kanan", text: "Formulir input akan muncul di sebelah kanan. Masukkan angka Berat Badan (BB) dan Tinggi Badan (TB) sesuai hasil timbangan fisik." },
-        { title: "Langkah 4: Klik Simpan", text: "Periksa kembali angka yang dimasukkan. Jika sudah benar, klik tombol hijau/toska 'Simpan Pemeriksaan'. Data akan langsung terekam.", badge: "Penting" }
+        { title: "Langkah 1: Masuk Menu Pelayanan", text: "Klik tombol 'Pelayanan' di menu navigasi utama." },
+        { title: "Langkah 2: Pilih Halaman Balita / Lansia", text: "Klik tombol Balita atau Lansia di bagian atas untuk berpindah halaman pelayanan." },
+        { title: "Langkah 3: Cari Nama Warga & Isi Formulir", text: "Pilih nama warga di panel kiri, lalu masukkan data hasil penimbangan / pemeriksaan medis pada formulir di sebelah kanan." },
+        { title: "Langkah 4: Klik Simpan", text: "Periksa kembali angka yang dimasukkan, lalu klik tombol 'Simpan Pemeriksaan'. Data akan langsung terekam.", badge: "Penting" }
       ]
     },
     {

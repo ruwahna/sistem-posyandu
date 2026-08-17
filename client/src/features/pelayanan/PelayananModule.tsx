@@ -74,7 +74,8 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
   const [pasiens, setPasiens] = useState<Pasien[]>([]);
   const [query, setQuery] = useState("");
   const [selectedPasien, setSelectedPasien] = useState<Pasien | null>(null);
-  const [selectedTypeFilter, setSelectedTypeFilter] = useState<"Semua" | "Balita" | "Lansia">("Semua");
+  const [activeTab, setActiveTab] = useState<"Balita" | "Lansia">("Balita");
+  const [sessionLogFilter, setSessionLogFilter] = useState<"Semua" | "Balita" | "Lansia">("Semua");
 
   // Registration Modals Visibility
   const [showAddBalitaModal, setShowAddBalitaModal] = useState(false);
@@ -191,10 +192,10 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
   const [formWarning, setFormWarning] = useState("");
   const [successToast, setSuccessToast] = useState("");
 
-  // Filter Patients
+  // Filter Patients based on active page/tab & search query
   const filteredPasiens = pasiens.filter((p) => {
     const matchesSearch = p.nama.toLowerCase().includes(query.toLowerCase());
-    const matchesType = selectedTypeFilter === "Semua" || p.tipe === selectedTypeFilter;
+    const matchesType = p.tipe === activeTab;
     return matchesSearch && matchesType;
   });
 
@@ -403,6 +404,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
         };
 
         setPasiens((prev) => [newPasien, ...prev]);
+        setActiveTab("Balita");
         setSelectedPasien(newPasien);
         setShowAddBalitaModal(false);
         setSuccessToast(`${bNama} berhasil didaftarkan & dipilih.`);
@@ -464,6 +466,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
         };
 
         setPasiens((prev) => [newPasien, ...prev]);
+        setActiveTab("Lansia");
         setSelectedPasien(newPasien);
         setShowAddLansiaModal(false);
         setSuccessToast(`Lansia ${lNama} berhasil didaftarkan & dipilih.`);
@@ -489,8 +492,12 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
   return (
     <div className="space-y-6">
       <PageHelmet
-        title="Pelayanan Posyandu"
-        description="Pencatatan cepat pelayanan dan pemeriksaan fisik balita & lansia PosyanduKita."
+        title={activeTab === "Balita" ? "Pelayanan Balita — PosyanduKita" : "Pelayanan Lansia — PosyanduKita"}
+        description={
+          activeTab === "Balita"
+            ? "Pencatatan pelayanan dan pemeriksaan tumbuh kembang balita PosyanduKita."
+            : "Pencatatan pelayanan dan skrining kesehatan fisik lansia PosyanduKita."
+        }
       />
       {/* Success Toast */}
       {successToast && (
@@ -500,61 +507,127 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header & Tombol Switch Halaman */}
+      <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-saas-dark tracking-tight">Pencatatan Pelayanan Posyandu</h2>
-          <p className="text-sm text-saas-muted mt-0.5">Input data penimbangan, tinggi badan, dan skrining medis warga posyandu.</p>
+          <div className="flex items-center gap-2">
+            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${
+              activeTab === "Balita" ? "bg-teal-50 text-saas-primary border border-teal-200/50" : "bg-indigo-50 text-indigo-700 border border-indigo-200/50"
+            }`}>
+              {activeTab === "Balita" ? "Halaman Balita" : "Halaman Lansia"}
+            </span>
+          </div>
+          <h2 className="text-2xl font-extrabold text-saas-dark tracking-tight mt-1">
+            {activeTab === "Balita" ? "Pencatatan Pelayanan Balita" : "Pencatatan Pelayanan Lansia"}
+          </h2>
+          <p className="text-xs text-saas-muted mt-0.5">
+            {activeTab === "Balita"
+              ? "Input data penimbangan, tinggi badan, lingkar kepala, ASI eksklusif, & imunisasi balita."
+              : "Input tekanan darah, gula darah, asam urat, kolesterol, & skrining kesehatan lansia."}
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowAddBalitaModal(true)}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-all"
-          >
-            <UserPlus className="w-4 h-4" /> + Balita Baru
-          </button>
-          <button
-            onClick={() => setShowAddLansiaModal(true)}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-all"
-          >
-            <UserPlus className="w-4 h-4" /> + Lansia Baru
-          </button>
+
+        <div className="flex items-center flex-wrap gap-3">
+          {/* Tombol Switch Halaman (Segmented Control) */}
+          <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200/80">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("Balita");
+                if (selectedPasien?.tipe !== "Balita") {
+                  setSelectedPasien(null);
+                  setFormError("");
+                  setFormWarning("");
+                }
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all duration-200 select-none ${
+                activeTab === "Balita"
+                  ? "bg-white text-saas-primary shadow-sm scale-[1.02]"
+                  : "text-saas-muted hover:text-saas-dark"
+              }`}
+            >
+              <Baby className="w-4 h-4" />
+              <span>Balita</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                activeTab === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-gray-200/70 text-saas-muted"
+              }`}>
+                {pasiens.filter((p) => p.tipe === "Balita").length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("Lansia");
+                if (selectedPasien?.tipe !== "Lansia") {
+                  setSelectedPasien(null);
+                  setFormError("");
+                  setFormWarning("");
+                }
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all duration-200 select-none ${
+                activeTab === "Lansia"
+                  ? "bg-white text-indigo-600 shadow-sm scale-[1.02]"
+                  : "text-saas-muted hover:text-saas-dark"
+              }`}
+            >
+              <Heart className="w-4 h-4" />
+              <span>Lansia</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                activeTab === "Lansia" ? "bg-indigo-50 text-indigo-600" : "bg-gray-200/70 text-saas-muted"
+              }`}>
+                {pasiens.filter((p) => p.tipe === "Lansia").length}
+              </span>
+            </button>
+          </div>
+
+          {/* Action Button sesuai halaman aktif */}
+          {activeTab === "Balita" ? (
+            <button
+              onClick={() => setShowAddBalitaModal(true)}
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-all shrink-0"
+            >
+              <UserPlus className="w-4 h-4" /> + Balita Baru
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowAddLansiaModal(true)}
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-input shadow-md shadow-indigo-500/10 transition-all shrink-0"
+            >
+              <UserPlus className="w-4 h-4" /> + Lansia Baru
+            </button>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* KOLOM KIRI: Cari & Pilih Warga */}
+        {/* KOLOM KIRI: Cari & Pilih Warga Sesuai Halaman Aktif */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 flex flex-col h-[600px] space-y-4">
           <div className="space-y-1">
-            <h3 className="font-bold text-sm text-saas-dark">Pilih Warga</h3>
-            <p className="text-[11px] text-saas-muted leading-normal">Cari nama warga balita atau lansia yang akan dilayani.</p>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-saas-dark">
+                {activeTab === "Balita" ? "Pilih Balita" : "Pilih Lansia"}
+              </h3>
+              <span className="text-[10px] font-bold text-saas-muted bg-gray-100 px-2 py-0.5 rounded-full">
+                {filteredPasiens.length} Orang
+              </span>
+            </div>
+            <p className="text-[11px] text-saas-muted leading-normal">
+              {activeTab === "Balita"
+                ? "Cari nama balita yang akan dicatat penimbangannya."
+                : "Cari nama lansia yang akan dicatat skriningnya."}
+            </p>
           </div>
 
           <div className="relative">
             <input
               type="text"
-              placeholder="Cari nama warga..."
+              placeholder={activeTab === "Balita" ? "Cari nama balita..." : "Cari nama lansia..."}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 focus:bg-white transition-all"
             />
             <Search className="absolute left-3.5 top-2.5 text-saas-muted/80 w-4 h-4" />
-          </div>
-
-          <div className="flex gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100/50">
-            {(["Semua", "Balita", "Lansia"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setSelectedTypeFilter(t)}
-                className={`flex-1 text-[10px] font-bold py-1.5 rounded-md transition-all ${
-                  selectedTypeFilter === t
-                    ? "bg-white text-saas-primary shadow-sm"
-                    : "text-saas-muted hover:text-saas-dark"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
           </div>
 
           <div className="flex-1 overflow-y-auto pr-1 space-y-2">
@@ -571,33 +644,50 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                     }}
                     className={`w-full text-left p-3 border rounded-xl flex items-center justify-between text-xs transition-all group ${
                       isSelected
-                        ? "border-saas-primary bg-saas-primary/5 shadow-sm shadow-teal-500/5"
+                        ? activeTab === "Balita"
+                          ? "border-saas-primary bg-saas-primary/5 shadow-sm shadow-teal-500/5"
+                          : "border-indigo-500 bg-indigo-50/40 shadow-sm shadow-indigo-500/5"
                         : "border-gray-100 hover:border-saas-primary/30 hover:bg-gray-50/50"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                         isSelected 
-                          ? "bg-saas-primary text-white" 
-                          : p.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-red-50 text-red-500"
+                          ? p.tipe === "Balita" ? "bg-saas-primary text-white" : "bg-indigo-600 text-white"
+                          : p.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-indigo-50 text-indigo-600"
                       }`}>
                         {p.tipe === "Balita" ? <Baby className="w-4 h-4" /> : <Heart className="w-4 h-4" />}
                       </div>
                       <div>
                         <p className={`font-bold transition-colors ${
-                          isSelected ? "text-saas-primary" : "text-saas-dark group-hover:text-saas-primary"
+                          isSelected 
+                            ? p.tipe === "Balita" ? "text-saas-primary" : "text-indigo-600" 
+                            : "text-saas-dark group-hover:text-saas-primary"
                         }`}>{p.nama}</p>
                         <p className="text-[10px] text-saas-muted font-semibold mt-0.5">{p.subInfo}</p>
                       </div>
                     </div>
                     <ChevronRight className={`w-4 h-4 transition-transform ${
-                      isSelected ? "text-saas-primary translate-x-1" : "text-saas-muted group-hover:translate-x-1"
+                      isSelected 
+                        ? p.tipe === "Balita" ? "text-saas-primary translate-x-1" : "text-indigo-600 translate-x-1" 
+                        : "text-saas-muted group-hover:translate-x-1"
                     }`} />
                   </button>
                 );
               })
             ) : (
-              <p className="text-center text-xs text-saas-muted py-12 font-medium">Nama warga tidak ditemukan.</p>
+              <div className="text-center py-12 px-4 space-y-2">
+                <p className="text-xs text-saas-muted font-medium">
+                  {activeTab === "Balita" ? "Data balita tidak ditemukan." : "Data lansia tidak ditemukan."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => (activeTab === "Balita" ? setShowAddBalitaModal(true) : setShowAddLansiaModal(true))}
+                  className="text-[11px] font-bold text-saas-primary hover:underline"
+                >
+                  {activeTab === "Balita" ? "+ Daftarkan Balita Baru" : "+ Daftarkan Lansia Baru"}
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -606,15 +696,30 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 lg:col-span-2 h-[600px] overflow-y-auto flex flex-col justify-between">
           {!selectedPasien ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3">
-              <div className="w-16 h-16 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-saas-muted">
-                <SlidersHorizontal className="w-8 h-8" />
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center border ${
+                activeTab === "Balita" ? "bg-teal-50 border-teal-100 text-saas-primary" : "bg-indigo-50 border-indigo-100 text-indigo-600"
+              }`}>
+                {activeTab === "Balita" ? <Baby className="w-8 h-8" /> : <Heart className="w-8 h-8" />}
               </div>
               <div>
-                <h3 className="font-bold text-sm text-saas-dark">Mulai Pencatatan Pemeriksaan</h3>
+                <h3 className="font-bold text-sm text-saas-dark">
+                  {activeTab === "Balita" ? "Pencatatan Pemeriksaan Balita" : "Pencatatan Pemeriksaan Lansia"}
+                </h3>
                 <p className="text-xs text-saas-muted mt-1 max-w-sm leading-relaxed">
-                  Pilih salah satu warga dari daftar di panel sebelah kiri atau daftarkan warga baru melalui tombol di atas untuk memulai penginputan pemeriksaan.
+                  {activeTab === "Balita"
+                    ? "Pilih salah satu balita dari daftar di panel sebelah kiri atau daftarkan balita baru untuk memasukkan data penimbangan, tinggi badan, & imunisasi."
+                    : "Pilih salah satu lansia dari daftar di panel sebelah kiri atau daftarkan lansia baru untuk memasukkan data tekanan darah, gula darah, & asam urat."}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => (activeTab === "Balita" ? setShowAddBalitaModal(true) : setShowAddLansiaModal(true))}
+                className={`mt-2 px-4 py-2 text-xs font-bold rounded-input text-white shadow-sm transition-all ${
+                  activeTab === "Balita" ? "bg-saas-primary hover:bg-teal-600" : "bg-indigo-600 hover:bg-indigo-700"
+                }`}
+              >
+                {activeTab === "Balita" ? "+ Daftarkan Balita Baru" : "+ Daftarkan Lansia Baru"}
+              </button>
             </div>
           ) : (
             <div className="flex-grow flex flex-col justify-between h-full">
@@ -632,7 +737,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        selectedPasien.tipe === "Balita" ? "bg-teal-100 text-saas-primary" : "bg-red-100 text-red-500"
+                        selectedPasien.tipe === "Balita" ? "bg-teal-100 text-saas-primary" : "bg-indigo-100 text-indigo-600"
                       }`}>
                         {selectedPasien.tipe === "Balita" ? <Baby className="w-4 h-4" /> : <Heart className="w-4 h-4" />}
                       </div>
@@ -1007,44 +1112,76 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
 
       {/* DATA YANG SELESAI HARI INI */}
       <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
-            <h3 className="font-bold text-base text-saas-dark">Pencatatan Sesi Hari Ini</h3>
+            <h3 className="font-bold text-base text-saas-dark">Pencatatan Sesi Pelayanan Hari Ini</h3>
             <p className="text-xs text-saas-muted mt-0.5">Daftar warga yang sudah selesai dimasukkan datanya dalam sesi pelayanan ini.</p>
+          </div>
+          <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100/70">
+            {(["Semua", "Balita", "Lansia"] as const).map((t) => {
+              const count = t === "Semua" ? sessionLogs.length : sessionLogs.filter((s) => s.tipe === t).length;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setSessionLogFilter(t)}
+                  className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${
+                    sessionLogFilter === t
+                      ? "bg-white text-saas-dark shadow-xs"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  {t} ({count})
+                </button>
+              );
+            })}
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
-                <th className="pb-3">Nama</th>
-                <th className="pb-3">Kategori</th>
-                <th className="pb-3">Hasil Pengukuran</th>
-                <th className="pb-3">Status</th>
-                <th className="pb-3 text-right">Jam Input</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sessionLogs.map((log) => (
-                <tr key={log.id} className="border-b border-gray-50 last:border-b-0 text-xs text-saas-dark">
-                  <td className="py-3.5 font-bold">{log.nama}</td>
-                  <td className="py-3.5 text-saas-muted font-semibold">{log.tipe}</td>
-                  <td className="py-3.5 text-saas-muted font-semibold">{log.summary}</td>
-                  <td className="py-3.5">
-                    <span className={`px-2 py-0.5 rounded-full font-bold ${
-                      log.status.includes("Normal") 
-                        ? "bg-trend-successBg text-trend-successText" 
-                        : "bg-trend-dangerBg text-trend-dangerText"
-                    }`}>
-                      {log.status}
-                    </span>
-                  </td>
-                  <td className="py-3.5 text-right font-bold text-saas-muted">{log.waktu}</td>
+          {sessionLogs.filter((log) => sessionLogFilter === "Semua" || log.tipe === sessionLogFilter).length > 0 ? (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
+                  <th className="pb-3">Nama</th>
+                  <th className="pb-3">Kategori</th>
+                  <th className="pb-3">Hasil Pengukuran</th>
+                  <th className="pb-3">Status</th>
+                  <th className="pb-3 text-right">Jam Input</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sessionLogs
+                  .filter((log) => sessionLogFilter === "Semua" || log.tipe === sessionLogFilter)
+                  .map((log) => (
+                    <tr key={log.id} className="border-b border-gray-50 last:border-b-0 text-xs text-saas-dark">
+                      <td className="py-3.5 font-bold">{log.nama}</td>
+                      <td className="py-3.5 text-saas-muted font-semibold">
+                        <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
+                          log.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-indigo-50 text-indigo-600"
+                        }`}>
+                          {log.tipe}
+                        </span>
+                      </td>
+                      <td className="py-3.5 text-saas-muted font-semibold">{log.summary}</td>
+                      <td className="py-3.5">
+                        <span className={`px-2 py-0.5 rounded-full font-bold ${
+                          log.status.includes("Normal") 
+                            ? "bg-trend-successBg text-trend-successText" 
+                            : "bg-trend-dangerBg text-trend-dangerText"
+                        }`}>
+                          {log.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 text-right font-bold text-saas-muted">{log.waktu}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-center text-xs text-saas-muted py-8 font-medium">
+              Belum ada pemeriksaan yang dicatat dalam sesi ini.
+            </p>
+          )}
         </div>
       </div>
 
