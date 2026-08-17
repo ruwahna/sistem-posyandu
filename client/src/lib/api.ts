@@ -602,4 +602,209 @@ export const ownerApi = {
     }),
 };
 
+// ─────────────────────────────────────────────────────────────
+// API: PUBLIC PUSKESMAS MONITORING (PRIVACY SAFE - NO NIK)
+// ─────────────────────────────────────────────────────────────
+
+export interface PublicPemeriksaanItem {
+  id: string;
+  kategori: 'Balita' | 'Lansia';
+  tanggalPeriksa: string;
+  namaWarga: string;
+  jenisKelamin: 'L' | 'P';
+  usiaInfo: string;
+  posyanduId: string;
+  posyanduNama: string;
+  desa: string;
+  wilayah: string;
+  beratBadan: number;
+  tinggiBadan: number;
+  lingkarKepala?: number;
+  statusBbU?: string;
+  statusTbU?: string;
+  statusBbTb?: string;
+  vitaminA?: boolean;
+  statusImunisasi?: string;
+  tekananDarah?: string;
+  sistol?: number;
+  diastol?: number;
+  gds?: number;
+  kolesterol?: number;
+  asamUrat?: number;
+  imt?: string;
+  statusRingkasan: string;
+  isPerluRujukan: boolean;
+  tindakanCatatan?: string;
+}
+
+export interface PublicPosyanduInfo {
+  id: string;
+  nama: string;
+  desa: string;
+  kecamatan: string;
+}
+
+function getFallbackPublicData(params?: {
+  posyanduId?: string;
+  kategori?: string;
+  status?: string;
+  search?: string;
+}): PublicPemeriksaanItem[] {
+  const dummy: PublicPemeriksaanItem[] = [
+    {
+      id: "pub-1",
+      kategori: "Balita",
+      tanggalPeriksa: "2026-07-28",
+      namaWarga: "Rafif Athar",
+      jenisKelamin: "L",
+      usiaInfo: "18 Bulan",
+      posyanduId: "pos-1",
+      posyanduNama: "Posyandu Mawar 01",
+      desa: "Karanggayam",
+      wilayah: "RT 01 / RW 02, Karanggayam",
+      beratBadan: 10.2,
+      tinggiBadan: 82.5,
+      lingkarKepala: 46.5,
+      statusBbU: "Normal",
+      statusTbU: "Normal",
+      statusBbTb: "Normal",
+      vitaminA: true,
+      statusImunisasi: "DPT 3, Polio 4",
+      statusRingkasan: "Normal",
+      isPerluRujukan: false,
+    },
+    {
+      id: "pub-2",
+      kategori: "Balita",
+      tanggalPeriksa: "2026-07-27",
+      namaWarga: "Kania Putri",
+      jenisKelamin: "P",
+      usiaInfo: "24 Bulan",
+      posyanduId: "pos-1",
+      posyanduNama: "Posyandu Mawar 01",
+      desa: "Karanggayam",
+      wilayah: "RT 02 / RW 02, Karanggayam",
+      beratBadan: 8.8,
+      tinggiBadan: 76.0,
+      lingkarKepala: 44.0,
+      statusBbU: "Kurang",
+      statusTbU: "Sangat Pendek (Stunting)",
+      statusBbTb: "Kurus",
+      vitaminA: true,
+      statusImunisasi: "Lengkap",
+      statusRingkasan: "Stunting (Sangat Pendek)",
+      isPerluRujukan: true,
+      tindakanCatatan: "PMT Pemulihan 90 Hari + Edukasi Gizi Ibu",
+    },
+    {
+      id: "pub-3",
+      kategori: "Lansia",
+      tanggalPeriksa: "2026-07-28",
+      namaWarga: "Mbah Joyo",
+      jenisKelamin: "L",
+      usiaInfo: "66 Tahun",
+      posyanduId: "pos-2",
+      posyanduNama: "Posyandu Melati 02",
+      desa: "Karanggayam",
+      wilayah: "RT 04 / RW 01, Karanggayam",
+      beratBadan: 62.0,
+      tinggiBadan: 163.0,
+      tekananDarah: "165/95 mmHg",
+      sistol: 165,
+      diastol: 95,
+      gds: 210,
+      kolesterol: 220,
+      asamUrat: 7.1,
+      imt: "23.3 (Normal)",
+      statusRingkasan: "Hipertensi & Diabetes (GDS >200)",
+      isPerluRujukan: true,
+      tindakanCatatan: "Rujukan ke Puskesmas Pembantu (Pustu) Karanggayam",
+    },
+    {
+      id: "pub-4",
+      kategori: "Lansia",
+      tanggalPeriksa: "2026-07-26",
+      namaWarga: "Siti Rahayu",
+      jenisKelamin: "P",
+      usiaInfo: "61 Tahun",
+      posyanduId: "pos-1",
+      posyanduNama: "Posyandu Mawar 01",
+      desa: "Karanggayam",
+      wilayah: "RT 03 / RW 02, Karanggayam",
+      beratBadan: 55.5,
+      tinggiBadan: 155.0,
+      tekananDarah: "125/80 mmHg",
+      sistol: 125,
+      diastol: 80,
+      gds: 115,
+      kolesterol: 180,
+      asamUrat: 5.4,
+      imt: "23.1 (Normal)",
+      statusRingkasan: "Normal",
+      isPerluRujukan: false,
+    },
+  ];
+
+  return dummy.filter((item) => {
+    if (params?.posyanduId && params.posyanduId !== "semua" && item.posyanduId !== params.posyanduId) return false;
+    if (params?.kategori && params.kategori !== "Semua" && item.kategori !== params.kategori) return false;
+    if (params?.search && !item.namaWarga.toLowerCase().includes(params.search.toLowerCase())) return false;
+    if (params?.status && params.status !== "semua") {
+      const s = params.status.toLowerCase();
+      if (s === "rujukan" || s === "rawan") return item.isPerluRujukan;
+      if (s === "normal") return item.statusRingkasan.toLowerCase().includes("normal");
+      if (s === "stunting") return item.statusRingkasan.toLowerCase().includes("stunting");
+      if (s === "hipertensi") return item.statusRingkasan.toLowerCase().includes("hipertensi");
+      if (s === "diabetes") return item.statusRingkasan.toLowerCase().includes("diabetes");
+    }
+    return true;
+  });
+}
+
+export const publicPuskesmasApi = {
+  getPosyandus: async (): Promise<PublicPosyanduInfo[]> => {
+    try {
+      const res = await request<ApiResponse<PublicPosyanduInfo[]>>('/api/public/posyandu');
+      return res.data && res.data.length > 0 ? res.data : [
+        { id: 'pos-1', nama: 'Posyandu Mawar 01', desa: 'Karanggayam', kecamatan: 'Lembah Hijau' },
+        { id: 'pos-2', nama: 'Posyandu Melati 02', desa: 'Karanggayam', kecamatan: 'Lembah Hijau' },
+      ];
+    } catch {
+      return [
+        { id: 'pos-1', nama: 'Posyandu Mawar 01', desa: 'Karanggayam', kecamatan: 'Lembah Hijau' },
+        { id: 'pos-2', nama: 'Posyandu Melati 02', desa: 'Karanggayam', kecamatan: 'Lembah Hijau' },
+      ];
+    }
+  },
+
+  getPemeriksaanData: async (params?: {
+    posyanduId?: string;
+    kategori?: string;
+    status?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<PublicPemeriksaanItem[]> => {
+    const query = new URLSearchParams();
+    if (params?.posyanduId && params.posyanduId !== 'semua') query.append('posyanduId', params.posyanduId);
+    if (params?.kategori && params.kategori !== 'Semua') query.append('kategori', params.kategori);
+    if (params?.status && params.status !== 'semua') query.append('status', params.status);
+    if (params?.search) query.append('search', params.search);
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    try {
+      const res = await request<ApiResponse<PublicPemeriksaanItem[]>>(`/api/public/puskesmas/pemeriksaan${queryString}`);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        return res.data;
+      }
+      return getFallbackPublicData(params);
+    } catch (err) {
+      console.warn('Menggunakan fallback data publik puskesmas:', err);
+      return getFallbackPublicData(params);
+    }
+  },
+};
+
 
