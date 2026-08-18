@@ -715,6 +715,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                 <thead>
                   <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
                     <th className="pb-3">Nama Lengkap</th>
+                    <th className="pb-3">No. HP Orang Tua / WA</th>
                     <th className="pb-3">Usia (Bulan)</th>
                     <th className="pb-3">Jenis Kelamin</th>
                     <th className="pb-3">Nama Ibu</th>
@@ -727,11 +728,29 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     filteredBalitas.map((item) => {
                       const ageMonths = calculateAgeInMonths(item.tanggalLahir);
                       const latestExam = item.pemeriksaan[0]; // Teratas/terbaru
+                      const cleanPhone = item.noHp ? item.noHp.replace(/\D/g, "") : "";
+                      const waNumber = cleanPhone.startsWith("0") ? "62" + cleanPhone.slice(1) : cleanPhone;
                       return (
                         <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
                           <td className="py-4">
                             <p className="font-bold text-saas-dark">{item.nama}</p>
                             <p className="text-[11px] text-saas-muted font-medium mt-0.5">NIK: {item.nik || "-"}</p>
+                          </td>
+                          <td className="py-4">
+                            {item.noHp ? (
+                              <a
+                                href={`https://wa.me/${waNumber}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold rounded-lg text-xs transition-colors border border-emerald-200/60"
+                                title="Hubungi Orang Tua via WhatsApp"
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                                {item.noHp}
+                              </a>
+                            ) : (
+                              <span className="text-xs text-saas-muted font-medium">-</span>
+                            )}
                           </td>
                           <td className="py-4 font-bold text-saas-dark">{ageMonths} Bulan</td>
                           <td className="py-4 font-semibold text-saas-muted">{item.jenisKelamin === "L" ? "Laki-laki" : "Perempuan"}</td>
@@ -774,7 +793,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-xs text-saas-muted font-medium">
+                      <td colSpan={7} className="py-12 text-center text-xs text-saas-muted font-medium">
                         Tidak ada data balita yang cocok.
                       </td>
                     </tr>

@@ -584,10 +584,9 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                           <button
                             type="button"
                             onClick={() => openDetailModal(log)}
-                            className="font-extrabold text-saas-dark hover:text-saas-primary text-left transition-colors flex items-center gap-1.5 group"
+                            className="font-extrabold text-saas-dark hover:text-saas-primary text-left transition-colors cursor-pointer hover:underline"
                           >
-                            <span>{log.nama}</span>
-                            <LineChartIcon className="w-3.5 h-3.5 text-saas-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                            {log.nama}
                           </button>
                         </td>
                         <td className="py-4 px-3 font-semibold text-saas-muted whitespace-nowrap">
@@ -621,36 +620,26 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                         </td>
                         <td className="py-4 px-3 text-xs text-saas-muted font-bold whitespace-nowrap">{log.petugas}</td>
                         <td className="py-4 px-3 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              type="button"
-                              onClick={() => openDetailModal(log)}
-                              className="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-saas-primary text-xs font-bold rounded-lg transition-colors flex items-center gap-1 border border-teal-200/50"
-                              title="Cek Detail & Grafik Perkembangan"
-                            >
-                              <LineChartIcon className="w-3.5 h-3.5 shrink-0" /> Detail Grafik
-                            </button>
-                            <ActionMenu
-                              items={[
-                                {
-                                  label: "Cek Detail & Grafik",
-                                  icon: <Eye className="w-4 h-4" />,
-                                  onClick: () => openDetailModal(log)
-                                },
-                                {
-                                  label: "Edit Record",
-                                  icon: <Edit2 className="w-4 h-4" />,
-                                  onClick: () => openEditModal(log)
-                                },
-                                {
-                                  label: "Hapus Record",
-                                  icon: <Trash2 className="w-4 h-4" />,
-                                  variant: "danger",
-                                  onClick: () => openDeleteModal(log)
-                                }
-                              ]}
-                            />
-                          </div>
+                          <ActionMenu
+                            items={[
+                              {
+                                label: "Lihat Detail",
+                                icon: <Eye className="w-4 h-4" />,
+                                onClick: () => openDetailModal(log)
+                              },
+                              {
+                                label: "Edit Record",
+                                icon: <Edit2 className="w-4 h-4" />,
+                                onClick: () => openEditModal(log)
+                              },
+                              {
+                                label: "Hapus Record",
+                                icon: <Trash2 className="w-4 h-4" />,
+                                variant: "danger",
+                                onClick: () => openDeleteModal(log)
+                              }
+                            ]}
+                          />
                         </td>
                       </tr>
                     ))

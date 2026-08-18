@@ -127,6 +127,7 @@ export interface Lansia {
   id: string;
   nama: string;
   nik: string;
+  noHp?: string;
   noBpjs?: string;
   tanggalLahir: string;
   jenisKelamin: 'L' | 'P';

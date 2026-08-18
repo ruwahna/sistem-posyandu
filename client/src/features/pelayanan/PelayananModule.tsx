@@ -754,11 +754,10 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                     <div className="flex items-center justify-between">
                       <p className="font-extrabold text-saas-dark text-xs">{item.nama}</p>
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                          item.statusType === "warning"
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${item.statusType === "warning"
                             ? "bg-red-100 text-red-700"
                             : "bg-emerald-100 text-emerald-800"
-                        }`}
+                          }`}
                       >
                         {item.status}
                       </span>
@@ -1025,11 +1024,10 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                     <div className="flex items-center justify-between">
                       <p className="font-extrabold text-saas-dark text-xs">{item.nama}</p>
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                          item.statusType === "warning"
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${item.statusType === "warning"
                             ? "bg-red-100 text-red-700"
                             : "bg-emerald-100 text-emerald-800"
-                        }`}
+                          }`}
                       >
                         {item.status}
                       </span>
