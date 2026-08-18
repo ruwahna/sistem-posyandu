@@ -77,6 +77,7 @@ export const riwayatService = {
       });
 
       for (const item of meBalita) {
+        if (!item.balita) continue;
         const isWarning = item.statusBbU === 'SK' || item.statusBbU === 'K' || item.statusTbU === 'SP' || item.statusTbU === 'P' || item.statusBbTb === 'SK' || item.statusBbTb === 'K' || item.statusBbTb === 'G';
         const statusType: 'success' | 'warning' = isWarning ? 'warning' : 'success';
 
@@ -135,6 +136,7 @@ export const riwayatService = {
       });
 
       for (const item of meLansia) {
+        if (!item.lansia) continue;
         const isHipertensi = item.tekananDarahSistol >= 140 || item.tekananDarahDiastol >= 90;
         const isGdsTinggi = Number(item.gulaDarahSewaktu) >= 200;
         const isWarning = isHipertensi || isGdsTinggi;

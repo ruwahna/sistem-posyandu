@@ -47,6 +47,7 @@ export const notificationService = {
     });
 
     for (const pem of alertBalita) {
+      if (!pem.balita) continue;
       const title = `Peringatan Gizi: ${pem.balita.nama}`;
       const existing = await prisma.notification.findFirst({
         where: { posyanduId, title },
@@ -68,7 +69,7 @@ export const notificationService = {
           data: {
             posyanduId,
             title,
-            message: `Usia ${pem.usiaBulan} bln (Ibu ${pem.balita.namaIbu}). Status: ${issues.join(', ')}. Butuh perhatian gizi.`,
+            message: `Usia ${pem.usiaBulan} bln (Ibu ${pem.balita.namaIbu || '-'}). Status: ${issues.join(', ')}. Butuh perhatian gizi.`,
             type: 'DANGER',
             category: 'balita',
             createdAt: pem.tanggalPeriksa,
@@ -96,6 +97,7 @@ export const notificationService = {
     });
 
     for (const pem of alertLansia) {
+      if (!pem.lansia) continue;
       const title = `Peringatan Kesehatan: ${pem.lansia.nama}`;
       const existing = await prisma.notification.findFirst({
         where: { posyanduId, title },
@@ -106,7 +108,7 @@ export const notificationService = {
         if (pem.tekananDarahSistol >= 140) {
           issues.push(`TD: ${pem.tekananDarahSistol}/${pem.tekananDarahDiastol} mmHg (Hipertensi)`);
         }
-        if (Number(pem.gulaDarahSewaktu) >= 200) {
+        if (pem.gulaDarahSewaktu && Number(pem.gulaDarahSewaktu) >= 200) {
           issues.push(`Gula Darah: ${pem.gulaDarahSewaktu} mg/dL (Tinggi)`);
         }
 
@@ -114,7 +116,7 @@ export const notificationService = {
           data: {
             posyanduId,
             title,
-            message: `RT/RW ${pem.lansia.rtRw}. Hasil periksa: ${issues.join(' | ')}. Berikan rujukan/konsultasi.`,
+            message: `RT/RW ${pem.lansia.rtRw || '-'}. Hasil periksa: ${issues.join(' | ')}. Berikan rujukan/konsultasi.`,
             type: 'WARNING',
             category: 'lansia',
             createdAt: pem.tanggalPeriksa,

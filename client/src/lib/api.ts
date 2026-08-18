@@ -96,6 +96,7 @@ export interface Balita {
   id: string;
   nama: string;
   nik?: string;
+  noHp?: string;
   tanggalLahir: string;
   jenisKelamin: 'L' | 'P';
   namaIbu: string;
