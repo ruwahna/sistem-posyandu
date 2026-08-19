@@ -148,6 +148,7 @@ export default function BalitaModule({ posyanduId, searchQuery = "", selectedId 
 
   // Search, Filter & Pagination State
   const [query, setQuery] = useState(searchQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
 
   useEffect(() => {
     if (searchQuery !== undefined) {
@@ -156,12 +157,20 @@ export default function BalitaModule({ posyanduId, searchQuery = "", selectedId 
   }, [searchQuery]);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
     if (selectedId) {
       setSelectedBalitaId(selectedId);
       setView("detail");
     }
   }, [selectedId]);
-  
+
   // Edit & Delete Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -214,7 +223,7 @@ export default function BalitaModule({ posyanduId, searchQuery = "", selectedId 
 
     balitaApi
       .getAll(posyanduId, {
-        search: query || undefined,
+        search: debouncedQuery || undefined,
         kelompokUsia: kelompokUsiaParam,
         page: currentPage,
         limit: limit,
@@ -245,7 +254,7 @@ export default function BalitaModule({ posyanduId, searchQuery = "", selectedId 
       })
       .catch((err) => setApiError(err.message))
       .finally(() => setIsLoading(false));
-  }, [posyanduId, query, ageFilter, currentPage, limit]);
+  }, [posyanduId, debouncedQuery, ageFilter, currentPage, limit]);
 
   useEffect(() => {
     fetchBalitas();

@@ -193,8 +193,17 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
   const [successToast, setSuccessToast] = useState("");
 
   // Filter Patients based on active page/tab & search query
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const filteredPasiens = pasiens.filter((p) => {
-    const matchesSearch = p.nama.toLowerCase().includes(query.toLowerCase());
+    const matchesSearch = p.nama.toLowerCase().includes(debouncedQuery.toLowerCase());
     const matchesType = p.tipe === activeTab;
     return matchesSearch && matchesType;
   });

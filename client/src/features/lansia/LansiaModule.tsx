@@ -98,12 +98,21 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId 
 
   // Search, Filter & Pagination State
   const [query, setQuery] = useState(searchQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
 
   useEffect(() => {
     if (searchQuery !== undefined) {
       setQuery(searchQuery);
     }
   }, [searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   useEffect(() => {
     if (selectedId) {
@@ -169,7 +178,7 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId 
 
     lansiaApi
       .getAll(posyanduId, {
-        search: query || undefined,
+        search: debouncedQuery || undefined,
         kelompokUmur: kelompokUmurParam,
         ht: htParam,
         dm: dmParam,
@@ -198,7 +207,7 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId 
       })
       .catch((err) => setApiError(err.message))
       .finally(() => setIsLoading(false));
-  }, [posyanduId, query, ageFilter, diseaseFilter, currentPage, limit]);
+  }, [posyanduId, debouncedQuery, ageFilter, diseaseFilter, currentPage, limit]);
 
   useEffect(() => {
     fetchLansias();
