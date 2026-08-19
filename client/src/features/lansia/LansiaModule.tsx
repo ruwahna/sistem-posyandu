@@ -84,18 +84,33 @@ function calculateAgeInYears(birthDateStr: string, refDate: Date = new Date()): 
 
 interface LansiaModuleProps {
   posyanduId: string;
+  searchQuery?: string;
+  selectedId?: string;
 }
 
-export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
+export default function LansiaModule({ posyanduId, searchQuery = "", selectedId }: LansiaModuleProps) {
   const [lansias, setLansias] = useState<Lansia[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [view, setView] = useState<"list" | "detail" | "add">("list");
-  const [selectedLansiaId, setSelectedLansiaId] = useState<string | null>(null);
+  const [selectedLansiaId, setSelectedLansiaId] = useState<string | null>(selectedId || null);
 
   // Search, Filter & Pagination State
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(searchQuery);
+
+  useEffect(() => {
+    if (searchQuery !== undefined) {
+      setQuery(searchQuery);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (selectedId) {
+      setSelectedLansiaId(selectedId);
+      setView("detail");
+    }
+  }, [selectedId]);
   const [ageFilter, setAgeFilter] = useState<"semua" | "45-59" | "60-69" | "70+">("semua");
   const [diseaseFilter, setDiseaseFilter] = useState<"semua" | "ht" | "dm">("semua");
   const [currentPage, setCurrentPage] = useState(1);

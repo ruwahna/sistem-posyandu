@@ -31,7 +31,7 @@ import {
   EyeSlash,
 } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
-import { notificationApi, authApi, AppNotification } from "../lib/api";
+import { notificationApi, authApi, balitaApi, lansiaApi, AppNotification } from "../lib/api";
 
 // Feature Modules
 import DashboardModule from "../features/dashboard/DashboardModule";
@@ -49,10 +49,24 @@ import LoginPage from "./login/page";
 export default function Home() {
   const { user, posyanduId, isLoading, logout, updateUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchRecommendations, setSearchRecommendations] = useState<
+    Array<{
+      id: string;
+      nama: string;
+      tipe: "Balita" | "Lansia";
+      subText: string;
+      raw: any;
+    }>
+  >([]);
+  const [isSearchingRecommendations, setIsSearchingRecommendations] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [selectedBalitaId, setSelectedBalitaId] = useState<string | undefined>(undefined);
+  const [selectedLansiaId, setSelectedLansiaId] = useState<string | undefined>(undefined);
   const [showNotification, setShowNotification] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const searchRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -182,7 +196,67 @@ export default function Home() {
     setShowNotification(false);
   };
 
-  // Close notification & profile dropdown when clicking outside or pressing Escape
+  // Debounced Search Recommendations (After Typing)
+  useEffect(() => {
+    if (!posyanduId || searchQuery.trim().length < 2) {
+      setSearchRecommendations([]);
+      setShowSearchDropdown(false);
+      setIsSearchingRecommendations(false);
+      return;
+    }
+
+    setIsSearchingRecommendations(true);
+    const timer = setTimeout(async () => {
+      try {
+        const [balitaRes, lansiaRes] = await Promise.all([
+          balitaApi.getAll(posyanduId, { search: searchQuery.trim() }),
+          lansiaApi.getAll(posyanduId, { search: searchQuery.trim() }),
+        ]);
+
+        const balitaItems = (balitaRes.data || []).slice(0, 5).map((b) => ({
+          id: b.id,
+          nama: b.nama,
+          tipe: "Balita" as const,
+          subText: `Ibu: ${b.namaIbu || "-"} • ${b.alamat || "-"}`,
+          raw: b,
+        }));
+
+        const lansiaItems = (lansiaRes.data || []).slice(0, 5).map((l) => ({
+          id: l.id,
+          nama: l.nama,
+          tipe: "Lansia" as const,
+          subText: `NIK: ${l.nik || "-"} • ${l.alamat || "-"}`,
+          raw: l,
+        }));
+
+        const combined = [...balitaItems, ...lansiaItems];
+        setSearchRecommendations(combined);
+        setShowSearchDropdown(true);
+      } catch (err) {
+        console.error("Gagal memuat rekomendasi pencarian:", err);
+      } finally {
+        setIsSearchingRecommendations(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, posyanduId]);
+
+  const handleSelectRecommendation = (item: { id: string; nama: string; tipe: "Balita" | "Lansia" }) => {
+    setShowSearchDropdown(false);
+    setSearchQuery(item.nama);
+    if (item.tipe === "Balita") {
+      setSelectedBalitaId(item.id);
+      setSelectedLansiaId(undefined);
+      setActiveMenu("Balita");
+    } else if (item.tipe === "Lansia") {
+      setSelectedLansiaId(item.id);
+      setSelectedBalitaId(undefined);
+      setActiveMenu("Lansia");
+    }
+  };
+
+  // Close notification, search & profile dropdown when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -197,12 +271,19 @@ export default function Home() {
       ) {
         setShowProfileMenu(false);
       }
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowSearchDropdown(false);
+      }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setShowNotification(false);
         setShowProfileMenu(false);
+        setShowSearchDropdown(false);
       }
     };
 
@@ -259,9 +340,21 @@ export default function Home() {
       case "Pelayanan":
         return <PelayananModule posyanduId={posyanduId} />;
       case "Balita":
-        return <BalitaModule posyanduId={posyanduId} />;
+        return (
+          <BalitaModule
+            posyanduId={posyanduId}
+            searchQuery={searchQuery}
+            selectedId={selectedBalitaId}
+          />
+        );
       case "Lansia":
-        return <LansiaModule posyanduId={posyanduId} />;
+        return (
+          <LansiaModule
+            posyanduId={posyanduId}
+            searchQuery={searchQuery}
+            selectedId={selectedLansiaId}
+          />
+        );
       case "Riwayat":
         return <RiwayatModule posyanduId={posyanduId} />;
       case "Manajemen Akun":
@@ -469,16 +562,105 @@ export default function Home() {
               <span className="font-bold text-saas-dark text-sm tracking-tight">PosyanduKita</span>
             </div>
 
-            {/* Desktop Search Input */}
-            <div className="relative hidden md:block w-72 lg:w-80">
-              <input
-                type="text"
-                placeholder="Cari nama balita atau lansia..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-50/70 border border-gray-100 rounded-input text-sm text-saas-dark placeholder-saas-muted/70 focus:outline-none focus:border-saas-primary/50 focus:bg-white transition-all"
-              />
-              <MagnifyingGlass className="absolute left-3.5 top-2.5 text-saas-muted/80 w-4 h-4" weight="bold" />
+            {/* Desktop Search Input with Autocomplete Recommendations */}
+            <div className="relative hidden md:block w-72 lg:w-96" ref={searchRef}>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Cari nama balita atau lansia..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (selectedBalitaId) setSelectedBalitaId(undefined);
+                    if (selectedLansiaId) setSelectedLansiaId(undefined);
+                  }}
+                  onFocus={() => {
+                    if (searchRecommendations.length > 0) setShowSearchDropdown(true);
+                  }}
+                  className="w-full pl-10 pr-8 py-2 bg-gray-50/70 border border-gray-150 rounded-input text-sm text-saas-dark placeholder-saas-muted/70 focus:outline-none focus:border-saas-primary/50 focus:bg-white transition-all"
+                />
+                <MagnifyingGlass className="absolute left-3.5 top-2.5 text-saas-muted/80 w-4 h-4" weight="bold" />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setShowSearchDropdown(false);
+                      setSearchRecommendations([]);
+                      setSelectedBalitaId(undefined);
+                      setSelectedLansiaId(undefined);
+                    }}
+                    className="absolute right-3 top-2.5 text-saas-muted hover:text-saas-dark"
+                  >
+                    <X className="w-4 h-4" weight="bold" />
+                  </button>
+                )}
+              </div>
+
+              {/* Autocomplete Recommendation Dropdown */}
+              {showSearchDropdown && (
+                <div className="absolute top-12 left-0 w-full bg-white rounded-card shadow-xl border border-gray-100 p-2 z-50 animate-in fade-in duration-150 space-y-1">
+                  <div className="px-3 py-1.5 border-b border-gray-100 flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-saas-muted uppercase tracking-wider">
+                      Rekomendasi Hasil Pencarian
+                    </span>
+                    {isSearchingRecommendations && (
+                      <CircleNotch className="w-3.5 h-3.5 text-saas-primary animate-spin" weight="bold" />
+                    )}
+                  </div>
+
+                  {isSearchingRecommendations ? (
+                    <div className="py-4 text-center text-xs font-semibold text-saas-muted flex items-center justify-center gap-2">
+                      <CircleNotch className="w-4 h-4 text-saas-primary animate-spin" weight="bold" />
+                      Mencari nama balita &amp; lansia...
+                    </div>
+                  ) : searchRecommendations.length > 0 ? (
+                    <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
+                      {searchRecommendations.map((item) => (
+                        <button
+                          key={`${item.tipe}-${item.id}`}
+                          type="button"
+                          onClick={() => handleSelectRecommendation(item)}
+                          className="w-full text-left p-2.5 hover:bg-gray-50 rounded-lg transition-colors flex items-center justify-between gap-3 group"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                item.tipe === "Balita" ? "bg-teal-50 text-teal-700" : "bg-indigo-50 text-indigo-700"
+                              }`}
+                            >
+                              {item.tipe === "Balita" ? (
+                                <Baby className="w-4 h-4" weight="bold" />
+                              ) : (
+                                <Heartbeat className="w-4 h-4" weight="bold" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-xs text-saas-dark group-hover:text-saas-primary transition-colors truncate">
+                                {item.nama}
+                              </p>
+                              <p className="text-[10px] text-saas-muted truncate">{item.subText}</p>
+                            </div>
+                          </div>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                              item.tipe === "Balita"
+                                ? "bg-teal-50 text-teal-800 border-teal-200"
+                                : "bg-indigo-50 text-indigo-800 border-indigo-200"
+                            }`}
+                          >
+                            {item.tipe}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-4 text-center text-xs font-semibold text-saas-muted">
+                      Tidak ditemukan data balita atau lansia dengan nama "{searchQuery}".
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

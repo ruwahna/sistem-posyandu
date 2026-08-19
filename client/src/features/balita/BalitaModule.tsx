@@ -134,15 +134,33 @@ function calculateAgeInMonths(birthDateStr: string, refDate: Date = new Date()):
 
 interface BalitaModuleProps {
   posyanduId: string;
+  searchQuery?: string;
+  selectedId?: string;
 }
 
-export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
+export default function BalitaModule({ posyanduId, searchQuery = "", selectedId }: BalitaModuleProps) {
   const [balitas, setBalitas] = useState<Balita[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [view, setView] = useState<"list" | "detail" | "add">("list");
-  const [selectedBalitaId, setSelectedBalitaId] = useState<string | null>(null);
+  const [selectedBalitaId, setSelectedBalitaId] = useState<string | null>(selectedId || null);
+
+  // Search, Filter & Pagination State
+  const [query, setQuery] = useState(searchQuery);
+
+  useEffect(() => {
+    if (searchQuery !== undefined) {
+      setQuery(searchQuery);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (selectedId) {
+      setSelectedBalitaId(selectedId);
+      setView("detail");
+    }
+  }, [selectedId]);
   
   // Edit & Delete Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -177,8 +195,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   const [editExamImunisasi, setEditExamImunisasi] = useState("");
   const [editExamError, setEditExamError] = useState("");
 
-  // Search, Filter & Pagination State
-  const [query, setQuery] = useState("");
+  // Filter & Pagination State
   const [ageFilter, setAgeFilter] = useState<"semua" | "0-6" | "7-12" | "13-24" | "25-60">("semua");
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(10);
