@@ -7,31 +7,24 @@ import {
   ShieldCheck,
   MagnifyingGlass,
   Funnel,
-  CalendarBlank,
   Baby,
-  Heart,
-  Pulse,
   Heartbeat,
   WarningCircle,
   FileCsv,
   FilePdf,
-  Printer,
   CaretRight,
   CaretLeft,
   CaretDoubleLeft,
   CaretDoubleRight,
   CircleNotch,
-  CheckCircle,
-  SlidersHorizontal,
   Info,
   X,
-  User,
-  ChartBar,
   Hospital,
   Sparkle,
   SquaresFour,
   Drop,
-  Scales
+  Scales,
+  Eye
 } from "@phosphor-icons/react";
 import PageHelmet from "../../components/PageHelmet";
 import { publicPuskesmasApi, PublicPemeriksaanItem, PublicPosyanduInfo } from "../../lib/api";
@@ -204,30 +197,30 @@ export default function PuskesmasPublicPage() {
   }, [search, selectedPosyandu, selectedStatus, startDate, endDate]);
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-saas-dark font-sans flex flex-col justify-between">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans flex flex-col justify-between">
       <PageHelmet
         title={`Portal Pemantauan ${activeTab} — UPTD Puskesmas`}
         description={`Portal pemantauan data kesehatan ${activeTab} wilayah UPTD Puskesmas tanpa data pribadi NIK.`}
       />
 
       {/* TOP HEADER BRANDING BANNER */}
-      <header className="bg-white border-b border-gray-200/80 sticky top-0 z-30 shadow-xs print:hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 print:hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-              activeTab === "Balita" ? "bg-teal-50 border-teal-150 text-saas-primary" : "bg-indigo-50 border-indigo-150 text-indigo-600"
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border ${
+              activeTab === "Balita" ? "bg-teal-50 border-teal-200 text-teal-700" : "bg-indigo-50 border-indigo-200 text-indigo-700"
             }`}>
-              <Buildings className="w-6 h-6" weight="bold" />
+              <Buildings className="w-5 h-5" weight="bold" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                  activeTab === "Balita" ? "bg-teal-50 text-saas-primary border-teal-200/50" : "bg-indigo-50 text-indigo-700 border-indigo-200/50"
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                  activeTab === "Balita" ? "bg-teal-50 text-teal-800 border-teal-200" : "bg-indigo-50 text-indigo-800 border-indigo-200"
                 }`}>
                   Portal Puskesmas — Pemantauan {activeTab}
                 </span>
               </div>
-              <h1 className="text-base font-extrabold text-saas-dark tracking-tight leading-tight mt-0.5">
+              <h1 className="text-sm font-bold text-slate-900 tracking-tight leading-tight mt-0.5">
                 Monitoring Pemantauan Pelayanan {activeTab} Wilayah Puskesmas
               </h1>
             </div>
@@ -236,21 +229,21 @@ export default function PuskesmasPublicPage() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleExportCSV}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-input transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold rounded-md transition-colors"
               title="Unduh data dalam format Excel / CSV"
             >
-              <FileCsv className="w-4.5 h-4.5 text-emerald-700" weight="bold" /> Unduh Tabel Excel
+              <FileCsv className="w-4 h-4 text-emerald-700" weight="bold" /> Unduh Excel
             </button>
             <button
               onClick={handleExportPDF}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-bold rounded-input transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-semibold rounded-md transition-colors"
               title="Cetak Laporan PDF Resmi UPTD Puskesmas"
             >
-              <FilePdf className="w-4.5 h-4.5 text-indigo-700" weight="bold" /> Cetak Dokumen PDF
+              <FilePdf className="w-4 h-4 text-indigo-700" weight="bold" /> Cetak PDF
             </button>
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md transition-colors"
             >
               Menu Utama <CaretRight className="w-3.5 h-3.5" weight="bold" />
             </Link>
@@ -259,11 +252,11 @@ export default function PuskesmasPublicPage() {
       </header>
 
       {/* MAIN CONTAINER */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow space-y-6 print:hidden">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow space-y-5 print:hidden">
 
-        {/* PAGE SWITCH TAB BUTTONS (TERPISAH HALAMAN BALITA & LANSIA) */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2 p-1.5 bg-white rounded-2xl border border-gray-200/80 shadow-xs w-fit">
+        {/* PAGE SWITCH TAB BUTTONS */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 p-1 bg-white rounded-lg border border-slate-200 w-fit">
             <button
               type="button"
               onClick={() => {
@@ -272,10 +265,10 @@ export default function PuskesmasPublicPage() {
                 setActivePreset("semua");
                 setCurrentPage(1);
               }}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-extrabold text-xs transition-all ${
+              className={`flex items-center gap-2 px-5 py-2 rounded-md font-bold text-xs transition-all ${
                 activeTab === "Balita"
-                  ? "bg-saas-primary text-white shadow-md shadow-teal-500/20"
-                  : "text-saas-muted hover:text-saas-dark hover:bg-gray-50"
+                  ? "bg-teal-600 text-white"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
               <Baby className="w-4 h-4" weight="bold" /> Pemantauan Balita
@@ -289,187 +282,172 @@ export default function PuskesmasPublicPage() {
                 setActivePreset("semua");
                 setCurrentPage(1);
               }}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-extrabold text-xs transition-all ${
+              className={`flex items-center gap-2 px-5 py-2 rounded-md font-bold text-xs transition-all ${
                 activeTab === "Lansia"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-                  : "text-saas-muted hover:text-saas-dark hover:bg-gray-50"
+                  ? "bg-indigo-600 text-white"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
               <Heartbeat className="w-4 h-4" weight="bold" /> Pemantauan Lansia
             </button>
           </div>
 
-          <span className="text-xs font-semibold text-saas-muted">
-            Menampilkan data pemantauan <strong className={activeTab === "Balita" ? "text-saas-primary" : "text-indigo-600"}>{activeTab}</strong>
+          <span className="text-xs font-medium text-slate-500">
+            Menampilkan data pemantauan <strong className={activeTab === "Balita" ? "text-teal-700" : "text-indigo-700"}>{activeTab}</strong>
           </span>
         </div>
 
-        {/* HERO BANNER - SANGAT JELAS & HIGH CONTRAST */}
-        <div className="bg-white rounded-card p-6 md:p-8 text-saas-dark border border-gray-200/80 shadow-soft-card relative overflow-hidden">
-          <div className="relative z-10 space-y-3 max-w-3xl">
-            <div className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-extrabold border ${
-              activeTab === "Balita" ? "bg-teal-50 text-teal-800 border-teal-200/80" : "bg-indigo-50 text-indigo-800 border-indigo-200/80"
-            }`}>
-              <ShieldCheck className={`w-4 h-4 ${activeTab === "Balita" ? "text-teal-600" : "text-indigo-600"}`} weight="fill" />
-              <span>Privasi Terjaga — Pemantauan Kesehatan {activeTab} Tanpa Data Sensitif</span>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-saas-dark tracking-tight leading-tight">
-              Data Rekam Pemantauan Kesehatan {activeTab}
-            </h2>
-            <p className="text-xs md:text-sm text-saas-muted font-medium leading-relaxed">
-              {activeTab === "Balita"
-                ? "Didesain khusus untuk Petugas Puskesmas dan Bidan Desa dalam memantau tren gizi anak, deteksi dini stunting (kurang tinggi), pemberian Vitamin A, serta kelengkapan imunisasi balita."
-                : "Didesain khusus untuk Petugas Puskesmas dan Pembina Lansia dalam memantau skrining penyakit tidak menular (PTM) seperti hipertensi (tekanan darah tinggi), diabetes (gula darah), asam urat, serta kolesterol."}
-            </p>
+        {/* HERO BANNER - FLAT CLEAN CARD */}
+        <div className="bg-white rounded-lg p-5 border border-slate-200 text-slate-800 space-y-2">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className={`w-4 h-4 ${activeTab === "Balita" ? "text-teal-600" : "text-indigo-600"}`} weight="fill" />
+            <span className="text-xs font-bold text-slate-700">
+              Privasi Terjaga — Pemantauan Kesehatan {activeTab} Tanpa Data Sensitif (NIK)
+            </span>
           </div>
-          <div className="absolute -right-8 -bottom-8 opacity-5 pointer-events-none">
-            {activeTab === "Balita" ? (
-              <Baby className="w-64 h-64 text-saas-primary" weight="duotone" />
-            ) : (
-              <Heartbeat className="w-64 h-64 text-indigo-600" weight="duotone" />
-            )}
-          </div>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+            Data Rekam Pemantauan Kesehatan {activeTab}
+          </h2>
+          <p className="text-xs text-slate-600 font-normal leading-relaxed">
+            {activeTab === "Balita"
+              ? "Memantau tren gizi anak, deteksi dini stunting (kurang tinggi), pemberian Vitamin A, serta kelengkapan imunisasi balita di wilayah kerja UPTD Puskesmas."
+              : "Memantau skrining penyakit tidak menular (PTM) seperti hipertensi (tekanan darah), gula darah (diabetes), asam urat, serta kolesterol lansia di wilayah kerja UPTD Puskesmas."}
+          </p>
         </div>
 
-        {/* STATS OVERVIEW CARDS (KHUSUS BALITA / LANSIA) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 sm:p-5 rounded-card border border-gray-100/80 shadow-soft-card space-y-1">
-            <span className="text-[11px] font-bold text-saas-muted uppercase tracking-wider block">
+        {/* STATS OVERVIEW CARDS - FLAT CLEAN */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
               Total {activeTab} Periksa
             </span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl sm:text-3xl font-extrabold text-saas-dark">{totalRecords}</span>
+              <span className="text-2xl font-bold text-slate-900">{totalRecords}</span>
               {activeTab === "Balita" ? (
-                <Baby className="w-6 h-6 text-saas-primary shrink-0" weight="bold" />
+                <Baby className="w-5 h-5 text-teal-600 shrink-0" weight="bold" />
               ) : (
-                <Heartbeat className="w-6 h-6 text-indigo-600 shrink-0" weight="bold" />
+                <Heartbeat className="w-5 h-5 text-indigo-600 shrink-0" weight="bold" />
               )}
             </div>
-            <p className="text-[10px] text-saas-muted font-medium pt-1">Hasil penginputan terkini</p>
+            <p className="text-[10px] text-slate-500 font-medium">Hasil penginputan terkini</p>
           </div>
 
           {activeTab === "Balita" ? (
             <>
-              <div className="bg-white p-4 sm:p-5 rounded-card border border-gray-100/80 shadow-soft-card space-y-1">
-                <span className="text-[11px] font-bold text-saas-muted uppercase tracking-wider block">Anak Kurang Tinggi</span>
+              <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Anak Kurang Tinggi</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-amber-600">{totalStunting}</span>
-                  <Baby className="w-6 h-6 text-amber-500 shrink-0" weight="bold" />
+                  <span className="text-2xl font-bold text-amber-700">{totalStunting}</span>
+                  <Baby className="w-5 h-5 text-amber-600 shrink-0" weight="bold" />
                 </div>
-                <p className="text-[10px] text-saas-muted font-medium pt-1">Kasus Stunting (TB/U)</p>
+                <p className="text-[10px] text-slate-500 font-medium">Kasus Stunting (TB/U)</p>
               </div>
 
-              <div className="bg-white p-4 sm:p-5 rounded-card border border-gray-100/80 shadow-soft-card space-y-1">
-                <span className="text-[11px] font-bold text-saas-muted uppercase tracking-wider block">Perlu Rujukan</span>
+              <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Perlu Rujukan</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-red-600">{totalRujukan}</span>
-                  <WarningCircle className="w-6 h-6 text-red-500 shrink-0" weight="bold" />
+                  <span className="text-2xl font-bold text-red-700">{totalRujukan}</span>
+                  <WarningCircle className="w-5 h-5 text-red-600 shrink-0" weight="bold" />
                 </div>
-                <p className="text-[10px] text-saas-muted font-medium pt-1">PMT / Tindak Lanjut Medis</p>
+                <p className="text-[10px] text-slate-500 font-medium">PMT / Tindak Lanjut Medis</p>
               </div>
             </>
           ) : (
             <>
-              <div className="bg-white p-4 sm:p-5 rounded-card border border-gray-100/80 shadow-soft-card space-y-1">
-                <span className="text-[11px] font-bold text-saas-muted uppercase tracking-wider block">Tensi Tinggi</span>
+              <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Tensi Tinggi</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-indigo-600">{totalHipertensi}</span>
-                  <Heartbeat className="w-6 h-6 text-indigo-500 shrink-0" weight="bold" />
+                  <span className="text-2xl font-bold text-indigo-700">{totalHipertensi}</span>
+                  <Heartbeat className="w-5 h-5 text-indigo-600 shrink-0" weight="bold" />
                 </div>
-                <p className="text-[10px] text-saas-muted font-medium pt-1">Hipertensi (Sistol ≥140)</p>
+                <p className="text-[10px] text-slate-500 font-medium">Hipertensi (Sistol ≥140)</p>
               </div>
 
-              <div className="bg-white p-4 sm:p-5 rounded-card border border-gray-100/80 shadow-soft-card space-y-1">
-                <span className="text-[11px] font-bold text-saas-muted uppercase tracking-wider block">Gula Darah Tinggi</span>
+              <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Gula Darah Tinggi</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-rose-600">{totalDiabetes}</span>
-                  <Drop className="w-6 h-6 text-rose-500 shrink-0" weight="bold" />
+                  <span className="text-2xl font-bold text-rose-700">{totalDiabetes}</span>
+                  <Drop className="w-5 h-5 text-rose-600 shrink-0" weight="bold" />
                 </div>
-                <p className="text-[10px] text-saas-muted font-medium pt-1">Diabetes (GDS ≥200)</p>
+                <p className="text-[10px] text-slate-500 font-medium">Diabetes (GDS ≥200)</p>
               </div>
             </>
           )}
 
-          <div className="bg-white p-4 sm:p-5 rounded-card border border-gray-100/80 shadow-soft-card space-y-1">
-            <span className="text-[11px] font-bold text-saas-muted uppercase tracking-wider block">Posyandu Aktif</span>
+          <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Posyandu Aktif</span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl sm:text-3xl font-extrabold text-saas-dark">{posyandus.length}</span>
-              <Buildings className="w-6 h-6 text-saas-primary shrink-0" weight="bold" />
+              <span className="text-2xl font-bold text-slate-900">{posyandus.length}</span>
+              <Buildings className="w-5 h-5 text-teal-600 shrink-0" weight="bold" />
             </div>
-            <p className="text-[10px] text-saas-muted font-medium pt-1">Wilayah Binaan Puskesmas</p>
+            <p className="text-[10px] text-slate-500 font-medium">Wilayah Binaan Puskesmas</p>
           </div>
         </div>
 
-        {/* USER-FRIENDLY UX FILTER PANEL */}
-        <div className="bg-white p-5 rounded-card border border-gray-100/80 shadow-soft-card space-y-5">
-          {/* Header Filter & Quick Chips (DENGAN ICON PHOSPHOR LENGKAP) */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <Funnel className="w-5 h-5 text-saas-primary" weight="bold" />
-              <div>
-                <h3 className="font-extrabold text-sm text-saas-dark">Pilih Kategori & Cari Nama</h3>
-                <p className="text-[11px] text-saas-muted">Gunakan tombol pilihan cepat di kanan untuk memfilter kasus dengan instan.</p>
-              </div>
+        {/* INTEGRATED SINGLE FILTER PANEL (GABUNG FILTER, PENCARIAN, DATE, & QUICK PRESETS) */}
+        <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200 space-y-4">
+          
+          {/* Quick Preset Chips Row inside Filter Panel */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-1.5">
+              <Funnel className="w-4 h-4 text-teal-700" weight="bold" />
+              <h3 className="font-bold text-xs text-slate-900 uppercase tracking-wider">Panel Filter Terpadu</h3>
               {activeFilterCount > 0 && (
-                <span className="px-2.5 py-0.5 bg-teal-50 text-saas-primary text-[10px] font-extrabold rounded-full border border-teal-200">
+                <span className="px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-bold rounded border border-teal-200">
                   {activeFilterCount} Filter Aktif
                 </span>
               )}
             </div>
 
-            {/* QUICK PRESETS CHIPS (DENGAN PHOSPHOR ICONS, TANPA EMOJI RAW) */}
-            <div className="flex items-center flex-wrap gap-2">
-              <span className="text-[11px] font-bold text-saas-muted flex items-center gap-1 mr-1">
+            <div className="flex items-center flex-wrap gap-1.5">
+              <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1 mr-1">
                 <Sparkle className="w-3.5 h-3.5 text-amber-500" weight="fill" /> Pilihan Cepat:
               </span>
 
-              {/* Button 1: Semua Data */}
               <button
                 type="button"
                 onClick={() => applyPreset("semua")}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold transition-all ${
                   activePreset === "semua"
-                    ? "bg-saas-dark text-white shadow-xs"
-                    : "bg-gray-100 text-saas-muted hover:bg-gray-200"
+                    ? "bg-slate-900 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
                 <SquaresFour className="w-3.5 h-3.5" weight="bold" /> Semua Data
               </button>
 
-              {/* Button 2: Perlu Rujukan */}
               <button
                 type="button"
                 onClick={() => applyPreset("rujukan")}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold transition-all ${
                   activePreset === "rujukan"
-                    ? "bg-amber-600 text-white shadow-xs"
+                    ? "bg-amber-700 text-white"
                     : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
                 }`}
               >
                 <WarningCircle className="w-3.5 h-3.5 text-amber-600" weight="bold" /> Perlu Rujukan ({totalRujukan})
               </button>
 
-              {/* Button 3 & 4 Khusus Balita / Lansia */}
               {activeTab === "Balita" ? (
                 <>
                   <button
                     type="button"
                     onClick={() => applyPreset("stunting")}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold transition-all ${
                       activePreset === "stunting"
-                        ? "bg-teal-600 text-white shadow-xs"
+                        ? "bg-teal-700 text-white"
                         : "bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-200"
                     }`}
                   >
-                    <Baby className="w-3.5 h-3.5 text-teal-600" weight="bold" /> Anak Kurang Tinggi (Stunting)
+                    <Baby className="w-3.5 h-3.5 text-teal-600" weight="bold" /> Stunting (TB/U)
                   </button>
 
                   <button
                     type="button"
                     onClick={() => applyPreset("gizi")}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold transition-all ${
                       activePreset === "gizi"
-                        ? "bg-amber-600 text-white shadow-xs"
+                        ? "bg-amber-700 text-white"
                         : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
                     }`}
                   >
@@ -481,47 +459,47 @@ export default function PuskesmasPublicPage() {
                   <button
                     type="button"
                     onClick={() => applyPreset("hipertensi")}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold transition-all ${
                       activePreset === "hipertensi"
-                        ? "bg-indigo-600 text-white shadow-xs"
+                        ? "bg-indigo-700 text-white"
                         : "bg-indigo-50 text-indigo-800 hover:bg-indigo-100 border border-indigo-200"
                     }`}
                   >
-                    <Heartbeat className="w-3.5 h-3.5 text-indigo-600" weight="bold" /> Lansia Tensi Tinggi (Hipertensi)
+                    <Heartbeat className="w-3.5 h-3.5 text-indigo-600" weight="bold" /> Hipertensi
                   </button>
 
                   <button
                     type="button"
                     onClick={() => applyPreset("diabetes")}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold transition-all ${
                       activePreset === "diabetes"
-                        ? "bg-rose-600 text-white shadow-xs"
+                        ? "bg-rose-700 text-white"
                         : "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
                     }`}
                   >
-                    <Drop className="w-3.5 h-3.5 text-rose-600" weight="bold" /> Gula Darah Tinggi (Diabetes)
+                    <Drop className="w-3.5 h-3.5 text-rose-600" weight="bold" /> Diabetes
                   </button>
                 </>
               )}
             </div>
           </div>
 
-          {/* MAIN FILTER FORM */}
-          <form onSubmit={handleSearchSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {/* Integrated Filter Controls */}
+          <form onSubmit={handleSearchSubmit} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
               
-              {/* Filter 1: Pencarian Nama Warga */}
+              {/* Search input */}
               <div className="lg:col-span-2 space-y-1">
-                <label className="text-[11px] font-bold text-saas-muted">Nama {activeTab}</label>
+                <label className="text-[11px] font-semibold text-slate-500 block">Pencarian Nama</label>
                 <div className="relative">
                   <input
                     type="text"
                     placeholder={`Ketik nama ${activeTab.toLowerCase()}...`}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary focus:bg-white transition-all"
+                    className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-medium focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
                   />
-                  <MagnifyingGlass className="w-4 h-4 text-saas-muted absolute left-3 top-2.5" weight="bold" />
+                  <MagnifyingGlass className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" weight="bold" />
                   {search && (
                     <button
                       type="button"
@@ -529,7 +507,7 @@ export default function PuskesmasPublicPage() {
                         setSearch("");
                         loadData();
                       }}
-                      className="absolute right-2.5 top-2.5 text-saas-muted hover:text-saas-dark"
+                      className="absolute right-2 top-2 text-slate-400 hover:text-slate-700"
                     >
                       <X className="w-3.5 h-3.5" weight="bold" />
                     </button>
@@ -537,16 +515,16 @@ export default function PuskesmasPublicPage() {
                 </div>
               </div>
 
-              {/* Filter 2: Posyandu */}
+              {/* Posyandu dropdown */}
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-saas-muted">Posyandu Bina</label>
+                <label className="text-[11px] font-semibold text-slate-500 block">Posyandu Bina</label>
                 <select
                   value={selectedPosyandu}
                   onChange={(e) => {
                     setSelectedPosyandu(e.target.value);
                     setActivePreset("custom");
                   }}
-                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary cursor-pointer"
+                  className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-medium focus:outline-none focus:border-indigo-500 cursor-pointer"
                 >
                   <option value="semua">Semua Posyandu</option>
                   {posyandus.map((p) => (
@@ -557,109 +535,106 @@ export default function PuskesmasPublicPage() {
                 </select>
               </div>
 
-              {/* Filter 3: Status Medis */}
+              {/* Status dropdown */}
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-saas-muted">Status Kesehatan</label>
+                <label className="text-[11px] font-semibold text-slate-500 block">Status Kesehatan</label>
                 <select
                   value={selectedStatus}
                   onChange={(e) => {
                     setSelectedStatus(e.target.value);
                     setActivePreset("custom");
                   }}
-                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary cursor-pointer"
+                  className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-medium focus:outline-none focus:border-indigo-500 cursor-pointer"
                 >
-                  <option value="semua">Semua Status Kesehatan</option>
+                  <option value="semua">Semua Status</option>
                   <option value="normal">Status Normal</option>
-                  <option value="rujukan">🚨 Perlu Rujukan / Rawan</option>
+                  <option value="rujukan">Perlu Rujukan</option>
                   {activeTab === "Balita" ? (
                     <>
-                      <option value="stunting">⚠️ Anak Kurang Tinggi (Stunting)</option>
-                      <option value="kurang">⚖️ Gizi Kurang (BB/U)</option>
+                      <option value="stunting">Anak Kurang Tinggi (Stunting)</option>
+                      <option value="kurang">Gizi Kurang (BB/U)</option>
                     </>
                   ) : (
                     <>
-                      <option value="hipertensi">🔴 Tensi Tinggi (Hipertensi)</option>
-                      <option value="diabetes">🩸 Gula Darah Tinggi (Diabetes)</option>
+                      <option value="hipertensi">Tensi Tinggi (Hipertensi)</option>
+                      <option value="diabetes">Gula Darah Tinggi (Diabetes)</option>
                     </>
                   )}
                 </select>
               </div>
 
-              {/* Filter 4: Search CTA */}
-              <div className="space-y-1 flex items-end">
-                <button
-                  type="submit"
-                  className={`w-full py-2 px-3 text-white font-bold text-xs rounded-input shadow-xs transition-all flex items-center justify-center gap-1.5 ${
-                    activeTab === "Balita" ? "bg-saas-primary hover:bg-teal-600" : "bg-indigo-600 hover:bg-indigo-700"
-                  }`}
-                >
-                  <MagnifyingGlass className="w-4 h-4" weight="bold" /> Cari Data
-                </button>
+              {/* Date Filters */}
+              <div className="lg:col-span-2 space-y-1">
+                <label className="text-[11px] font-semibold text-slate-500 block">Periode Tanggal Periksa</label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      setActivePreset("custom");
+                    }}
+                    className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-medium focus:outline-none focus:border-indigo-500"
+                  />
+                  <span className="text-xs text-slate-400">s/d</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setActivePreset("custom");
+                    }}
+                    className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-medium focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Date Filter Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-gray-100/70">
-              <div className="flex items-center flex-wrap gap-2">
-                <span className="text-[11px] font-bold text-saas-muted flex items-center gap-1 mr-1">
-                  <CalendarBlank className="w-3.5 h-3.5 text-saas-primary" weight="bold" /> Tanggal Periksa:
-                </span>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    setActivePreset("custom");
-                  }}
-                  className="p-1.5 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold"
-                />
-                <span className="text-xs text-saas-muted">s/d</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => {
-                    setEndDate(e.target.value);
-                    setActivePreset("custom");
-                  }}
-                  className="p-1.5 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold"
-                />
-              </div>
-
+            {/* Filter Action Row */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
               {activeFilterCount > 0 && (
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="text-xs font-bold text-red-500 hover:text-red-700 flex items-center gap-1 transition-colors self-end sm:self-auto"
+                  className="px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors flex items-center gap-1"
                 >
-                  <X className="w-3.5 h-3.5" weight="bold" /> Bersihkan Filter
+                  <X className="w-3.5 h-3.5" weight="bold" /> Reset Filter
                 </button>
               )}
+              <button
+                type="submit"
+                className={`px-4 py-1.5 text-white font-semibold text-xs rounded shadow-xs transition-colors flex items-center gap-1.5 ${
+                  activeTab === "Balita" ? "bg-teal-600 hover:bg-teal-700" : "bg-indigo-600 hover:bg-indigo-700"
+                }`}
+              >
+                <MagnifyingGlass className="w-3.5 h-3.5" weight="bold" /> Terapkan Filter
+              </button>
             </div>
           </form>
         </div>
 
         {/* DATA TABLE & PAGINATION */}
-        <div className="bg-white rounded-card shadow-soft-card border border-gray-100/80 p-6 space-y-4">
+        <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h3 className="font-extrabold text-base text-saas-dark">
+              <h3 className="font-bold text-sm text-slate-900">
                 Daftar Rekam Pemeriksaan {activeTab}
               </h3>
-              <p className="text-xs text-saas-muted mt-0.5">
-                Menampilkan data pengukuran fisik medis {activeTab.toLowerCase()} terproteksi tanpa identifikasi NIK.
+              <p className="text-xs text-slate-500 mt-0.5">
+                Menampilkan data pengukuran fisik medis {activeTab.toLowerCase()} tanpa identifikasi NIK.
               </p>
             </div>
 
             {/* Page Size Selector */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-saas-muted">Tampilkan per lembar:</span>
+              <span className="text-xs font-medium text-slate-500">Tampilkan per lembar:</span>
               <select
                 value={pageSize}
                 onChange={(e) => {
                   setPageSize(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="p-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-saas-dark focus:outline-none"
+                className="p-1 bg-slate-50 border border-slate-200 rounded text-xs font-semibold text-slate-700 focus:outline-none"
               >
                 <option value={10}>10 Baris</option>
                 <option value={25}>25 Baris</option>
@@ -670,89 +645,94 @@ export default function PuskesmasPublicPage() {
           </div>
 
           {isLoading ? (
-            <div className="py-16 flex flex-col items-center justify-center space-y-3">
-              <CircleNotch className="w-8 h-8 text-saas-primary animate-spin" weight="bold" />
-              <p className="text-xs font-bold text-saas-muted">Memuat data pemeriksaan {activeTab.toLowerCase()}...</p>
+            <div className="py-16 flex flex-col items-center justify-center space-y-2">
+              <CircleNotch className="w-7 h-7 text-indigo-600 animate-spin" weight="bold" />
+              <p className="text-xs font-medium text-slate-500">Memuat data pemeriksaan {activeTab.toLowerCase()}...</p>
             </div>
           ) : paginatedData.length > 0 ? (
             <>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto border border-slate-200 rounded">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-gray-200 text-[11px] font-bold text-saas-muted uppercase tracking-wider bg-gray-50/70">
-                      <th className="p-3 rounded-l-lg">No</th>
-                      <th className="p-3">Tanggal Periksa</th>
+                    <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50">
+                      <th className="p-3">No</th>
+                      <th className="p-3">Tanggal</th>
                       <th className="p-3">Posyandu & Wilayah</th>
                       <th className="p-3">Nama {activeTab}</th>
                       <th className="p-3">Kelompok Usia</th>
                       <th className="p-3">Hasil Pemeriksaan Medis</th>
                       <th className="p-3">Status Indikator</th>
-                      <th className="p-3 rounded-r-lg text-right">Aksi</th>
+                      <th className="p-3 text-right">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 text-xs text-saas-dark">
+                  <tbody className="divide-y divide-slate-200 text-xs text-slate-800">
                     {paginatedData.map((item, idx) => {
                       const rowNumber = (currentPage - 1) * pageSize + idx + 1;
+                      
+                      // Status badge color logic
+                      const isNormal = item.statusRingkasan.toLowerCase().includes("normal");
+                      const statusBadgeClass = isNormal
+                        ? "bg-[#DCFCE7] text-[#15803D] border border-green-200"
+                        : item.isPerluRujukan || item.statusRingkasan.toLowerCase().includes("stunting") || item.statusRingkasan.toLowerCase().includes("hipertensi") || item.statusRingkasan.toLowerCase().includes("diabetes")
+                        ? "bg-[#FEE2E2] text-[#B91C1C] border border-red-200"
+                        : "bg-amber-50 text-amber-800 border border-amber-200";
+
                       return (
-                        <tr key={item.id} className="hover:bg-gray-50/70 transition-colors">
-                          <td className="p-3 font-bold text-saas-muted">{rowNumber}</td>
-                          <td className="p-3 font-semibold text-saas-muted whitespace-nowrap">
+                        <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="p-3 font-medium text-slate-500">{rowNumber}</td>
+                          <td className="p-3 font-medium text-slate-600 whitespace-nowrap">
                             {item.tanggalPeriksa}
                           </td>
                           <td className="p-3">
-                            <p className="font-bold text-saas-dark leading-tight">{item.posyanduNama}</p>
-                            <p className="text-[10px] text-saas-muted mt-0.5">{item.wilayah}</p>
+                            <p className="font-semibold text-slate-900 leading-tight">{item.posyanduNama}</p>
+                            <p className="text-[11px] text-slate-500 mt-0.5">{item.wilayah}</p>
                           </td>
                           <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              <p className="font-bold text-saas-dark">{item.namaWarga}</p>
-                              <span className="text-[10px] text-saas-muted font-normal italic">
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-semibold text-slate-900">{item.namaWarga}</p>
+                              <span className="text-[11px] text-slate-400 font-normal">
                                 ({item.jenisKelamin === "L" ? "L" : "P"})
                               </span>
                             </div>
                           </td>
+                          {/* Kelompok Usia - Neutral secondary info style */}
                           <td className="p-3">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-bold text-[11px] ${
-                              item.kategori === "Balita" ? "bg-teal-50 text-saas-primary border border-teal-200/50" : "bg-indigo-50 text-indigo-700 border border-indigo-200/50"
-                            }`}>
-                              {item.kategori === "Balita" ? <Baby className="w-3.5 h-3.5" weight="bold" /> : <Heartbeat className="w-3.5 h-3.5" weight="bold" />}
+                            <span className="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-medium text-xs">
                               {item.usiaInfo}
                             </span>
                           </td>
-                          <td className="p-3 space-y-1">
-                            <p className="font-semibold text-saas-dark">
-                              BB: <span className="font-bold">{item.beratBadan} kg</span> | TB: <span className="font-bold">{item.tinggiBadan} cm</span>
-                            </p>
+                          {/* Format Informasi Medis di Tabel: Clean grid / split layout */}
+                          <td className="p-3 space-y-0.5">
+                            <div className="font-semibold text-slate-900">
+                              BB / TB: <span className="font-bold">{item.beratBadan} kg</span> / <span className="font-bold">{item.tinggiBadan} cm</span>
+                            </div>
                             {item.kategori === "Balita" ? (
-                              <p className="text-[10px] text-saas-muted">
-                                {item.lingkarKepala ? `LK: ${item.lingkarKepala}cm ` : ""}
-                                {item.vitaminA ? "• Vit A ✓ " : ""}
-                                {item.statusImunisasi ? `• Imunisasi: ${item.statusImunisasi}` : ""}
-                              </p>
+                              <div className="text-[11px] text-slate-500">
+                                {item.lingkarKepala ? `LK: ${item.lingkarKepala} cm ` : ""}
+                                {item.vitaminA ? " | Vit A ✓ " : ""}
+                                {item.statusImunisasi ? ` | Imunisasi: ${item.statusImunisasi}` : ""}
+                              </div>
                             ) : (
-                              <p className="text-[10px] text-saas-muted font-medium">
-                                TD: <span className="font-bold text-saas-dark">{item.tekananDarah}</span> | GDS: <span className="font-bold text-saas-dark">{item.gds} mg/dL</span>
+                              <div className="text-[11px] text-slate-500">
+                                TD: <span className="font-medium text-slate-700">{item.tekananDarah || "-"}</span> | GDS: <span className="font-medium text-slate-700">{item.gds ? `${item.gds} mg/dL` : "-"}</span>
                                 {item.kolesterol ? ` | Kol: ${item.kolesterol}` : ""}
                                 {item.asamUrat ? ` | Urat: ${item.asamUrat}` : ""}
-                              </p>
+                              </div>
                             )}
                           </td>
                           <td className="p-3">
-                            <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
-                              item.isPerluRujukan 
-                                ? "bg-amber-50 text-amber-700 border border-amber-200" 
-                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            }`}>
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${statusBadgeClass}`}>
                               {item.statusRingkasan}
                             </span>
                           </td>
-                          <td className="p-3 text-right">
+                          {/* CTA Detail Button: Text Button Clean with Eye icon */}
+                          <td className="p-3 text-right whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => setSelectedItem(item)}
-                              className="px-2.5 py-1 bg-gray-100 hover:bg-saas-primary hover:text-white text-saas-dark text-[11px] font-bold rounded-md transition-all"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded transition-colors"
                             >
-                              Detail
+                              <Eye className="w-3.5 h-3.5" weight="bold" /> Detail
                             </button>
                           </td>
                         </tr>
@@ -763,19 +743,19 @@ export default function PuskesmasPublicPage() {
               </div>
 
               {/* PAGINATION CONTROLS */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-gray-100">
-                <p className="text-xs font-semibold text-saas-muted">
-                  Menampilkan <strong className="text-saas-dark">{(currentPage - 1) * pageSize + 1}</strong> s/d{" "}
-                  <strong className="text-saas-dark">{Math.min(currentPage * pageSize, totalRecords)}</strong> dari{" "}
-                  <strong className="text-saas-dark">{totalRecords}</strong> data pemeriksaan {activeTab.toLowerCase()}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-slate-200">
+                <p className="text-xs font-medium text-slate-500">
+                  Menampilkan <strong className="text-slate-900">{(currentPage - 1) * pageSize + 1}</strong> s/d{" "}
+                  <strong className="text-slate-900">{Math.min(currentPage * pageSize, totalRecords)}</strong> dari{" "}
+                  <strong className="text-slate-900">{totalRecords}</strong> data {activeTab.toLowerCase()}
                 </p>
 
-                <div className="flex items-center gap-1.5 self-center sm:self-auto">
+                <div className="flex items-center gap-1 self-center sm:self-auto">
                   <button
                     type="button"
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    className="p-2 bg-gray-100 hover:bg-gray-200 text-saas-dark rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     title="Lembar Pertama"
                   >
                     <CaretDoubleLeft className="w-3.5 h-3.5" weight="bold" />
@@ -785,14 +765,12 @@ export default function PuskesmasPublicPage() {
                     type="button"
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-saas-dark rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     <CaretLeft className="w-3.5 h-3.5" weight="bold" /> Sebelum
                   </button>
 
-                  <span className={`px-3 py-1.5 font-extrabold text-xs rounded-lg border ${
-                    activeTab === "Balita" ? "bg-teal-50 text-saas-primary border-teal-200" : "bg-indigo-50 text-indigo-600 border-indigo-200"
-                  }`}>
+                  <span className="px-3 py-1 font-bold text-xs rounded bg-slate-100 text-slate-800 border border-slate-200">
                     Lembar {currentPage} dari {totalPages}
                   </span>
 
@@ -800,7 +778,7 @@ export default function PuskesmasPublicPage() {
                     type="button"
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-saas-dark rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Sesudah <CaretRight className="w-3.5 h-3.5" weight="bold" />
                   </button>
@@ -809,7 +787,7 @@ export default function PuskesmasPublicPage() {
                     type="button"
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
-                    className="p-2 bg-gray-100 hover:bg-gray-200 text-saas-dark rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     title="Lembar Terakhir"
                   >
                     <CaretDoubleRight className="w-3.5 h-3.5" weight="bold" />
@@ -818,15 +796,15 @@ export default function PuskesmasPublicPage() {
               </div>
             </>
           ) : (
-            <div className="py-12 text-center space-y-2">
-              <Info className="w-8 h-8 text-saas-muted mx-auto" weight="bold" />
-              <p className="text-xs font-bold text-saas-dark">Tidak ada data pemeriksaan {activeTab.toLowerCase()} yang sesuai dengan filter.</p>
-              <p className="text-[11px] text-saas-muted">Coba ubah kata kunci pencarian atau bersihkan filter di atas.</p>
+            <div className="py-12 text-center space-y-2 border border-dashed border-slate-200 rounded">
+              <Info className="w-7 h-7 text-slate-400 mx-auto" weight="bold" />
+              <p className="text-xs font-bold text-slate-800">Tidak ada data pemeriksaan {activeTab.toLowerCase()} yang sesuai dengan filter.</p>
+              <p className="text-[11px] text-slate-500">Coba ubah kata kunci pencarian atau bersihkan filter di atas.</p>
               <button
                 onClick={resetFilters}
-                className="mt-2 px-3 py-1.5 bg-gray-100 text-xs font-bold text-saas-dark rounded-input hover:bg-gray-200"
+                className="mt-2 px-3 py-1.5 bg-slate-100 text-xs font-semibold text-slate-800 rounded hover:bg-slate-200 transition-colors"
               >
-                Bersihkan Semua Filter
+                Bersihkan Filter
               </button>
             </div>
           )}
@@ -834,14 +812,14 @@ export default function PuskesmasPublicPage() {
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-white border-t border-gray-200/80 py-6 text-center text-xs text-saas-muted print:hidden mt-8">
-        <div className="max-w-7xl mx-auto px-4 space-y-1">
-          <p className="font-bold text-saas-dark">Sistem Informasi Posyandu & Monitoring Puskesmas Terpadu</p>
+      <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 print:hidden mt-6">
+        <div className="max-w-7xl mx-auto px-4 space-y-0.5">
+          <p className="font-semibold text-slate-700">Sistem Informasi Posyandu & Monitoring Puskesmas Terpadu</p>
           <p className="text-[11px]">Halaman pemantauan publik resmi untuk pemangku kepentingan kesehatan daerah.</p>
         </div>
       </footer>
 
-      {/* FORMAL PRINT / PDF DOKUMEN LAPORAN RESMI PUSKESMAS (TAMPIL KHUSUS PRINT) */}
+      {/* FORMAL PRINT / PDF DOKUMEN LAPORAN RESMI PUSKESMAS */}
       <div className="hidden print:block p-8 bg-white text-black font-serif space-y-6">
         {/* KOP SURAT FORMAL */}
         <div className="border-b-4 border-double border-black pb-4 flex items-center justify-between">
@@ -928,76 +906,76 @@ export default function PuskesmasPublicPage() {
         </div>
       </div>
 
-      {/* DETAIL MODAL */}
+      {/* DETAIL MODAL - CLEAN & COMPACT */}
       {selectedItem && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 print:hidden">
-          <div className="bg-white rounded-card max-w-lg w-full p-6 shadow-xl border border-gray-100 space-y-5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 print:hidden">
+          <div className="bg-white rounded-lg max-w-md w-full p-5 border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-white ${
-                  selectedItem.kategori === "Balita" ? "bg-saas-primary" : "bg-indigo-600"
+                <span className={`w-7 h-7 rounded flex items-center justify-center text-white ${
+                  selectedItem.kategori === "Balita" ? "bg-teal-600" : "bg-indigo-600"
                 }`}>
-                  {selectedItem.kategori === "Balita" ? <Baby className="w-5 h-5" weight="bold" /> : <Heartbeat className="w-5 h-5" weight="bold" />}
+                  {selectedItem.kategori === "Balita" ? <Baby className="w-4 h-4" weight="bold" /> : <Heartbeat className="w-4 h-4" weight="bold" />}
                 </span>
                 <div>
-                  <h3 className="font-extrabold text-sm text-saas-dark">Detail Hasil Pemeriksaan {selectedItem.kategori}</h3>
-                  <p className="text-[10px] text-saas-muted">Tanggal Periksa: {selectedItem.tanggalPeriksa}</p>
+                  <h3 className="font-bold text-sm text-slate-900">Detail Hasil Pemeriksaan {selectedItem.kategori}</h3>
+                  <p className="text-[10px] text-slate-500">Tanggal Periksa: {selectedItem.tanggalPeriksa}</p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedItem(null)}
-                className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-saas-muted font-bold text-xs"
+                className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs"
               >
                 ✕
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 bg-teal-50/60 border border-teal-150/60 rounded-xl space-y-1">
-                <p className="text-[10px] font-bold uppercase text-teal-700">Identitas Warga</p>
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded space-y-1">
+                <p className="text-[10px] font-bold uppercase text-slate-500">Identitas Warga</p>
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-saas-dark text-sm">{selectedItem.namaWarga}</span>
+                  <span className="font-bold text-slate-900 text-sm">{selectedItem.namaWarga}</span>
                 </div>
-                <p className="text-saas-muted text-[11px]">
-                  Kategori: <strong className="text-saas-dark">{selectedItem.kategori} ({selectedItem.usiaInfo})</strong> | Kelamin: {selectedItem.jenisKelamin === "L" ? "Laki-laki" : "Perempuan"}
+                <p className="text-slate-600 text-[11px]">
+                  Kategori: <strong className="text-slate-900">{selectedItem.kategori} ({selectedItem.usiaInfo})</strong> | Kelamin: {selectedItem.jenisKelamin === "L" ? "Laki-laki" : "Perempuan"}
                 </p>
-                <p className="text-saas-muted text-[11px]">
-                  Posyandu: <strong className="text-saas-dark">{selectedItem.posyanduNama}</strong> ({selectedItem.wilayah})
+                <p className="text-slate-600 text-[11px]">
+                  Posyandu: <strong className="text-slate-900">{selectedItem.posyanduNama}</strong> ({selectedItem.wilayah})
                 </p>
               </div>
 
-              <div className="space-y-2 border-t border-gray-100 pt-3">
-                <p className="font-bold text-saas-dark">Hasil Pengukuran Medis:</p>
-                <div className="grid grid-cols-2 gap-2 text-saas-dark">
-                  <div className="p-2.5 bg-gray-50 rounded-lg">
-                    <span className="text-[10px] text-saas-muted block">Berat Badan</span>
-                    <span className="font-extrabold text-sm">{selectedItem.beratBadan} kg</span>
+              <div className="space-y-2 border-t border-slate-100 pt-3">
+                <p className="font-semibold text-slate-900">Hasil Pengukuran Medis:</p>
+                <div className="grid grid-cols-2 gap-2 text-slate-800">
+                  <div className="p-2 bg-slate-50 border border-slate-200 rounded">
+                    <span className="text-[10px] text-slate-500 block">Berat Badan</span>
+                    <span className="font-bold text-xs text-slate-900">{selectedItem.beratBadan} kg</span>
                   </div>
-                  <div className="p-2.5 bg-gray-50 rounded-lg">
-                    <span className="text-[10px] text-saas-muted block">Tinggi Badan</span>
-                    <span className="font-extrabold text-sm">{selectedItem.tinggiBadan} cm</span>
+                  <div className="p-2 bg-slate-50 border border-slate-200 rounded">
+                    <span className="text-[10px] text-slate-500 block">Tinggi Badan</span>
+                    <span className="font-bold text-xs text-slate-900">{selectedItem.tinggiBadan} cm</span>
                   </div>
 
                   {selectedItem.kategori === "Balita" ? (
                     <>
-                      <div className="p-2.5 bg-gray-50 rounded-lg">
-                        <span className="text-[10px] text-saas-muted block">Status TB/U (Stunting)</span>
-                        <span className="font-bold">{selectedItem.statusTbU || "Normal"}</span>
+                      <div className="p-2 bg-slate-50 border border-slate-200 rounded">
+                        <span className="text-[10px] text-slate-500 block">Status TB/U (Stunting)</span>
+                        <span className="font-semibold text-xs">{selectedItem.statusTbU || "Normal"}</span>
                       </div>
-                      <div className="p-2.5 bg-gray-50 rounded-lg">
-                        <span className="text-[10px] text-saas-muted block">Status BB/U</span>
-                        <span className="font-bold">{selectedItem.statusBbU || "Normal"}</span>
+                      <div className="p-2 bg-slate-50 border border-slate-200 rounded">
+                        <span className="text-[10px] text-slate-500 block">Status BB/U</span>
+                        <span className="font-semibold text-xs">{selectedItem.statusBbU || "Normal"}</span>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="p-2.5 bg-gray-50 rounded-lg">
-                        <span className="text-[10px] text-saas-muted block">Tekanan Darah</span>
-                        <span className="font-bold text-sm">{selectedItem.tekananDarah}</span>
+                      <div className="p-2 bg-slate-50 border border-slate-200 rounded">
+                        <span className="text-[10px] text-slate-500 block">Tekanan Darah</span>
+                        <span className="font-bold text-xs text-slate-900">{selectedItem.tekananDarah || "-"}</span>
                       </div>
-                      <div className="p-2.5 bg-gray-50 rounded-lg">
-                        <span className="text-[10px] text-saas-muted block">Gula Darah Sewaktu</span>
-                        <span className="font-bold text-sm">{selectedItem.gds} mg/dL</span>
+                      <div className="p-2 bg-slate-50 border border-slate-200 rounded">
+                        <span className="text-[10px] text-slate-500 block">Gula Darah Sewaktu</span>
+                        <span className="font-bold text-xs text-slate-900">{selectedItem.gds ? `${selectedItem.gds} mg/dL` : "-"}</span>
                       </div>
                     </>
                   )}
@@ -1005,9 +983,9 @@ export default function PuskesmasPublicPage() {
               </div>
 
               {selectedItem.tindakanCatatan && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded space-y-1">
                   <p className="text-[10px] font-bold uppercase text-amber-800">Catatan Medis & Tindakan Rujukan</p>
-                  <p className="text-xs text-amber-900 font-semibold">{selectedItem.tindakanCatatan}</p>
+                  <p className="text-xs text-amber-900 font-medium">{selectedItem.tindakanCatatan}</p>
                 </div>
               )}
             </div>
@@ -1016,7 +994,7 @@ export default function PuskesmasPublicPage() {
               <button
                 type="button"
                 onClick={() => setSelectedItem(null)}
-                className="px-4 py-2 bg-saas-primary text-white font-bold text-xs rounded-input hover:bg-teal-600 transition-colors"
+                className="px-3.5 py-1.5 bg-slate-800 text-white font-semibold text-xs rounded hover:bg-slate-900 transition-colors"
               >
                 Tutup Detail
               </button>
