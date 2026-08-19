@@ -618,26 +618,18 @@ export default function PuskesmasPublicPage() {
                 </button>
               </div>
 
-              {/* Right Side: Reset & Apply Filter Buttons */}
-              <div className="flex items-center gap-2 self-end sm:self-auto">
-                {activeFilterCount > 0 && (
+              {/* Right Side: Reset Filter Button */}
+              {activeFilterCount > 0 && (
+                <div className="flex items-center gap-2 self-end sm:self-auto">
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors flex items-center gap-1"
+                    className="px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors flex items-center gap-1 border border-red-200"
                   >
-                    <X className="w-3.5 h-3.5" weight="bold" /> Reset Filter
+                    <X className="w-3.5 h-3.5" weight="bold" /> Reset Filter ({activeFilterCount})
                   </button>
-                )}
-                <button
-                  type="submit"
-                  className={`px-4 py-1.5 text-white font-semibold text-xs rounded transition-colors flex items-center gap-1.5 ${
-                    activeTab === "Balita" ? "bg-teal-600 hover:bg-teal-700" : "bg-indigo-600 hover:bg-indigo-700"
-                  }`}
-                >
-                  <MagnifyingGlass className="w-3.5 h-3.5" weight="bold" /> Terapkan Filter
-                </button>
-              </div>
+                </div>
+              )}
             </div>
           </form>
         </div>
