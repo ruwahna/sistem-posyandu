@@ -10,6 +10,7 @@ export const createBalitaSchema = z.object({
     .regex(/^\d+$/, 'NIK harus berupa angka')
     .optional()
     .or(z.literal('')),
+  noHp: z.string().optional().nullable().or(z.literal('')),
   tanggalLahir: z.string().refine((val) => {
     const date = new Date(val);
     return !isNaN(date.getTime()) && date <= new Date();

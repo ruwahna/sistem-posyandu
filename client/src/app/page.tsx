@@ -23,9 +23,15 @@ import {
   List,
   X,
   Buildings,
+  User,
+  PencilSimple,
+  Envelope,
+  Lock,
+  Eye,
+  EyeSlash,
 } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
-import { notificationApi, AppNotification } from "../lib/api";
+import { notificationApi, authApi, AppNotification } from "../lib/api";
 
 // Feature Modules
 import DashboardModule from "../features/dashboard/DashboardModule";
@@ -41,7 +47,7 @@ import BantuanModule from "../features/bantuan/BantuanModule";
 import LoginPage from "./login/page";
 
 export default function Home() {
-  const { user, posyanduId, isLoading, logout } = useAuth();
+  const { user, posyanduId, isLoading, logout, updateUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotification, setShowNotification] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Overview");
@@ -54,6 +60,67 @@ export default function Home() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState<boolean>(false);
+
+  // Quick Edit Profile Modal State
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [editNama, setEditNama] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [modalNotice, setModalNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const openEditProfileModal = () => {
+    if (user) {
+      setEditNama(user.nama);
+      setEditEmail(user.email);
+      setEditPassword("");
+      setShowPassword(false);
+      setModalNotice(null);
+      setIsEditProfileOpen(true);
+    }
+  };
+
+  const handleSaveProfileModal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setModalNotice(null);
+
+    if (!editNama.trim() || !editEmail.trim()) {
+      setModalNotice({ type: "error", message: "Nama dan email tidak boleh kosong" });
+      return;
+    }
+
+    if (editPassword && editPassword.length < 6) {
+      setModalNotice({ type: "error", message: "Password minimal 6 karakter" });
+      return;
+    }
+
+    try {
+      setIsSavingProfile(true);
+      const res = await authApi.updateProfile({
+        nama: editNama.trim(),
+        email: editEmail.trim(),
+        ...(editPassword.trim() ? { password: editPassword.trim() } : {}),
+      });
+
+      if (res.success && res.data) {
+        updateUser({
+          nama: res.data.nama,
+          email: res.data.email,
+        });
+        setModalNotice({ type: "success", message: "Profil berhasil diperbarui!" });
+        setTimeout(() => {
+          setIsEditProfileOpen(false);
+        }, 1200);
+      } else {
+        setModalNotice({ type: "error", message: res.message || "Gagal memperbarui profil" });
+      }
+    } catch (err: any) {
+      setModalNotice({ type: "error", message: err.message || "Gagal memperbarui profil" });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const loadNotifications = async () => {
     if (!posyanduId) return;
@@ -549,17 +616,42 @@ export default function Home() {
 
               {/* Dropdown Menu Profil */}
               {showProfileMenu && (
-                <div className="absolute top-14 right-0 w-64 bg-white rounded-card shadow-xl border border-gray-100 p-2 z-50 animate-in fade-in duration-150 space-y-1">
-                  {/* Info Ringkas */}
-                  <div className="p-3 border-b border-gray-100 bg-gray-50/60 rounded-lg mb-1">
-                    <p className="font-extrabold text-xs text-saas-dark">{user.nama}</p>
-                    <p className="text-[10px] text-saas-muted truncate mt-0.5">{user.email}</p>
+                <div className="absolute top-14 right-0 w-72 bg-white rounded-card shadow-xl border border-gray-100 p-2.5 z-50 animate-in fade-in duration-150 space-y-1">
+                  {/* Info Ringkas & Quick Edit Header */}
+                  <div className="p-3 border-b border-gray-100 bg-gray-50/70 rounded-xl mb-1">
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0 pr-2">
+                        <p className="font-extrabold text-xs text-saas-dark truncate">{user.nama}</p>
+                        <p className="text-[10px] text-saas-muted truncate mt-0.5">{user.email}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          openEditProfileModal();
+                        }}
+                        className="px-2 py-1 rounded-lg bg-saas-primary/10 text-saas-primary hover:bg-saas-primary hover:text-white transition-all flex items-center gap-1 text-[10px] font-bold shrink-0 shadow-xs"
+                      >
+                        <PencilSimple className="w-3.5 h-3.5" weight="bold" />
+                        Edit
+                      </button>
+                    </div>
                     <div className="mt-2 inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-teal-50 text-saas-primary border border-teal-200/50">
                       {user.role === "OWNER" ? "Pengelola (Owner)" : "Kader Posyandu"}
                     </div>
                   </div>
 
                   {/* Menu Navigasi Profil */}
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      openEditProfileModal();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-saas-dark hover:bg-teal-50/60 hover:text-saas-primary rounded-lg transition-colors text-left"
+                  >
+                    <User className="w-4 h-4 text-saas-primary" weight="bold" />
+                    Edit Profil Saya
+                  </button>
+
                   <button
                     onClick={() => handleMenuSelect("Pengaturan")}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-saas-dark hover:bg-gray-50 rounded-lg transition-colors text-left"
@@ -632,6 +724,128 @@ export default function Home() {
           );
         })}
       </div>
+
+      {/* 6. MODAL QUICK EDIT PROFIL SAYA */}
+      {isEditProfileOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-saas-dark/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 p-6 relative">
+            <button
+              onClick={() => setIsEditProfileOpen(false)}
+              className="absolute top-4 right-4 text-saas-muted hover:text-saas-dark p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5" weight="bold" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-saas-primary/10 flex items-center justify-center text-saas-primary border border-saas-primary/20">
+                <User className="w-5 h-5" weight="bold" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-saas-dark leading-tight">Edit Profil Saya</h3>
+                <p className="text-xs text-saas-muted">Perbarui nama lengkap, email, atau kata sandi Anda.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveProfileModal} className="space-y-4">
+              {modalNotice && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-semibold flex items-center gap-2 border ${
+                    modalNotice.type === "success"
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                      : "bg-red-50 text-red-800 border-red-200"
+                  }`}
+                >
+                  {modalNotice.type === "success" ? (
+                    <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" weight="bold" />
+                  ) : (
+                    <WarningCircle className="w-4 h-4 text-red-600 shrink-0" weight="bold" />
+                  )}
+                  {modalNotice.message}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-saas-dark mb-1.5">Nama Lengkap</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={editNama}
+                    onChange={(e) => setEditNama(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary focus:bg-white transition-all"
+                    placeholder="Nama lengkap"
+                    required
+                  />
+                  <User className="absolute left-3 top-3 w-4 h-4 text-saas-muted" weight="bold" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-saas-dark mb-1.5">Alamat Email</label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary focus:bg-white transition-all"
+                    placeholder="nama@email.com"
+                    required
+                  />
+                  <Envelope className="absolute left-3 top-3 w-4 h-4 text-saas-muted" weight="bold" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-saas-dark mb-1.5">Kata Sandi Baru (Opsional)</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                    placeholder="Kosongkan jika tidak ingin diubah"
+                    className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary focus:bg-white transition-all"
+                  />
+                  <Lock className="absolute left-3 top-3 w-4 h-4 text-saas-muted" weight="bold" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-saas-muted hover:text-saas-dark"
+                  >
+                    {showPassword ? (
+                      <EyeSlash className="w-4 h-4" weight="bold" />
+                    ) : (
+                      <Eye className="w-4 h-4" weight="bold" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsEditProfileOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-saas-muted hover:text-saas-dark hover:bg-gray-100 rounded-xl transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingProfile}
+                  className="px-5 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isSavingProfile ? (
+                    <>
+                      <CircleNotch className="w-4 h-4 animate-spin" weight="bold" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    "Simpan Perubahan"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

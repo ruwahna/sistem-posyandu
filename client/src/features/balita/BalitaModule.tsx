@@ -17,7 +17,8 @@ import {
   AlertCircle,
   FileSpreadsheet,
   Trash2,
-  ChevronRight
+  ChevronRight,
+  Phone
 } from "lucide-react";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, convertStatusBbUToCode, convertStatusTbUToCode, convertStatusBbTbToCode } from "../../lib/zScoreCalculator";
 import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
@@ -45,6 +46,7 @@ export interface Balita {
   id: string;
   nama: string;
   nik?: string;
+  noHp?: string;
   tanggalLahir: string;
   jenisKelamin: "L" | "P";
   namaIbu: string;
@@ -136,6 +138,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editNama, setEditNama] = useState("");
   const [editNik, setEditNik] = useState("");
+  const [editNoHp, setEditNoHp] = useState("");
   const [editTglLahir, setEditTglLahir] = useState("");
   const [editJk, setEditJk] = useState<"L" | "P">("L");
   const [editNamaIbu, setEditNamaIbu] = useState("");
@@ -232,6 +235,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   });
   const [formNama, setFormNama] = useState("");
   const [formNik, setFormNik] = useState("");
+  const [formNoHp, setFormNoHp] = useState("");
   const [formTglLahir, setFormTglLahir] = useState("2025-01-01");
   const [formJk, setFormJk] = useState<"L" | "P">("L");
   const [formNamaIbu, setFormNamaIbu] = useState("");
@@ -278,6 +282,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
   const openEditModal = (b: Balita) => {
     setEditNama(b.nama);
     setEditNik(b.nik || "");
+    setEditNoHp(b.noHp || "");
     setEditTglLahir(formatTanggalInput(b.tanggalLahir));
     setEditJk(b.jenisKelamin);
     setEditNamaIbu(b.namaIbu);
@@ -302,6 +307,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
       await balitaApi.update(posyanduId, selectedBalitaId, {
         nama: editNama,
         nik: editNik || undefined,
+        noHp: editNoHp || undefined,
         tanggalLahir: editTglLahir,
         jenisKelamin: editJk,
         namaIbu: editNamaIbu,
@@ -520,6 +526,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
       await balitaApi.create(posyanduId, {
         nama: formNama,
         nik: formNik || undefined,
+        noHp: formNoHp || undefined,
         tanggalLahir: formTglLahir,
         jenisKelamin: formJk,
         namaIbu: formNamaIbu,
@@ -529,6 +536,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
       fetchBalitas();
       setFormNama("");
       setFormNik("");
+      setFormNoHp("");
       setFormTglLahir("2025-01-01");
       setFormJk("L");
       setFormNamaIbu("");
@@ -707,6 +715,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                 <thead>
                   <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
                     <th className="pb-3">Nama Lengkap</th>
+                    <th className="pb-3">No. HP Orang Tua / WA</th>
                     <th className="pb-3">Usia (Bulan)</th>
                     <th className="pb-3">Jenis Kelamin</th>
                     <th className="pb-3">Nama Ibu</th>
@@ -719,11 +728,29 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     filteredBalitas.map((item) => {
                       const ageMonths = calculateAgeInMonths(item.tanggalLahir);
                       const latestExam = item.pemeriksaan[0]; // Teratas/terbaru
+                      const cleanPhone = item.noHp ? item.noHp.replace(/\D/g, "") : "";
+                      const waNumber = cleanPhone.startsWith("0") ? "62" + cleanPhone.slice(1) : cleanPhone;
                       return (
                         <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
                           <td className="py-4">
                             <p className="font-bold text-saas-dark">{item.nama}</p>
                             <p className="text-[11px] text-saas-muted font-medium mt-0.5">NIK: {item.nik || "-"}</p>
+                          </td>
+                          <td className="py-4">
+                            {item.noHp ? (
+                              <a
+                                href={`https://wa.me/${waNumber}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold rounded-lg text-xs transition-colors border border-emerald-200/60"
+                                title="Hubungi Orang Tua via WhatsApp"
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                                {item.noHp}
+                              </a>
+                            ) : (
+                              <span className="text-xs text-saas-muted font-medium">-</span>
+                            )}
                           </td>
                           <td className="py-4 font-bold text-saas-dark">{ageMonths} Bulan</td>
                           <td className="py-4 font-semibold text-saas-muted">{item.jenisKelamin === "L" ? "Laki-laki" : "Perempuan"}</td>
@@ -766,7 +793,7 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-xs text-saas-muted font-medium">
+                      <td colSpan={7} className="py-12 text-center text-xs text-saas-muted font-medium">
                         Tidak ada data balita yang cocok.
                       </td>
                     </tr>
@@ -880,6 +907,25 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                   <div>
                     <p className="text-xs text-saas-muted">Nama Ibu</p>
                     <p className="text-saas-dark text-xs mt-0.5">{activeBalita.namaIbu}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Phone className="w-4.5 h-4.5 text-saas-muted mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-saas-muted">No. WA / HP Orang Tua</p>
+                    {activeBalita.noHp ? (
+                      <a
+                        href={`https://wa.me/${activeBalita.noHp.replace(/^0/, "62").replace(/\D/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-saas-primary text-xs font-bold mt-0.5 hover:underline flex items-center gap-1"
+                      >
+                        {activeBalita.noHp} ↗
+                      </a>
+                    ) : (
+                      <p className="text-saas-dark text-xs mt-0.5 leading-snug text-saas-muted italic">Belum diisi</p>
+                    )}
                   </div>
                 </div>
 
@@ -1280,6 +1326,18 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
               />
             </div>
 
+            {/* No. HP / WA */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-saas-muted">No. WhatsApp / HP Orang Tua (Opsional)</label>
+              <input
+                type="text"
+                placeholder="Contoh: 081234567890"
+                value={formNoHp}
+                onChange={(e) => setFormNoHp(e.target.value)}
+                className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               {/* Tanggal Lahir */}
               <div className="space-y-1.5">
@@ -1386,6 +1444,16 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
               maxLength={16}
               value={editNik}
               onChange={(e) => setEditNik(e.target.value)}
+              className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-saas-dark">No. WhatsApp / HP Orang Tua (opsional)</label>
+            <input
+              type="text"
+              placeholder="Contoh: 081234567890"
+              value={editNoHp}
+              onChange={(e) => setEditNoHp(e.target.value)}
               className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
             />
           </div>
