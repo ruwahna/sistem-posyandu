@@ -37,8 +37,9 @@ export default function PuskesmasPublicPage() {
   // Tab State: "Balita" | "Lansia"
   const [activeTab, setActiveTab] = useState<"Balita" | "Lansia">("Balita");
 
-  // Filters state
+  // Search & Filter state
   const [search, setSearch] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
   const [selectedPosyandu, setSelectedPosyandu] = useState<string>("semua");
   const [selectedStatus, setSelectedStatus] = useState<string>("semua");
   const [startDate, setStartDate] = useState<string>("");
@@ -54,6 +55,15 @@ export default function PuskesmasPublicPage() {
   // Detail Modal state
   const [selectedItem, setSelectedItem] = useState<PublicPemeriksaanItem | null>(null);
 
+  // Debounce search after-typing (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -63,7 +73,7 @@ export default function PuskesmasPublicPage() {
           posyanduId: selectedPosyandu,
           kategori: activeTab,
           status: selectedStatus,
-          search,
+          search: debouncedSearch,
           startDate: startDate || undefined,
           endDate: endDate || undefined,
         })
@@ -79,13 +89,12 @@ export default function PuskesmasPublicPage() {
 
   useEffect(() => {
     loadData();
-    setCurrentPage(1);
-  }, [activeTab, selectedPosyandu, selectedStatus, startDate, endDate]);
+  }, [activeTab, selectedPosyandu, selectedStatus, startDate, endDate, debouncedSearch]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setDebouncedSearch(search);
     setCurrentPage(1);
-    loadData();
   };
 
   const resetFilters = () => {
@@ -497,7 +506,8 @@ export default function PuskesmasPublicPage() {
                       type="button"
                       onClick={() => {
                         setSearch("");
-                        loadData();
+                        setDebouncedSearch("");
+                        setCurrentPage(1);
                       }}
                       className="absolute right-2 top-2 text-slate-400 hover:text-slate-700"
                     >
