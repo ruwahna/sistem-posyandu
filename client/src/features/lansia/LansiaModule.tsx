@@ -23,8 +23,19 @@ import {
   ClipboardList,
   ShieldCheck,
   BrainCircuit,
-  Phone
+  Phone,
+  TrendingUp
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { hitungIMT } from "../../lib/zScoreCalculator";
 
 // Tipe Data
@@ -1144,6 +1155,88 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+
+          {/* GRAFIK MONITORING KESEHATAN LANSIA (LINE CHART) */}
+          <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-base text-saas-dark flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-indigo-600" />
+                  Grafik Monitoring Kesehatan Lansia (Tensi &amp; Gula Darah)
+                </h3>
+                <p className="text-xs text-saas-muted mt-0.5">
+                  Grafik tren tekanan darah (Sistol/Diastol mmHg), gula darah sewaktu (mg/dL), dan berat badan (kg).
+                </p>
+              </div>
+              <span className="text-xs font-bold text-saas-muted bg-gray-50 px-2.5 py-1 rounded-full border border-gray-150">
+                {activeLansia.pemeriksaan.length} Data Periksa
+              </span>
+            </div>
+
+            <div className="h-64 w-full pt-2">
+              {activeLansia.pemeriksaan.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={[...activeLansia.pemeriksaan]
+                      .sort((a, b) => new Date(a.tanggalPeriksa).getTime() - new Date(b.tanggalPeriksa).getTime())
+                      .map(p => ({
+                        tanggal: formatTanggalIndonesia(p.tanggalPeriksa),
+                        "TD Sistol (mmHg)": p.tekananDarahSistol || null,
+                        "TD Diastol (mmHg)": p.tekananDarahDiastol || null,
+                        "Gula Darah (mg/dL)": p.gulaDarahSewaktu || null,
+                        "Berat Badan (kg)": p.beratBadan,
+                      }))}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <XAxis dataKey="tanggal" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#FFF",
+                        borderRadius: "12px",
+                        border: "1px solid #E5E7EB",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="TD Sistol (mmHg)"
+                      stroke="#EF4444"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="TD Diastol (mmHg)"
+                      stroke="#3B82F6"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Gula Darah (mg/dL)"
+                      stroke="#F59E0B"
+                      strokeWidth={2}
+                      strokeDasharray="4 4"
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Berat Badan (kg)"
+                      stroke="#10B981"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-xs text-saas-muted font-medium bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                  Belum ada riwayat pemeriksaan lansia untuk menampilkan grafik.
+                </div>
+              )}
             </div>
           </div>
 

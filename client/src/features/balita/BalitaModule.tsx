@@ -18,8 +18,19 @@ import {
   FileSpreadsheet,
   Trash2,
   ChevronRight,
-  Phone
+  Phone,
+  TrendingUp
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, convertStatusBbUToCode, convertStatusTbUToCode, convertStatusBbTbToCode } from "../../lib/zScoreCalculator";
 import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
 
@@ -1164,6 +1175,80 @@ export default function BalitaModule({ posyanduId }: BalitaModuleProps) {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+
+          {/* GRAFIK PERTUMBUHAN BALITA (LINE CHART) */}
+          <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-base text-saas-dark flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-saas-primary" />
+                  Grafik Pertumbuhan Balita (BB, TB &amp; LK)
+                </h3>
+                <p className="text-xs text-saas-muted mt-0.5">
+                  Grafik tren pertumbuhan berat badan (kg), tinggi badan (cm), dan lingkar kepala (cm) berdasarkan riwayat periksa.
+                </p>
+              </div>
+              <span className="text-xs font-bold text-saas-muted bg-gray-50 px-2.5 py-1 rounded-full border border-gray-150">
+                {activeBalita.pemeriksaan.length} Data Periksa
+              </span>
+            </div>
+
+            <div className="h-64 w-full pt-2">
+              {activeBalita.pemeriksaan.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={[...activeBalita.pemeriksaan]
+                      .sort((a, b) => new Date(a.tanggalPeriksa).getTime() - new Date(b.tanggalPeriksa).getTime())
+                      .map(p => ({
+                        tanggal: formatTanggalIndonesia(p.tanggalPeriksa),
+                        "Berat Badan (kg)": p.beratBadan,
+                        "Tinggi Badan (cm)": p.tinggiBadan,
+                        "Lingkar Kepala (cm)": p.lingkarKepala || null,
+                      }))}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <XAxis dataKey="tanggal" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#FFF",
+                        borderRadius: "12px",
+                        border: "1px solid #E5E7EB",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="Berat Badan (kg)"
+                      stroke="#0D9488"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Tinggi Badan (cm)"
+                      stroke="#3B82F6"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Lingkar Kepala (cm)"
+                      stroke="#F59E0B"
+                      strokeWidth={2}
+                      strokeDasharray="4 4"
+                      dot={{ r: 3 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-xs text-saas-muted font-medium bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                  Belum ada riwayat pemeriksaan untuk menampilkan grafik pertumbuhan.
+                </div>
+              )}
             </div>
           </div>
 
