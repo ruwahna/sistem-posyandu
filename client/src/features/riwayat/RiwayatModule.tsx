@@ -46,6 +46,32 @@ interface RiwayatModuleProps {
   posyanduId: string;
 }
 
+interface RekapanBalita {
+  periode: string;
+  totalPemeriksaan: number;
+  totalAnak: number;
+  statusBbU: { normal: number; kurang: number; sangatKurang: number; lebih: number };
+  statusTbU: { normal: number; pendek: number; sangatPendek: number };
+  statusBbTb: { normal: number; kurang: number; sangatKurang: number; lebih: number };
+  vitaminA: number;
+  imunisasiLengkap: number;
+  asiEksklusif: number;
+}
+
+interface RekapanLansia {
+  periode: string;
+  totalPemeriksaan: number;
+  totalOrang: number;
+  statusHipertensi: number;
+  statusGdsTinggi: number;
+  statusHipertensiDanGds: number;
+  rataRataBb: number;
+  rataRataTb: number;
+  rataRataSistol: number;
+  rataRataDiastol: number;
+  rataRataGds: number;
+}
+
 export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
   const [logs, setLogs] = useState<ItemRiwayat[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,8 +81,19 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
   const [typeFilter, setTypeFilter] = useState<"semua" | "Balita" | "Lansia">("semua");
   const [statusFilter, setStatusFilter] = useState<"semua" | "success" | "warning">("semua");
 
-  // Tab mode: "tabel" vs "grafik"
-  const [viewMode, setViewMode] = useState<"tabel" | "grafik">("tabel");
+  // Tab mode: "tabel" vs "grafik" vs "rekapan"
+  const [viewMode, setViewMode] = useState<"tabel" | "grafik" | "rekapan">("tabel");
+
+  // Filter Periode untuk Rekapan
+  const [filterStartDate, setFilterStartDate] = useState<string>("");
+  const [filterEndDate, setFilterEndDate] = useState<string>("");
+  const [filterMonth, setFilterMonth] = useState<string>("");
+  const [filterYear, setFilterYear] = useState<string>(new Date().getFullYear().toString());
+
+  // Rekapan data
+  const [rekapanBalita, setRekapanBalita] = useState<RekapanBalita | null>(null);
+  const [rekapanLansia, setRekapanLansia] = useState<RekapanLansia | null>(null);
+  const [rekapanLoading, setRekapanLoading] = useState(false);
 
   // Modal Edit & Delete State
   const [selectedLog, setSelectedLog] = useState<ItemRiwayat | null>(null);
@@ -294,6 +331,82 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
     }
   };
 
+  // Hitung Rekapan Balita & Lansia berdasarkan filter
+  const calculateRekapan = () => {
+    setRekapanLoading(true);
+
+    const balitaLogs = logs.filter((l) => l.tipe === "Balita");
+    const lansiaLogs = logs.filter((l) => l.tipe === "Lansia");
+
+    // BALITA REKAPAN
+    if (balitaLogs.length > 0) {
+      const rekapanB: RekapanBalita = {
+        periode: filterMonth ? `${filterMonth}/${filterYear}` : filterYear,
+        totalPemeriksaan: balitaLogs.length,
+        totalAnak: new Set(balitaLogs.map((l) => l.pasienId)).size,
+        statusBbU: {
+          normal: balitaLogs.filter((l) => l.statusBbU === "N").length,
+          kurang: balitaLogs.filter((l) => l.statusBbU === "K").length,
+          sangatKurang: balitaLogs.filter((l) => l.statusBbU === "SK").length,
+          lebih: balitaLogs.filter((l) => l.statusBbU === "L").length,
+        },
+        statusTbU: {
+          normal: balitaLogs.filter((l) => l.statusTbU === "N").length,
+          pendek: balitaLogs.filter((l) => l.statusTbU === "P").length,
+          sangatPendek: balitaLogs.filter((l) => l.statusTbU === "SP").length,
+        },
+        statusBbTb: {
+          normal: balitaLogs.filter((l) => l.statusBbTb === "N").length,
+          kurang: balitaLogs.filter((l) => l.statusBbTb === "K").length,
+          sangatKurang: balitaLogs.filter((l) => l.statusBbTb === "SK").length,
+          lebih: balitaLogs.filter((l) => l.statusBbTb === "L" || l.statusBbTb === "G").length,
+        },
+        vitaminA: balitaLogs.filter((l) => l.vitaminA).length,
+        imunisasiLengkap: balitaLogs.filter((l) => l.statusImunisasi && l.statusImunisasi !== "").length,
+        asiEksklusif: balitaLogs.filter((l) => l.asiEksklusif).length,
+      };
+      setRekapanBalita(rekapanB);
+    } else {
+      setRekapanBalita(null);
+    }
+
+    // LANSIA REKAPAN
+    if (lansiaLogs.length > 0) {
+      const rekapanL: RekapanLansia = {
+        periode: filterMonth ? `${filterMonth}/${filterYear}` : filterYear,
+        totalPemeriksaan: lansiaLogs.length,
+        totalOrang: new Set(lansiaLogs.map((l) => l.pasienId)).size,
+        statusHipertensi: lansiaLogs.filter(
+          (l) => l.tekananDarahSistol! >= 140 || l.tekananDarahDiastol! >= 90
+        ).length,
+        statusGdsTinggi: lansiaLogs.filter((l) => l.gulaDarahSewaktu! >= 200).length,
+        statusHipertensiDanGds: lansiaLogs.filter(
+          (l) =>
+            (l.tekananDarahSistol! >= 140 || l.tekananDarahDiastol! >= 90) &&
+            l.gulaDarahSewaktu! >= 200
+        ).length,
+        rataRataBb:
+          lansiaLogs.reduce((sum, l) => sum + (l.beratBadan || 0), 0) / lansiaLogs.length,
+        rataRataTb:
+          lansiaLogs.reduce((sum, l) => sum + (l.tinggiBadan || 0), 0) / lansiaLogs.length,
+        rataRataSistol:
+          lansiaLogs.reduce((sum, l) => sum + (l.tekananDarahSistol || 0), 0) /
+          lansiaLogs.length,
+        rataRataDiastol:
+          lansiaLogs.reduce((sum, l) => sum + (l.tekananDarahDiastol || 0), 0) /
+          lansiaLogs.length,
+        rataRataGds:
+          lansiaLogs.reduce((sum, l) => sum + (l.gulaDarahSewaktu || 0), 0) /
+          lansiaLogs.length,
+      };
+      setRekapanLansia(rekapanL);
+    } else {
+      setRekapanLansia(null);
+    }
+
+    setRekapanLoading(false);
+  };
+
   // Olah data untuk Grafik Trend Pertumbuhan / Pemeriksaan (Agregasi Tanggal)
   const chartData = (() => {
     const dateMap: Record<string, { tanggal: string; balita: number; lansia: number; warning: number }> = {};
@@ -327,8 +440,8 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
-          {/* Switch Mode Tabel / Grafik */}
-          <div className="bg-gray-100 p-1 rounded-xl flex gap-1 w-full sm:w-auto">
+          {/* Switch Mode Tabel / Grafik / Rekapan */}
+          <div className="bg-gray-100 p-1 rounded-xl flex gap-1 w-full sm:w-auto overflow-x-auto">
             <button
               onClick={() => setViewMode("tabel")}
               className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
@@ -348,6 +461,19 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
               }`}
             >
               <LineChartIcon className="w-3.5 h-3.5 shrink-0" /> Grafik Trend
+            </button>
+            <button
+              onClick={() => {
+                setViewMode("rekapan");
+                calculateRekapan();
+              }}
+              className={`flex-1 sm:flex-none justify-center px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                viewMode === "rekapan"
+                  ? "bg-white text-saas-dark shadow-sm"
+                  : "text-saas-muted hover:text-saas-dark"
+              }`}
+            >
+              <LineChartIcon className="w-3.5 h-3.5 shrink-0" /> Laporan Rekapan
             </button>
           </div>
 
@@ -441,6 +567,452 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
           </div>
         </div>
       </div>
+
+      {/* VIEW: LAPORAN REKAPAN */}
+      {viewMode === "rekapan" && (
+        <div className="space-y-6">
+          {/* Filter Periode Card */}
+          <div className="bg-white p-4 sm:p-6 rounded-card border border-gray-100/50 shadow-soft-card space-y-4">
+            <h3 className="text-base font-bold text-saas-dark">Filter Periode Laporan Rekapan</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Tahun */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-saas-muted uppercase">Tahun</label>
+                <input
+                  type="number"
+                  min="2020"
+                  max={new Date().getFullYear()}
+                  value={filterYear}
+                  onChange={(e) => setFilterYear(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                />
+              </div>
+
+              {/* Bulan (Optional) */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-saas-muted uppercase">Bulan (Opsional)</label>
+                <select
+                  value={filterMonth}
+                  onChange={(e) => setFilterMonth(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                >
+                  <option value="">Semua Bulan</option>
+                  <option value="01">Januari</option>
+                  <option value="02">Februari</option>
+                  <option value="03">Maret</option>
+                  <option value="04">April</option>
+                  <option value="05">Mei</option>
+                  <option value="06">Juni</option>
+                  <option value="07">Juli</option>
+                  <option value="08">Agustus</option>
+                  <option value="09">September</option>
+                  <option value="10">Oktober</option>
+                  <option value="11">November</option>
+                  <option value="12">Desember</option>
+                </select>
+              </div>
+
+              {/* Tanggal Mulai */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-saas-muted uppercase">Dari Tanggal (Opsional)</label>
+                <input
+                  type="date"
+                  value={filterStartDate}
+                  onChange={(e) => setFilterStartDate(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                />
+              </div>
+
+              {/* Tanggal Akhir */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-saas-muted uppercase">Sampai Tanggal (Opsional)</label>
+                <input
+                  type="date"
+                  value={filterEndDate}
+                  onChange={(e) => setFilterEndDate(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
+              <button
+                onClick={calculateRekapan}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-all"
+              >
+                <LineChartIcon className="w-4 h-4" />
+                Hitung Rekapan
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    setExportingPdf(true);
+                    const bulan = filterMonth ? filterMonth : undefined;
+                    await riwayatApi.downloadPdf(posyanduId, {
+                      tipe: "semua",
+                      bulan,
+                      tahun: filterYear,
+                    });
+                  } catch (err) {
+                    console.error("Gagal export PDF rekapan:", err);
+                  } finally {
+                    setExportingPdf(false);
+                  }
+                }}
+                disabled={exportingPdf}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-input shadow-md shadow-red-600/10 transition-all disabled:opacity-50"
+              >
+                {exportingPdf ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                Cetak Laporan PDF
+              </button>
+            </div>
+          </div>
+
+          {/* Rekapan Balita */}
+          {rekapanLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 text-saas-primary animate-spin" />
+            </div>
+          ) : rekapanBalita ? (
+            <div className="bg-white p-4 sm:p-6 rounded-card border border-gray-100/50 shadow-soft-card space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-saas-dark flex items-center gap-2">
+                    <Baby className="w-5 h-5 text-saas-primary" />
+                    Rekapan Data Balita - Periode {rekapanBalita.periode}
+                  </h3>
+                  <p className="text-xs text-saas-muted mt-0.5">
+                    Ringkasan status gizi dan pelayanan imunisasi balita.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="p-3 bg-teal-50 border border-teal-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">Total Pemeriksaan</p>
+                  <p className="text-2xl font-bold text-saas-primary">{rekapanBalita.totalPemeriksaan}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">{rekapanBalita.totalAnak} anak unik</p>
+                </div>
+
+                <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">BB/U Normal</p>
+                  <p className="text-2xl font-bold text-blue-600">{rekapanBalita.statusBbU.normal}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">
+                    {((rekapanBalita.statusBbU.normal / rekapanBalita.totalPemeriksaan) * 100).toFixed(0)}%
+                  </p>
+                </div>
+
+                <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">BB Kurang</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {rekapanBalita.statusBbU.kurang + rekapanBalita.statusBbU.sangatKurang}
+                  </p>
+                  <p className="text-[10px] text-saas-muted mt-1">
+                    {(
+                      ((rekapanBalita.statusBbU.kurang + rekapanBalita.statusBbU.sangatKurang) /
+                        rekapanBalita.totalPemeriksaan) *
+                      100
+                    ).toFixed(0)}
+                    %
+                  </p>
+                </div>
+
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">Gizi Buruk</p>
+                  <p className="text-2xl font-bold text-red-600">{rekapanBalita.statusBbTb.sangatKurang}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">
+                    {((rekapanBalita.statusBbTb.sangatKurang / rekapanBalita.totalPemeriksaan) * 100).toFixed(0)}%
+                  </p>
+                </div>
+
+                <div className="p-3 bg-green-50 border border-green-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">Vitamin A</p>
+                  <p className="text-2xl font-bold text-green-600">{rekapanBalita.vitaminA}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">
+                    {((rekapanBalita.vitaminA / rekapanBalita.totalPemeriksaan) * 100).toFixed(0)}%
+                  </p>
+                </div>
+
+                <div className="p-3 bg-purple-50 border border-purple-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">ASI Eksklusif</p>
+                  <p className="text-2xl font-bold text-purple-600">{rekapanBalita.asiEksklusif}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">
+                    {((rekapanBalita.asiEksklusif / rekapanBalita.totalPemeriksaan) * 100).toFixed(0)}%
+                  </p>
+                </div>
+
+                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">Imunisasi Lengkap</p>
+                  <p className="text-2xl font-bold text-indigo-600">{rekapanBalita.imunisasiLengkap}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">
+                    {((rekapanBalita.imunisasiLengkap / rekapanBalita.totalPemeriksaan) * 100).toFixed(0)}%
+                  </p>
+                </div>
+
+                <div className="p-3 bg-pink-50 border border-pink-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">TB/U Normal</p>
+                  <p className="text-2xl font-bold text-pink-600">{rekapanBalita.statusTbU.normal}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">
+                    {((rekapanBalita.statusTbU.normal / rekapanBalita.totalPemeriksaan) * 100).toFixed(0)}%
+                  </p>
+                </div>
+              </div>
+
+              {/* Detail Table for Balita */}
+              <div className="pt-4 border-t border-gray-100">
+                <h4 className="text-sm font-bold text-saas-dark mb-3">Ringkasan Status Gizi Balita</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[600px] text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase">
+                        <th className="pb-2 px-2">Kategori Status</th>
+                        <th className="pb-2 px-2 text-center">Jumlah</th>
+                        <th className="pb-2 px-2 text-center">Persentase</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="py-2 px-2 font-bold text-saas-dark">BB/U - Normal</td>
+                        <td className="py-2 px-2 text-center">{rekapanBalita.statusBbU.normal}</td>
+                        <td className="py-2 px-2 text-center font-bold text-blue-600">
+                          {((rekapanBalita.statusBbU.normal / rekapanBalita.totalPemeriksaan) * 100).toFixed(1)}%
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="py-2 px-2 font-bold text-saas-dark">BB/U - Kurang</td>
+                        <td className="py-2 px-2 text-center">{rekapanBalita.statusBbU.kurang}</td>
+                        <td className="py-2 px-2 text-center font-bold text-yellow-600">
+                          {((rekapanBalita.statusBbU.kurang / rekapanBalita.totalPemeriksaan) * 100).toFixed(1)}%
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="py-2 px-2 font-bold text-saas-dark">BB/U - Sangat Kurang</td>
+                        <td className="py-2 px-2 text-center">{rekapanBalita.statusBbU.sangatKurang}</td>
+                        <td className="py-2 px-2 text-center font-bold text-orange-600">
+                          {((rekapanBalita.statusBbU.sangatKurang / rekapanBalita.totalPemeriksaan) * 100).toFixed(1)}%
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="py-2 px-2 font-bold text-saas-dark">BB/U - Lebih / Obesitas</td>
+                        <td className="py-2 px-2 text-center">{rekapanBalita.statusBbU.lebih}</td>
+                        <td className="py-2 px-2 text-center font-bold text-red-600">
+                          {((rekapanBalita.statusBbU.lebih / rekapanBalita.totalPemeriksaan) * 100).toFixed(1)}%
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Rekapan Lansia */}
+          {rekapanLoading ? null : rekapanLansia ? (
+            <div className="bg-white p-4 sm:p-6 rounded-card border border-gray-100/50 shadow-soft-card space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-saas-dark flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-red-500" />
+                    Rekapan Data Lansia - Periode {rekapanLansia.periode}
+                  </h3>
+                  <p className="text-xs text-saas-muted mt-0.5">
+                    Ringkasan status kesehatan lansia dengan fokus Hipertensi & Diabetes.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">Total Pemeriksaan</p>
+                  <p className="text-2xl font-bold text-red-600">{rekapanLansia.totalPemeriksaan}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">{rekapanLansia.totalOrang} orang unik</p>
+                </div>
+
+                <div className="p-3 bg-green-50 border border-green-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">Sehat & Normal</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {
+                      rekapanLansia.totalPemeriksaan -
+                      rekapanLansia.statusHipertensi -
+                      rekapanLansia.statusGdsTinggi +
+                      rekapanLansia.statusHipertensiDanGds
+                    }
+                  </p>
+                  <p className="text-[10px] text-saas-muted mt-1">
+                    {(
+                      (
+                        (rekapanLansia.totalPemeriksaan -
+                          rekapanLansia.statusHipertensi -
+                          rekapanLansia.statusGdsTinggi +
+                          rekapanLansia.statusHipertensiDanGds) /
+                        rekapanLansia.totalPemeriksaan
+                      ) *
+                      100
+                    ).toFixed(0)}
+                    %
+                  </p>
+                </div>
+
+                <div className="p-3 bg-orange-50 border border-orange-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">Hipertensi</p>
+                  <p className="text-2xl font-bold text-orange-600">{rekapanLansia.statusHipertensi}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">
+                    {((rekapanLansia.statusHipertensi / rekapanLansia.totalPemeriksaan) * 100).toFixed(0)}%
+                  </p>
+                </div>
+
+                <div className="p-3 bg-purple-50 border border-purple-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">GDS Tinggi</p>
+                  <p className="text-2xl font-bold text-purple-600">{rekapanLansia.statusGdsTinggi}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">
+                    {((rekapanLansia.statusGdsTinggi / rekapanLansia.totalPemeriksaan) * 100).toFixed(0)}%
+                  </p>
+                </div>
+
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">Hipertensi & GDS</p>
+                  <p className="text-2xl font-bold text-red-700">{rekapanLansia.statusHipertensiDanGds}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">
+                    {((rekapanLansia.statusHipertensiDanGds / rekapanLansia.totalPemeriksaan) * 100).toFixed(0)}%
+                  </p>
+                </div>
+
+                <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">Rata-rata BB</p>
+                  <p className="text-2xl font-bold text-blue-600">{rekapanLansia.rataRataBb.toFixed(1)}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">kg</p>
+                </div>
+
+                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">Rata-rata TB</p>
+                  <p className="text-2xl font-bold text-indigo-600">{rekapanLansia.rataRataTb.toFixed(1)}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">cm</p>
+                </div>
+
+                <div className="p-3 bg-pink-50 border border-pink-100 rounded-xl">
+                  <p className="text-xs text-saas-muted font-bold">Rata-rata GDS</p>
+                  <p className="text-2xl font-bold text-pink-600">{rekapanLansia.rataRataGds.toFixed(0)}</p>
+                  <p className="text-[10px] text-saas-muted mt-1">mg/dL</p>
+                </div>
+              </div>
+
+              {/* Detail Table for Lansia */}
+              <div className="pt-4 border-t border-gray-100">
+                <h4 className="text-sm font-bold text-saas-dark mb-3">Ringkasan Status Kesehatan Lansia</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[600px] text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase">
+                        <th className="pb-2 px-2">Indikator Kesehatan</th>
+                        <th className="pb-2 px-2 text-center">Kasus</th>
+                        <th className="pb-2 px-2 text-center">Persentase</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="py-2 px-2 font-bold text-saas-dark">Sehat & Normal</td>
+                        <td className="py-2 px-2 text-center">
+                          {
+                            rekapanLansia.totalPemeriksaan -
+                            rekapanLansia.statusHipertensi -
+                            rekapanLansia.statusGdsTinggi +
+                            rekapanLansia.statusHipertensiDanGds
+                          }
+                        </td>
+                        <td className="py-2 px-2 text-center font-bold text-green-600">
+                          {(
+                            (
+                              (rekapanLansia.totalPemeriksaan -
+                                rekapanLansia.statusHipertensi -
+                                rekapanLansia.statusGdsTinggi +
+                                rekapanLansia.statusHipertensiDanGds) /
+                              rekapanLansia.totalPemeriksaan
+                            ) *
+                            100
+                          ).toFixed(1)}
+                          %
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="py-2 px-2 font-bold text-saas-dark">Hipertensi Saja</td>
+                        <td className="py-2 px-2 text-center">
+                          {rekapanLansia.statusHipertensi - rekapanLansia.statusHipertensiDanGds}
+                        </td>
+                        <td className="py-2 px-2 text-center font-bold text-orange-600">
+                          {(
+                            ((rekapanLansia.statusHipertensi - rekapanLansia.statusHipertensiDanGds) /
+                              rekapanLansia.totalPemeriksaan) *
+                            100
+                          ).toFixed(1)}
+                          %
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="py-2 px-2 font-bold text-saas-dark">GDS Tinggi Saja</td>
+                        <td className="py-2 px-2 text-center">
+                          {rekapanLansia.statusGdsTinggi - rekapanLansia.statusHipertensiDanGds}
+                        </td>
+                        <td className="py-2 px-2 text-center font-bold text-purple-600">
+                          {(
+                            ((rekapanLansia.statusGdsTinggi - rekapanLansia.statusHipertensiDanGds) /
+                              rekapanLansia.totalPemeriksaan) *
+                            100
+                          ).toFixed(1)}
+                          %
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="py-2 px-2 font-bold text-saas-dark">Hipertensi & GDS Tinggi</td>
+                        <td className="py-2 px-2 text-center">{rekapanLansia.statusHipertensiDanGds}</td>
+                        <td className="py-2 px-2 text-center font-bold text-red-700">
+                          {((rekapanLansia.statusHipertensiDanGds / rekapanLansia.totalPemeriksaan) * 100).toFixed(1)}%
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Rata-rata Vital Signs */}
+              <div className="pt-4 border-t border-gray-100">
+                <h4 className="text-sm font-bold text-saas-dark mb-3">Rata-rata Parameter Vital</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                    <p className="text-xs text-saas-muted font-bold">Berat Badan Rata-rata</p>
+                    <p className="text-xl font-bold text-saas-dark">{rekapanLansia.rataRataBb.toFixed(2)} kg</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                    <p className="text-xs text-saas-muted font-bold">Tinggi Badan Rata-rata</p>
+                    <p className="text-xl font-bold text-saas-dark">{rekapanLansia.rataRataTb.toFixed(2)} cm</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                    <p className="text-xs text-saas-muted font-bold">Sistol Rata-rata</p>
+                    <p className="text-xl font-bold text-saas-dark">{rekapanLansia.rataRataSistol.toFixed(0)} mmHg</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                    <p className="text-xs text-saas-muted font-bold">Diastol Rata-rata</p>
+                    <p className="text-xl font-bold text-saas-dark">{rekapanLansia.rataRataDiastol.toFixed(0)} mmHg</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 border border-gray-100 rounded-lg col-span-2 sm:col-span-1">
+                    <p className="text-xs text-saas-muted font-bold">GDS Rata-rata</p>
+                    <p className="text-xl font-bold text-saas-dark">{rekapanLansia.rataRataGds.toFixed(2)} mg/dL</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {!rekapanBalita && !rekapanLansia && !rekapanLoading && (
+            <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-12 text-center">
+              <p className="text-sm text-saas-muted font-medium">Klik "Hitung Rekapan" untuk melihat ringkasan data pemeriksaan.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* VIEW: GRAFIK TREND */}
       {viewMode === "grafik" && (
