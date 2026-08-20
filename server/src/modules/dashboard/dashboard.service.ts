@@ -1,4 +1,5 @@
 import prisma from '../../shared/config/prisma';
+import { hitungZScoreBBU, hitungZScoreTBU } from '../../shared/utils/zScoreCalculator';
 
 export const dashboardService = {
   /**
@@ -147,8 +148,6 @@ export const dashboardService = {
       }
     }
 
-    const { hitungZScoreBBU, hitungZScoreTBU } = require('../../shared/utils/zScoreCalculator');
-
     for (const exam of examinations) {
       const date = new Date(exam.tanggalPeriksa);
       const key = period === 'bulanan'
@@ -178,12 +177,14 @@ export const dashboardService = {
 
       const item = aggregatedMap.get(key)!;
       item.total += 1;
-      if (exam.statusBbU === 'N') item.normal += 1;
-      else if (exam.statusBbU === 'K') item.kurang += 1;
-      else if (exam.statusBbU === 'SK') item.sangatKurang += 1;
-      else if (exam.statusBbU === 'L') item.lebih += 1;
+      const bbu = (exam.statusBbU || '').toString();
+      if (bbu === 'N' || bbu === 'Normal') item.normal += 1;
+      else if (bbu === 'K' || bbu === 'Kurang') item.kurang += 1;
+      else if (bbu === 'SK' || bbu === 'Sangat Kurang') item.sangatKurang += 1;
+      else if (bbu === 'L' || bbu === 'Lebih') item.lebih += 1;
 
-      if (exam.statusTbU === 'SP' || exam.statusTbU === 'P') {
+      const tbu = (exam.statusTbU || '').toString();
+      if (tbu === 'SP' || tbu === 'P' || tbu === 'Sangat Pendek' || tbu === 'Pendek') {
         item.stunting += 1;
       }
 

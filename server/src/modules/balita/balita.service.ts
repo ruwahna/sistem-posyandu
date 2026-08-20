@@ -3,31 +3,70 @@ import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb } from '../../shared
 import { hitungUsiaBulan, kelompokUsiaBulan } from './balita.helper';
 
 export const balitaService = {
-  async findAll(posyanduId: string, search?: string, kelompokUsia?: string) {
-    const balitas = await prisma.balita.findMany({
-      where: {
-        posyanduId,
-        ...(search && { nama: { contains: search, mode: 'insensitive' } }),
-      },
-      orderBy: { nama: 'asc' },
-      include: {
-        pemeriksaans: {
-          orderBy: { tanggalPeriksa: 'desc' },
-          take: 1,
+  async findAll(
+    posyanduId: string,
+    search?: string,
+    kelompokUsia?: string,
+    page: number = 1,
+    limit: number = 10
+  ) {
+    const skip = (page - 1) * limit;
+    const where: any = {
+      posyanduId,
+      ...(search && { nama: { contains: search, mode: 'insensitive' } }),
+    };
+
+    if (!kelompokUsia) {
+      const [total, balitas] = await Promise.all([
+        prisma.balita.count({ where }),
+        prisma.balita.findMany({
+          where,
+          orderBy: { nama: 'asc' },
+          skip,
+          take: limit,
+          include: {
+            pemeriksaans: {
+              orderBy: { tanggalPeriksa: 'desc' },
+              take: 1,
+            },
+          },
+        }),
+      ]);
+
+      const data = balitas.map((b) => {
+        const usiaBulan = hitungUsiaBulan(b.tanggalLahir);
+        const kelompok = kelompokUsiaBulan(usiaBulan);
+        return { ...b, usiaBulan, kelompokUsia: kelompok };
+      });
+
+      const totalPages = Math.ceil(total / limit) || 1;
+      return { data, meta: { page, limit, total, totalPages } };
+    } else {
+      const allBalitas = await prisma.balita.findMany({
+        where,
+        orderBy: { nama: 'asc' },
+        include: {
+          pemeriksaans: {
+            orderBy: { tanggalPeriksa: 'desc' },
+            take: 1,
+          },
         },
-      },
-    });
+      });
 
-    const result = balitas.map((b) => {
-      const usiaBulan = hitungUsiaBulan(b.tanggalLahir);
-      const kelompok = kelompokUsiaBulan(usiaBulan);
-      return { ...b, usiaBulan, kelompokUsia: kelompok };
-    });
+      const filtered = allBalitas
+        .map((b) => {
+          const usiaBulan = hitungUsiaBulan(b.tanggalLahir);
+          const kelompok = kelompokUsiaBulan(usiaBulan);
+          return { ...b, usiaBulan, kelompokUsia: kelompok };
+        })
+        .filter((b) => b.kelompokUsia === kelompokUsia);
 
-    if (kelompokUsia) {
-      return result.filter((b) => b.kelompokUsia === kelompokUsia);
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / limit) || 1;
+      const data = filtered.slice(skip, skip + limit);
+
+      return { data, meta: { page, limit, total, totalPages } };
     }
-    return result;
   },
 
   async findById(id: string, posyanduId: string) {
