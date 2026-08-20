@@ -2,6 +2,10 @@
   "name": "posyandu-monorepo",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
     "dev": "npm run dev --prefix server & npm run dev --prefix client",
     "build:server": "npm run build --prefix server",
@@ -14,10 +18,15 @@
     "prisma:seed": "npm run prisma:seed --prefix server"
   },
   "dependencies": {
-    "@prisma/client": "^6.0.0"
+    "@prisma/client": "^6.0.0",
+    "next": "16.2.12",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "prisma": "^6.0.0",
     "typescript": "^5.7.0"
   }
