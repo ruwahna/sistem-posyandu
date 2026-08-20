@@ -61,5 +61,6 @@ Desktop.ini
 .turbo/
 .npm/
 .yarn-cache/
+.vercel/
 
 references/
