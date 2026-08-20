@@ -59,10 +59,12 @@ export default function Home() {
     try {
       setIsLoadingNotifications(true);
       const res = await notificationApi.getNotifications(posyanduId);
-      setNotifications(res.notifications);
-      setUnreadCount(res.unreadCount);
+      setNotifications(res.notifications || []);
+      setUnreadCount(res.unreadCount || 0);
     } catch (err) {
-      console.error("Gagal memuat notifikasi:", err);
+      // Silently fail - set empty state instead of showing error
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setIsLoadingNotifications(false);
     }
@@ -72,7 +74,7 @@ export default function Home() {
     if (user && posyanduId) {
       loadNotifications();
     }
-  }, [user, posyanduId, activeMenu]);
+  }, [user, posyanduId]);
 
   const handleMarkAllRead = async () => {
     if (!posyanduId) return;
