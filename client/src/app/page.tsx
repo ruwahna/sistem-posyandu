@@ -42,6 +42,7 @@ import RiwayatModule from "../features/riwayat/RiwayatModule";
 import PengaturanModule from "../features/pengaturan/PengaturanModule";
 import ManajemenAkunModule from "../features/pengaturan/ManajemenAkunModule";
 import BantuanModule from "../features/bantuan/BantuanModule";
+import LansiaIcon from "../components/LansiaIcon";
 
 // Login Page (rendered inline when not authenticated)
 import LoginPage from "./login/page";
@@ -320,7 +321,7 @@ export default function Home() {
     { name: "Overview", icon: SquaresFour },
     { name: "Pelayanan", icon: ClipboardText },
     { name: "Balita", icon: Baby },
-    { name: "Lansia", icon: Heartbeat },
+    { name: "Lansia", icon: LansiaIcon },
     { name: "Riwayat", icon: ClockCounterClockwise },
     { name: "Manajemen Akun", icon: Users },
     { name: "Pengaturan", icon: Gear },
@@ -632,7 +633,7 @@ export default function Home() {
                               {item.tipe === "Balita" ? (
                                 <Baby className="w-4 h-4" weight="bold" />
                               ) : (
-                                <Heartbeat className="w-4 h-4" weight="bold" />
+                                <LansiaIcon className="w-4 h-4" />
                               )}
                             </div>
                             <div className="min-w-0">
@@ -887,7 +888,7 @@ export default function Home() {
           { name: "Overview", label: "Home", icon: SquaresFour },
           { name: "Pelayanan", label: "Layanan", icon: ClipboardText },
           { name: "Balita", label: "Balita", icon: Baby },
-          { name: "Lansia", label: "Lansia", icon: Heartbeat },
+          { name: "Lansia", label: "Lansia", icon: LansiaIcon },
           { name: "Riwayat", label: "Riwayat", icon: ClockCounterClockwise },
         ].map((item) => {
           const isActive = activeMenu === item.name;

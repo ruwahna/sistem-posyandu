@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Modal from "../../components/Modal";
 import PageHelmet from "../../components/PageHelmet";
 import { TableSkeleton } from "../../components/Skeleton";
+import LansiaIcon from "../../components/LansiaIcon";
 import { lansiaApi } from "../../lib/api";
 import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
 import {
@@ -856,7 +857,7 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId 
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                    <Heart className="w-6 h-6" />
+                    <LansiaIcon className="w-6 h-6" />
                   </div>
                   <div className="flex items-center gap-2">
                     <button

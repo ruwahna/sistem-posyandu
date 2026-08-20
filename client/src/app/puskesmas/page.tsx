@@ -27,6 +27,7 @@ import {
   Eye
 } from "@phosphor-icons/react";
 import PageHelmet from "../../components/PageHelmet";
+import LansiaIcon from "../../components/LansiaIcon";
 import { publicPuskesmasApi, PublicPemeriksaanItem, PublicPosyanduInfo } from "../../lib/api";
 
 export default function PuskesmasPublicPage() {
@@ -289,7 +290,7 @@ export default function PuskesmasPublicPage() {
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
-              <Heartbeat className="w-4 h-4" weight="bold" /> Pemantauan Lansia
+              <LansiaIcon className="w-4 h-4" /> Pemantauan Lansia
             </button>
           </div>
 
@@ -327,7 +328,7 @@ export default function PuskesmasPublicPage() {
               {activeTab === "Balita" ? (
                 <Baby className="w-5 h-5 text-teal-600 shrink-0" weight="bold" />
               ) : (
-                <Heartbeat className="w-5 h-5 text-indigo-600 shrink-0" weight="bold" />
+                <LansiaIcon className="w-5 h-5 shrink-0" />
               )}
             </div>
             <p className="text-[10px] text-slate-500 font-medium">Hasil penginputan terkini</p>
@@ -943,7 +944,7 @@ export default function PuskesmasPublicPage() {
                 <span className={`w-7 h-7 rounded flex items-center justify-center text-white ${
                   selectedItem.kategori === "Balita" ? "bg-teal-600" : "bg-indigo-600"
                 }`}>
-                  {selectedItem.kategori === "Balita" ? <Baby className="w-4 h-4" weight="bold" /> : <Heartbeat className="w-4 h-4" weight="bold" />}
+                  {selectedItem.kategori === "Balita" ? <Baby className="w-4 h-4" weight="bold" /> : <LansiaIcon className="w-4 h-4" />}
                 </span>
                 <div>
                   <h3 className="font-bold text-sm text-slate-900">Detail Hasil Pemeriksaan {selectedItem.kategori}</h3>

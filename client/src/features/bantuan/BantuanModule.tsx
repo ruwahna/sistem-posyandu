@@ -22,6 +22,7 @@ import {
   ListTodo
 } from "lucide-react";
 import PageHelmet from "../../components/PageHelmet";
+import LansiaIcon from "../../components/LansiaIcon";
 
 interface Guide {
   id: string;
@@ -82,7 +83,7 @@ export default function BantuanModule() {
       title: "Mendaftarkan Lansia Baru",
       category: "kader",
       description: "Cara mendaftarkan warga lansia baru di lingkungan posyandu.",
-      icon: Heart,
+      icon: LansiaIcon,
       steps: [
         { title: "Langkah 1: Klik Tombol Lansia Baru", text: "Buka menu 'Pelayanan', lalu klik tombol '+ Lansia Baru' di sudut kanan atas halaman." },
         { title: "Langkah 2: Isi NIK & BPJS", text: "Ketik NIK 16 digit sesuai KTP lansia dan nomor kartu BPJS (jika ada)." },
