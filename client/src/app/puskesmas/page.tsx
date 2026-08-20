@@ -27,6 +27,8 @@ import {
   Eye
 } from "@phosphor-icons/react";
 import PageHelmet from "../../components/PageHelmet";
+import LansiaIcon from "../../components/LansiaIcon";
+import { Skeleton, PuskesmasTableSkeleton } from "../../components/Skeleton";
 import { publicPuskesmasApi, PublicPemeriksaanItem, PublicPosyanduInfo } from "../../lib/api";
 
 export default function PuskesmasPublicPage() {
@@ -289,7 +291,7 @@ export default function PuskesmasPublicPage() {
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
-              <Heartbeat className="w-4 h-4" weight="bold" /> Pemantauan Lansia
+              <LansiaIcon className="w-4 h-4" /> Pemantauan Lansia
             </button>
           </div>
 
@@ -323,11 +325,15 @@ export default function PuskesmasPublicPage() {
               Total {activeTab} Periksa
             </span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-slate-900">{totalRecords}</span>
+              {isLoading ? (
+                <Skeleton variant="rounded" className="h-8 w-16 my-0.5" />
+              ) : (
+                <span className="text-2xl font-bold text-slate-900">{totalRecords}</span>
+              )}
               {activeTab === "Balita" ? (
                 <Baby className="w-5 h-5 text-teal-600 shrink-0" weight="bold" />
               ) : (
-                <Heartbeat className="w-5 h-5 text-indigo-600 shrink-0" weight="bold" />
+                <LansiaIcon className="w-5 h-5 shrink-0" />
               )}
             </div>
             <p className="text-[10px] text-slate-500 font-medium">Hasil penginputan terkini</p>
@@ -338,7 +344,11 @@ export default function PuskesmasPublicPage() {
               <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Anak Kurang Tinggi</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-bold text-amber-700">{totalStunting}</span>
+                  {isLoading ? (
+                    <Skeleton variant="rounded" className="h-8 w-14 my-0.5" />
+                  ) : (
+                    <span className="text-2xl font-bold text-amber-700">{totalStunting}</span>
+                  )}
                   <Baby className="w-5 h-5 text-amber-600 shrink-0" weight="bold" />
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium">Kasus Stunting (TB/U)</p>
@@ -347,7 +357,11 @@ export default function PuskesmasPublicPage() {
               <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Perlu Rujukan</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-bold text-red-700">{totalRujukan}</span>
+                  {isLoading ? (
+                    <Skeleton variant="rounded" className="h-8 w-14 my-0.5" />
+                  ) : (
+                    <span className="text-2xl font-bold text-red-700">{totalRujukan}</span>
+                  )}
                   <WarningCircle className="w-5 h-5 text-red-600 shrink-0" weight="bold" />
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium">PMT / Tindak Lanjut Medis</p>
@@ -358,8 +372,12 @@ export default function PuskesmasPublicPage() {
               <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Tensi Tinggi</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-bold text-indigo-700">{totalHipertensi}</span>
-                  <Heartbeat className="w-5 h-5 text-indigo-600 shrink-0" weight="bold" />
+                  {isLoading ? (
+                    <Skeleton variant="rounded" className="h-8 w-14 my-0.5" />
+                  ) : (
+                    <span className="text-2xl font-bold text-indigo-700">{totalHipertensi}</span>
+                  )}
+                  <LansiaIcon className="w-5 h-5 shrink-0" />
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium">Hipertensi (Sistol ≥140)</p>
               </div>
@@ -367,7 +385,11 @@ export default function PuskesmasPublicPage() {
               <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Gula Darah Tinggi</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-bold text-rose-700">{totalDiabetes}</span>
+                  {isLoading ? (
+                    <Skeleton variant="rounded" className="h-8 w-14 my-0.5" />
+                  ) : (
+                    <span className="text-2xl font-bold text-rose-700">{totalDiabetes}</span>
+                  )}
                   <Drop className="w-5 h-5 text-rose-600 shrink-0" weight="bold" />
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium">Diabetes (GDS ≥200)</p>
@@ -378,7 +400,11 @@ export default function PuskesmasPublicPage() {
           <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
             <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Posyandu Aktif</span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-slate-900">{posyandus.length}</span>
+              {isLoading ? (
+                <Skeleton variant="rounded" className="h-8 w-12 my-0.5" />
+              ) : (
+                <span className="text-2xl font-bold text-slate-900">{posyandus.length}</span>
+              )}
               <Buildings className="w-5 h-5 text-teal-600 shrink-0" weight="bold" />
             </div>
             <p className="text-[10px] text-slate-500 font-medium">Wilayah Binaan Puskesmas</p>
@@ -666,10 +692,7 @@ export default function PuskesmasPublicPage() {
           </div>
 
           {isLoading ? (
-            <div className="py-16 flex flex-col items-center justify-center space-y-2">
-              <CircleNotch className="w-7 h-7 text-indigo-600 animate-spin" weight="bold" />
-              <p className="text-xs font-medium text-slate-500">Memuat data pemeriksaan {activeTab.toLowerCase()}...</p>
-            </div>
+            <PuskesmasTableSkeleton rows={pageSize > 10 ? 10 : pageSize} />
           ) : paginatedData.length > 0 ? (
             <>
               <div className="overflow-x-auto border border-slate-200 rounded">
@@ -943,7 +966,7 @@ export default function PuskesmasPublicPage() {
                 <span className={`w-7 h-7 rounded flex items-center justify-center text-white ${
                   selectedItem.kategori === "Balita" ? "bg-teal-600" : "bg-indigo-600"
                 }`}>
-                  {selectedItem.kategori === "Balita" ? <Baby className="w-4 h-4" weight="bold" /> : <Heartbeat className="w-4 h-4" weight="bold" />}
+                  {selectedItem.kategori === "Balita" ? <Baby className="w-4 h-4" weight="bold" /> : <LansiaIcon className="w-4 h-4" />}
                 </span>
                 <div>
                   <h3 className="font-bold text-sm text-slate-900">Detail Hasil Pemeriksaan {selectedItem.kategori}</h3>

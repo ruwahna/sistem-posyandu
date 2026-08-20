@@ -396,3 +396,160 @@ export function PelayananSkeleton() {
     </div>
   );
 }
+
+// ── Puskesmas Portal Table Skeleton ──
+export function PuskesmasTableSkeleton({ rows = 6 }: { rows?: number }) {
+  return (
+    <div className="overflow-x-auto border border-slate-200 rounded animate-in fade-in duration-200">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50">
+            <th className="p-3 w-12"><Skeleton variant="rounded" className="h-3.5 w-6" /></th>
+            <th className="p-3 w-28"><Skeleton variant="rounded" className="h-3.5 w-20" /></th>
+            <th className="p-3 w-44"><Skeleton variant="rounded" className="h-3.5 w-32" /></th>
+            <th className="p-3 w-40"><Skeleton variant="rounded" className="h-3.5 w-28" /></th>
+            <th className="p-3 w-28"><Skeleton variant="rounded" className="h-3.5 w-20" /></th>
+            <th className="p-3"><Skeleton variant="rounded" className="h-3.5 w-48" /></th>
+            <th className="p-3 w-36"><Skeleton variant="rounded" className="h-3.5 w-24" /></th>
+            <th className="p-3 text-right w-20"><Skeleton variant="rounded" className="h-3.5 w-12 ml-auto" /></th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-200 text-xs">
+          {Array.from({ length: rows }).map((_, i) => (
+            <tr key={i} className="hover:bg-slate-50/50">
+              <td className="p-3"><Skeleton variant="rounded" className="h-3.5 w-5" /></td>
+              <td className="p-3"><Skeleton variant="rounded" className="h-3.5 w-24" /></td>
+              <td className="p-3">
+                <div className="space-y-1">
+                  <Skeleton variant="rounded" className="h-3.5 w-28" />
+                  <Skeleton variant="rounded" className="h-2.5 w-16" />
+                </div>
+              </td>
+              <td className="p-3"><Skeleton variant="rounded" className="h-4 w-32 font-bold" /></td>
+              <td className="p-3"><Skeleton variant="rounded" className="h-5 w-16 rounded-full" /></td>
+              <td className="p-3"><Skeleton variant="rounded" className="h-3.5 w-56" /></td>
+              <td className="p-3"><Skeleton variant="rounded" className="h-6 w-24 rounded-full" /></td>
+              <td className="p-3 text-right"><Skeleton variant="rounded" className="h-6 w-14 rounded ml-auto" /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Puskesmas Full Page Skeleton ──
+export function PuskesmasSkeleton() {
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300 max-w-7xl mx-auto px-4 py-8">
+      {/* Top Banner */}
+      <div className="bg-white rounded-lg p-5 border border-slate-200 space-y-3">
+        <Skeleton variant="rounded" className="h-4 w-64" />
+        <Skeleton variant="rounded" className="h-7 w-96 max-w-full" />
+        <Skeleton variant="rounded" className="h-4 w-full max-w-2xl" />
+      </div>
+
+      {/* 4 Cards Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-white p-4 rounded-lg border border-slate-200 space-y-2">
+            <Skeleton variant="rounded" className="h-3 w-24" />
+            <div className="flex items-center justify-between">
+              <Skeleton variant="rounded" className="h-8 w-16" />
+              <Skeleton variant="circular" className="w-6 h-6" />
+            </div>
+            <Skeleton variant="rounded" className="h-2.5 w-32" />
+          </div>
+        ))}
+      </div>
+
+      {/* Filter Bar */}
+      <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <Skeleton variant="rounded" className="h-9 w-full rounded-md" />
+          <Skeleton variant="rounded" className="h-9 w-full rounded-md" />
+          <Skeleton variant="rounded" className="h-9 w-full rounded-md" />
+          <Skeleton variant="rounded" className="h-9 w-full rounded-md" />
+        </div>
+      </div>
+
+      {/* Table */}
+      <PuskesmasTableSkeleton rows={8} />
+    </div>
+  );
+}
+
+// ── Riwayat Table Skeleton ──
+export function RiwayatTableSkeleton({ rows = 6 }: { rows?: number }) {
+  return (
+    <div className="overflow-x-auto animate-in fade-in duration-200">
+      <table className="w-full min-w-[700px] text-left border-collapse">
+        <thead>
+          <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
+            <th className="pb-3 px-3 w-32"><Skeleton variant="rounded" className="h-3.5 w-24" /></th>
+            <th className="pb-3 px-3 w-48"><Skeleton variant="rounded" className="h-3.5 w-32" /></th>
+            <th className="pb-3 px-3 w-28"><Skeleton variant="rounded" className="h-3.5 w-16" /></th>
+            <th className="pb-3 px-3"><Skeleton variant="rounded" className="h-3.5 w-48" /></th>
+            <th className="pb-3 px-3 w-36"><Skeleton variant="rounded" className="h-3.5 w-28" /></th>
+            <th className="pb-3 px-3 w-32"><Skeleton variant="rounded" className="h-3.5 w-20" /></th>
+            <th className="pb-3 px-3 text-right w-20"><Skeleton variant="rounded" className="h-3.5 w-10 ml-auto" /></th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50 text-sm">
+          {Array.from({ length: rows }).map((_, i) => (
+            <tr key={i} className="hover:bg-gray-50/40">
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-3.5 w-28" /></td>
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-4 w-36 font-bold" /></td>
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-5 w-18 rounded-md" /></td>
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-3.5 w-56" /></td>
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-6 w-28 rounded-full" /></td>
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-3.5 w-24" /></td>
+              <td className="py-4 px-3 text-right"><Skeleton variant="rounded" className="h-8 w-8 rounded-lg ml-auto" /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Manajemen Akun Table Skeleton ──
+export function AkunTableSkeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="overflow-x-auto animate-in fade-in duration-200">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
+            <th className="pb-3 w-56"><Skeleton variant="rounded" className="h-3.5 w-20" /></th>
+            <th className="pb-3 text-center w-32"><Skeleton variant="rounded" className="h-3.5 w-16 mx-auto" /></th>
+            <th className="pb-3 text-center w-28"><Skeleton variant="rounded" className="h-3.5 w-14 mx-auto" /></th>
+            <th className="pb-3 text-right w-24"><Skeleton variant="rounded" className="h-3.5 w-12 ml-auto" /></th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50 text-sm">
+          {Array.from({ length: rows }).map((_, i) => (
+            <tr key={i} className="hover:bg-gray-50/20">
+              <td className="py-4">
+                <div className="space-y-1.5">
+                  <Skeleton variant="rounded" className="h-4 w-36 font-bold" />
+                  <Skeleton variant="rounded" className="h-3 w-48" />
+                </div>
+              </td>
+              <td className="py-4 text-center">
+                <Skeleton variant="rounded" className="h-6 w-20 rounded-full mx-auto" />
+              </td>
+              <td className="py-4 text-center">
+                <Skeleton variant="rounded" className="h-6 w-16 rounded-full mx-auto" />
+              </td>
+              <td className="py-4 text-right">
+                <Skeleton variant="rounded" className="h-8 w-8 rounded-lg ml-auto" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+

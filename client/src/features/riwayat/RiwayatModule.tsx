@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
 import Modal from "../../components/Modal";
+import LansiaIcon from "../../components/LansiaIcon";
+import { RiwayatTableSkeleton } from "../../components/Skeleton";
 import { riwayatApi, ItemRiwayat, balitaApi, lansiaApi } from "@/lib/api";
 import {
   hitungStatusBbU,
@@ -549,10 +551,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
       {viewMode === "tabel" && (
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-4 sm:p-6 overflow-hidden">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-2">
-              <Loader2 className="w-7 h-7 text-saas-primary animate-spin" />
-              <p className="text-xs text-saas-muted font-medium">Memuat data riwayat...</p>
-            </div>
+            <RiwayatTableSkeleton rows={7} />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[700px] text-left border-collapse">
