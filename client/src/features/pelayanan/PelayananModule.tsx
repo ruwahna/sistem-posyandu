@@ -19,6 +19,7 @@ import { balitaApi, lansiaApi, Balita, Lansia } from "../../lib/api";
 // Reusable Modal Component
 import Modal from "../../components/Modal";
 import PageHelmet from "../../components/PageHelmet";
+import { PelayananSkeleton } from "../../components/Skeleton";
 
 // Tipe Data Pasien
 interface Pasien {
@@ -106,8 +107,10 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
 
   // Session Log State
   const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchPatients = () => {
+    setIsLoading(true);
     Promise.all([
       balitaApi.getAll(posyanduId),
       lansiaApi.getAll(posyanduId)
@@ -135,7 +138,10 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
         }));
         setPasiens([...balitas, ...lansias]);
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   useEffect(() => {
@@ -497,6 +503,18 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
       setLError(err.message || "Gagal mendaftarkan lansia.");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHelmet
+          title={activeTab === "Balita" ? "Pelayanan Balita — PosyanduKita" : "Pelayanan Lansia — PosyanduKita"}
+          description="Pencatatan pelayanan dan pemeriksaan PosyanduKita."
+        />
+        <PelayananSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
