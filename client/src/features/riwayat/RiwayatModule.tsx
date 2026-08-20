@@ -593,7 +593,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                             {log.tipe === "Balita" ? (
                               <Baby className="w-3.5 h-3.5 text-saas-primary shrink-0" />
                             ) : (
-                              <Heart className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                              <LansiaIcon className="w-3.5 h-3.5 shrink-0" />
                             )}
                             {log.tipe}
                           </div>
@@ -672,7 +672,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-white shadow-md ${
                   selectedDetailLog.tipe === "Balita" ? "bg-saas-primary shadow-teal-500/20" : "bg-indigo-600 shadow-indigo-500/20"
                 }`}>
-                  {selectedDetailLog.tipe === "Balita" ? <Baby className="w-6 h-6" /> : <Heart className="w-6 h-6" />}
+                  {selectedDetailLog.tipe === "Balita" ? <Baby className="w-6 h-6" /> : <LansiaIcon className="w-6 h-6" />}
                 </div>
                 <div>
                   <h3 className="text-lg font-extrabold text-saas-dark">{selectedDetailLog.nama}</h3>
