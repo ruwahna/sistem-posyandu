@@ -32,6 +32,7 @@ import PelayananModule from "../features/pelayanan/PelayananModule";
 import BalitaModule from "../features/balita/BalitaModule";
 import LansiaModule from "../features/lansia/LansiaModule";
 import RiwayatModule from "../features/riwayat/RiwayatModule";
+import LaporanModule from "../features/laporan/LaporanModule";
 import PengaturanModule from "../features/pengaturan/PengaturanModule";
 import ManajemenAkunModule from "../features/pengaturan/ManajemenAkunModule";
 import BantuanModule from "../features/bantuan/BantuanModule";
@@ -175,6 +176,7 @@ export default function Home() {
     { name: "Balita", icon: Baby },
     { name: "Lansia", icon: HeartPulse },
     { name: "Riwayat", icon: History },
+    { name: "Laporan", icon: ClipboardList },
     { name: "Manajemen Akun", icon: Users },
     { name: "Pengaturan", icon: Settings },
   ];
@@ -198,6 +200,8 @@ export default function Home() {
         return <LansiaModule posyanduId={posyanduId} />;
       case "Riwayat":
         return <RiwayatModule posyanduId={posyanduId} />;
+      case "Laporan":
+        return <LaporanModule posyanduId={posyanduId} />;
       case "Manajemen Akun":
         return <ManajemenAkunModule posyanduId={posyanduId} />;
       case "Pengaturan":
@@ -606,7 +610,7 @@ export default function Home() {
           { name: "Pelayanan", label: "Layanan", icon: ClipboardList },
           { name: "Balita", label: "Balita", icon: Baby },
           { name: "Lansia", label: "Lansia", icon: HeartPulse },
-          { name: "Riwayat", label: "Riwayat", icon: History },
+          { name: "Laporan", label: "Laporan", icon: History },
         ].map((item) => {
           const isActive = activeMenu === item.name;
           const Icon = item.icon;
