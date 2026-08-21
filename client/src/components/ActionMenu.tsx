@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Edit2, Trash2, Eye } from "lucide-react";
 
 export interface ActionMenuItem {
   label: string;
