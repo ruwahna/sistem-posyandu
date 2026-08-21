@@ -96,7 +96,7 @@ export const riwayatService = {
           nama: item.balita.nama,
           tipe: 'Balita',
           tanggal: item.tanggalPeriksa.toISOString().split('T')[0],
-          petugas: 'Kader Posyandu',
+          petugas: item.petugas || 'Kader Posyandu',
           parameter: paramStr,
           status: statusDesc,
           statusType,
@@ -155,7 +155,7 @@ export const riwayatService = {
           nama: item.lansia.nama,
           tipe: 'Lansia',
           tanggal: item.tanggalPeriksa.toISOString().split('T')[0],
-          petugas: 'Kader Posyandu',
+          petugas: item.petugas || 'Kader Posyandu',
           parameter: paramStr,
           status: statusDesc,
           statusType,
@@ -198,12 +198,12 @@ export const riwayatService = {
 
     const worksheet = workbook.addWorksheet('Riwayat Pemeriksaan');
 
-    worksheet.mergeCells('A1:F1');
+    worksheet.mergeCells('A1:G1');
     worksheet.getCell('A1').value = `LAPORAN RIWAYAT PEMERIKSAAN BULANAN POSYANDU`;
     worksheet.getCell('A1').font = { name: 'Arial', size: 14, bold: true };
     worksheet.getCell('A1').alignment = { horizontal: 'center' };
 
-    worksheet.mergeCells('A2:F2');
+    worksheet.mergeCells('A2:G2');
     worksheet.getCell('A2').value = `Posyandu: ${posyandu?.nama || '-'}, Desa: ${posyandu?.desa || '-'}, Kecamatan: ${posyandu?.kecamatan || '-'}`;
     worksheet.getCell('A2').font = { name: 'Arial', size: 10, italic: true };
     worksheet.getCell('A2').alignment = { horizontal: 'center' };
@@ -217,6 +217,7 @@ export const riwayatService = {
       'Kategori',
       'Parameter Fisik & Medis',
       'Kondisi Status / Diagnosa',
+      'Petugas Pemeriksa',
     ]);
 
     headerRow.eachCell((cell) => {
@@ -237,11 +238,13 @@ export const riwayatService = {
         item.tipe,
         item.parameter,
         item.status,
+        item.petugas || 'Kader Posyandu',
       ]);
 
       row.getCell(1).alignment = { horizontal: 'center' };
       row.getCell(2).alignment = { horizontal: 'center' };
       row.getCell(4).alignment = { horizontal: 'center' };
+      row.getCell(7).alignment = { horizontal: 'center' };
       
       if (item.statusType === 'warning') {
         row.getCell(6).font = { color: { argb: 'DC2626' }, bold: true };

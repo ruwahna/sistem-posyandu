@@ -44,6 +44,7 @@ export const createPemeriksaanBalitaSchema = z.object({
   asiEksklusif: z.boolean().optional().nullable(),
   obatCacing: z.boolean().optional().nullable(),
   statusImunisasi: z.string().optional().nullable(),
+  petugas: z.string().optional().nullable(),
   usiaBulan: z.number().optional(),
 }).passthrough(); // Allow extra fields dari frontend
 

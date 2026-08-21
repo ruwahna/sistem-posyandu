@@ -42,6 +42,7 @@ import {
 import ActionMenu from "../../components/ActionMenu";
 import LansiaIcon from "../../components/LansiaIcon";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface DashboardModuleProps {
   searchQuery: string;
@@ -72,7 +73,7 @@ interface Pasien {
 import { DashboardSkeleton, Skeleton } from "../../components/Skeleton";
 
 export default function DashboardModule({ searchQuery, onNavigate, posyanduId }: DashboardModuleProps) {
-
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"Semua" | "Balita" | "Lansia">("Semua");
 
   // ── API state ──────────────────────────────────────────────
@@ -340,6 +341,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
           asiEksklusif: examAsi,
           obatCacing: examCacing,
           statusImunisasi: examImunisasi || undefined,
+          petugas: user?.nama || "Kader Posyandu",
         };
         await balitaApi.createPemeriksaan(posyanduId, selectedPasien.id, data);
       } else {
@@ -365,6 +367,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
           asamUrat: examUricAcid ? parseFloat(examUricAcid) : undefined,
           keluhan: examKeluhan || undefined,
           tindakan: examTindakan || undefined,
+          petugas: user?.nama || "Kader Posyandu",
         };
         await lansiaApi.createPemeriksaan(posyanduId, selectedPasien.id, data);
       }

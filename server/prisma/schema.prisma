@@ -100,6 +100,7 @@ model PemeriksaanBalita {
   asiEksklusif   Boolean?    @map("asi_eksklusif")
   obatCacing     Boolean?    @map("obat_cacing")
   statusImunisasi String?    @map("status_imunisasi")
+  petugas        String?     @map("petugas")
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
@@ -151,6 +152,7 @@ model PemeriksaanLansia {
   asamUrat            Decimal? @map("asam_urat") @db.Decimal(5, 2)
   keluhan             String?  @map("keluhan") @db.Text
   tindakan            String?  @map("tindakan") @db.Text
+  petugas             String?  @map("petugas")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 

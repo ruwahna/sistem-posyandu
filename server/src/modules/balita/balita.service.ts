@@ -120,6 +120,7 @@ export const balitaService = {
       asiEksklusif?: boolean;
       obatCacing?: boolean;
       statusImunisasi?: string;
+      petugas?: string;
     }
   ) {
     const balita = await prisma.balita.findUnique({ where: { id: balitaId } });

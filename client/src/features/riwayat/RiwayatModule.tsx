@@ -89,6 +89,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
   const [bAsi, setBAsi] = useState(false);
   const [bCacing, setBCacing] = useState(false);
   const [bImunisasi, setBImunisasi] = useState("");
+  const [bPetugas, setBPetugas] = useState("");
 
   // Form Fields - Lansia
   const [lDate, setLDate] = useState("");
@@ -102,6 +103,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
   const [lUrat, setLUrat] = useState("");
   const [lKeluhan, setLKeluhan] = useState("");
   const [lTindakan, setLTindakan] = useState("");
+  const [lPetugas, setLPetugas] = useState("");
 
   // Open Detail & Grafik Perkembangan Modal
   const openDetailModal = (log: ItemRiwayat) => {
@@ -127,6 +129,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
       setBAsi(Boolean(log.asiEksklusif));
       setBCacing(Boolean(log.obatCacing));
       setBImunisasi(log.statusImunisasi || "");
+      setBPetugas(log.petugas || "");
     } else {
       setLDate(formatTanggalInput(log.tanggal));
       setLBB(log.beratBadan ? String(log.beratBadan) : "");
@@ -139,6 +142,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
       setLUrat(log.asamUrat ? String(log.asamUrat) : "");
       setLKeluhan(log.keluhan || "");
       setLTindakan(log.tindakan || "");
+      setLPetugas(log.petugas || "");
     }
     setIsEditModalOpen(true);
   };
@@ -179,6 +183,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
           asiEksklusif: bAsi,
           obatCacing: bCacing,
           statusImunisasi: bImunisasi || undefined,
+          petugas: bPetugas || undefined,
         } as any);
       } else {
         const bb = parseFloat(lBB);
@@ -205,6 +210,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
           asamUrat: lUrat ? parseFloat(lUrat) : undefined,
           keluhan: lKeluhan || undefined,
           tindakan: lTindakan || undefined,
+          petugas: lPetugas || undefined,
         } as any);
       }
       fetchRiwayat();
@@ -1036,6 +1042,17 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="text-xs font-bold text-saas-muted">Nama Petugas / Kader Pemeriksa</label>
+                <input
+                  type="text"
+                  placeholder="Nama Petugas..."
+                  value={bPetugas}
+                  onChange={(e) => setBPetugas(e.target.value)}
+                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary mt-1"
+                />
+              </div>
             </>
           ) : (
             <>
@@ -1161,6 +1178,17 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                     className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-saas-muted">Nama Petugas / Kader Pemeriksa</label>
+                <input
+                  type="text"
+                  placeholder="Nama Petugas..."
+                  value={lPetugas}
+                  onChange={(e) => setLPetugas(e.target.value)}
+                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary mt-1"
+                />
               </div>
             </>
           )}

@@ -91,7 +91,7 @@ export const authService = {
     if (!secret) throw new Error('JWT_SECRET tidak dikonfigurasi');
 
     const token = jwt.sign(
-      { userId: result.kader.id, posyanduId: result.posyandu.id, role: 'OWNER' },
+      { userId: result.kader.id, posyanduId: result.posyandu.id, role: 'OWNER', nama: result.kader.nama },
       secret,
       { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any }
     );
@@ -129,7 +129,7 @@ export const authService = {
     if (!secret) throw new Error('JWT_SECRET tidak dikonfigurasi');
 
     const token = jwt.sign(
-      { userId: kader.id, posyanduId: kader.posyanduId, role: kader.role },
+      { userId: kader.id, posyanduId: kader.posyanduId, role: kader.role, nama: kader.nama },
       secret,
       { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any }
     );
@@ -368,7 +368,7 @@ export const authService = {
     if (!secret) throw new Error('JWT_SECRET tidak dikonfigurasi');
 
     const token = jwt.sign(
-      { userId: kader.id, posyanduId: kader.posyanduId, role: kader.role },
+      { userId: kader.id, posyanduId: kader.posyanduId, role: kader.role, nama: kader.nama },
       secret,
       { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any }
     );

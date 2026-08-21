@@ -41,6 +41,7 @@ export const createPemeriksaanLansiaSchema = z.object({
   asamUrat: z.number().nonnegative('Asam urat tidak boleh bernilai negatif').refine((val) => val > 0, 'Asam urat harus lebih dari 0').optional().nullable(),
   keluhan: z.string().optional().nullable(),
   tindakan: z.string().optional().nullable(),
+  petugas: z.string().optional().nullable(),
 });
 
 export const updatePemeriksaanLansiaSchema = createPemeriksaanLansiaSchema.partial();

@@ -125,6 +125,7 @@ export const lansiaService = {
       asamUrat?: number;
       keluhan?: string;
       tindakan?: string;
+      petugas?: string;
     }
   ) {
     const lansia = await prisma.lansia.findUnique({ where: { id: lansiaId } });

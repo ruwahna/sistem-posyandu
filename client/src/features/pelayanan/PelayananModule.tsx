@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
 import { balitaApi, lansiaApi, Balita, Lansia } from "../../lib/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Reusable Modal Component
 import Modal from "../../components/Modal";
@@ -73,6 +74,7 @@ interface PelayananModuleProps {
 }
 
 export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
+  const { user } = useAuth();
   const [pasiens, setPasiens] = useState<Pasien[]>([]);
   const [query, setQuery] = useState("");
   const [selectedPasien, setSelectedPasien] = useState<Pasien | null>(null);
@@ -298,6 +300,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
           asiEksklusif: examAsi,
           obatCacing: examCacing,
           statusImunisasi: examImunisasi || undefined,
+          petugas: user?.nama || "Kader Posyandu",
         } as any);
 
         summaryText += `${lk ? `, LK: ${lk}cm` : ""}${lila ? `, LiLA: ${lila}cm` : ""}${examVitA ? ", Vit A" : ""}${examAsi ? ", ASI Eksklusif" : ""}${examCacing ? ", Obat Cacing" : ""}${examImunisasi ? `, Imunisasi: ${examImunisasi}` : ""}`;
@@ -328,6 +331,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
           asamUrat: urat,
           keluhan: examKeluhan || undefined,
           tindakan: examTindakan || undefined,
+          petugas: user?.nama || "Kader Posyandu",
         } as any);
 
         summaryText += `, TD: ${sis}/${dia}, GDS: ${gds}, LP: ${lp}cm${kol ? `, Kolesterol: ${kol}` : ""}${urat ? `, Asam Urat: ${urat}` : ""}`;

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import prisma from '../../shared/config/prisma';
 import { lansiaService } from './lansia.service';
 import { kelompokUmurLansia } from './lansia.helper';
 
@@ -149,8 +150,14 @@ export const createPemeriksaanLansia = async (req: Request, res: Response, next:
     const {
       tanggalPeriksa, beratBadan, tinggiBadan,
       tekananDarahSistol, tekananDarahDiastol, gulaDarahSewaktu, lingkarPerut,
-      kolesterol, asamUrat, keluhan, tindakan,
+      kolesterol, asamUrat, keluhan, tindakan, petugas,
     } = req.body;
+
+    let petugasNama = petugas || req.user?.nama;
+    if (!petugasNama && req.user?.userId) {
+      const kader = await prisma.kader.findUnique({ where: { id: req.user.userId }, select: { nama: true } });
+      petugasNama = kader?.nama;
+    }
 
     const data = await lansiaService.createPemeriksaan(lansiaId, {
       tanggalPeriksa: new Date(tanggalPeriksa),
@@ -164,6 +171,7 @@ export const createPemeriksaanLansia = async (req: Request, res: Response, next:
       asamUrat: asamUrat ? Number(asamUrat) : undefined,
       keluhan,
       tindakan,
+      petugas: petugasNama || 'Kader Posyandu',
     });
 
     res.status(201).json({ success: true, message: 'Pemeriksaan lansia berhasil ditambahkan', data });

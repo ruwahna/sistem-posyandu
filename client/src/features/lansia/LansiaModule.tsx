@@ -7,6 +7,7 @@ import { TableSkeleton } from "../../components/Skeleton";
 import LansiaIcon from "../../components/LansiaIcon";
 import { lansiaApi } from "../../lib/api";
 import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   ArrowLeft,
   Plus,
@@ -90,6 +91,7 @@ interface LansiaModuleProps {
 }
 
 export default function LansiaModule({ posyanduId, searchQuery = "", selectedId }: LansiaModuleProps) {
+  const { user } = useAuth();
   const [lansias, setLansias] = useState<Lansia[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -571,6 +573,7 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId 
         asamUrat: urat,
         keluhan: examKeluhan || undefined,
         tindakan: examTindakan || undefined,
+        petugas: user?.nama || "Kader Posyandu",
       } as any);
       // Refresh lansia detail
       const res = await lansiaApi.getById(posyanduId, activeLansia.id);

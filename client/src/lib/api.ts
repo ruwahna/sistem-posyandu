@@ -126,6 +126,7 @@ export interface PemeriksaanBalita {
   asiEksklusif?: boolean;
   obatCacing?: boolean;
   statusImunisasi?: string;
+  petugas?: string;
 }
 
 export interface Lansia {
@@ -159,6 +160,7 @@ export interface PemeriksaanLansia {
   asamUrat?: number;
   keluhan?: string;
   tindakan?: string;
+  petugas?: string;
 }
 
 // ─────────────────────────────────────────────────────────────

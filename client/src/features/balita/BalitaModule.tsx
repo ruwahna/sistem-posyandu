@@ -33,6 +33,7 @@ import {
 } from "recharts";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, convertStatusBbUToCode, convertStatusTbUToCode, convertStatusBbTbToCode } from "../../lib/zScoreCalculator";
 import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Tipe Data
 export interface PemeriksaanBalita {
@@ -134,11 +135,13 @@ function calculateAgeInMonths(birthDateStr: string, refDate: Date = new Date()):
 
 interface BalitaModuleProps {
   posyanduId: string;
+  onNavigateToPelayanan?: (id: string) => void;
   searchQuery?: string;
   selectedId?: string;
 }
 
-export default function BalitaModule({ posyanduId, searchQuery = "", selectedId }: BalitaModuleProps) {
+export default function BalitaModule({ posyanduId, onNavigateToPelayanan, selectedId, searchQuery }: BalitaModuleProps) {
+  const { user } = useAuth();
   const [balitas, setBalitas] = useState<Balita[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -638,6 +641,7 @@ export default function BalitaModule({ posyanduId, searchQuery = "", selectedId 
         asiEksklusif: examAsi,
         obatCacing: examCacing,
         statusImunisasi: examImunisasi || undefined,
+        petugas: user?.nama || "Kader Posyandu",
       } as any);
       // Refresh balita detail
       const res = await balitaApi.getById(posyanduId, activeBalita.id);
