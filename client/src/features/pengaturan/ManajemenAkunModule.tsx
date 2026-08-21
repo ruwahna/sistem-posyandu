@@ -16,6 +16,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { kaderApi, KaderMember } from "../../lib/api";
 import PageHelmet from "../../components/PageHelmet";
+import { AkunTableSkeleton } from "../../components/Skeleton";
 
 interface ManajemenAkunModuleProps {
   posyanduId?: string | null;
@@ -364,10 +365,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
 
             {/* Table */}
             {isLoading ? (
-              <div className="py-12 flex flex-col items-center justify-center gap-2 text-saas-muted">
-                <Loader2 className="w-7 h-7 text-saas-primary animate-spin" />
-                <p className="text-xs font-medium">Memuat data kader posyandu...</p>
-              </div>
+              <AkunTableSkeleton rows={4} />
             ) : kaders.length === 0 ? (
               <div className="py-12 text-center text-saas-muted text-xs">
                 Belum ada data kader terdaftar.

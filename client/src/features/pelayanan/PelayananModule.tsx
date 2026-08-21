@@ -19,6 +19,8 @@ import { balitaApi, lansiaApi, Balita, Lansia } from "../../lib/api";
 // Reusable Modal Component
 import Modal from "../../components/Modal";
 import PageHelmet from "../../components/PageHelmet";
+import { PelayananSkeleton } from "../../components/Skeleton";
+import LansiaIcon from "../../components/LansiaIcon";
 
 // Tipe Data Pasien
 interface Pasien {
@@ -106,8 +108,10 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
 
   // Session Log State
   const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchPatients = () => {
+    setIsLoading(true);
     Promise.all([
       balitaApi.getAll(posyanduId),
       lansiaApi.getAll(posyanduId)
@@ -135,7 +139,10 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
         }));
         setPasiens([...balitas, ...lansias]);
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   useEffect(() => {
@@ -498,6 +505,18 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHelmet
+          title={activeTab === "Balita" ? "Pelayanan Balita — PosyanduKita" : "Pelayanan Lansia — PosyanduKita"}
+          description="Pencatatan pelayanan dan pemeriksaan PosyanduKita."
+        />
+        <PelayananSkeleton />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHelmet
@@ -580,7 +599,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                   : "text-saas-muted hover:text-saas-dark"
               }`}
             >
-              <Heart className="w-4 h-4" />
+              <LansiaIcon className="w-4 h-4" />
               <span>Lansia</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                 activeTab === "Lansia" ? "bg-indigo-50 text-indigo-600" : "bg-gray-200/70 text-saas-muted"
@@ -665,7 +684,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                           ? p.tipe === "Balita" ? "bg-saas-primary text-white" : "bg-indigo-600 text-white"
                           : p.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-indigo-50 text-indigo-600"
                       }`}>
-                        {p.tipe === "Balita" ? <Baby className="w-4 h-4" /> : <Heart className="w-4 h-4" />}
+                        {p.tipe === "Balita" ? <Baby className="w-4 h-4" /> : <LansiaIcon className="w-4 h-4" />}
                       </div>
                       <div>
                         <p className={`font-bold transition-colors ${
@@ -708,7 +727,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
               <div className={`w-16 h-16 rounded-full flex items-center justify-center border ${
                 activeTab === "Balita" ? "bg-teal-50 border-teal-100 text-saas-primary" : "bg-indigo-50 border-indigo-100 text-indigo-600"
               }`}>
-                {activeTab === "Balita" ? <Baby className="w-8 h-8" /> : <Heart className="w-8 h-8" />}
+                {activeTab === "Balita" ? <Baby className="w-8 h-8" /> : <LansiaIcon className="w-8 h-8" />}
               </div>
               <div>
                 <h3 className="font-bold text-sm text-saas-dark">
@@ -748,7 +767,7 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                         selectedPasien.tipe === "Balita" ? "bg-teal-100 text-saas-primary" : "bg-indigo-100 text-indigo-600"
                       }`}>
-                        {selectedPasien.tipe === "Balita" ? <Baby className="w-4 h-4" /> : <Heart className="w-4 h-4" />}
+                        {selectedPasien.tipe === "Balita" ? <Baby className="w-4 h-4" /> : <LansiaIcon className="w-4 h-4" />}
                       </div>
                       <div>
                         <p className="font-extrabold text-saas-dark text-sm leading-none">{selectedPasien.nama}</p>

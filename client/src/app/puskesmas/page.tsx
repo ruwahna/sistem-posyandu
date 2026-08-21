@@ -27,7 +27,25 @@ import {
   Eye
 } from "@phosphor-icons/react";
 import PageHelmet from "../../components/PageHelmet";
+import LansiaIcon from "../../components/LansiaIcon";
+import { Skeleton, PuskesmasTableSkeleton } from "../../components/Skeleton";
 import { publicPuskesmasApi, PublicPemeriksaanItem, PublicPosyanduInfo } from "../../lib/api";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from "recharts";
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  LineChart as LineChartIcon
+} from "lucide-react";
 
 export default function PuskesmasPublicPage() {
   const [data, setData] = useState<PublicPemeriksaanItem[]>([]);
@@ -54,6 +72,52 @@ export default function PuskesmasPublicPage() {
 
   // Detail Modal state
   const [selectedItem, setSelectedItem] = useState<PublicPemeriksaanItem | null>(null);
+
+  // Participant specific history & trend for detail modal
+  const participantHistory = useMemo(() => {
+    if (!selectedItem) return [];
+    const items = data
+      .filter(
+        (d) =>
+          d.namaWarga.toLowerCase() === selectedItem.namaWarga.toLowerCase() &&
+          d.kategori === selectedItem.kategori
+      )
+      .sort((a, b) => new Date(a.tanggalPeriksa).getTime() - new Date(b.tanggalPeriksa).getTime());
+
+    // Map into friendly format for charts
+    return items.map((item) => ({
+      ...item,
+      tanggal: item.tanggalPeriksa,
+      bb: item.beratBadan,
+      tb: item.tinggiBadan,
+      sistol: item.sistol || (item.tekananDarah ? parseInt(item.tekananDarah.split('/')[0]) : undefined),
+      diastol: item.diastol || (item.tekananDarah ? parseInt(item.tekananDarah.split('/')[1]) : undefined),
+      gds: item.gds,
+    }));
+  }, [selectedItem, data]);
+
+  const prevRecord = participantHistory.length > 1 ? participantHistory[participantHistory.length - 2] : null;
+  const bbDiff = prevRecord && selectedItem ? Number((selectedItem.beratBadan - prevRecord.beratBadan).toFixed(2)) : 0;
+  const tbDiff = prevRecord && selectedItem ? Number((selectedItem.tinggiBadan - prevRecord.tinggiBadan).toFixed(1)) : 0;
+
+  // Handle Escape key and overflow prevention when modal is open
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedItem) {
+        setSelectedItem(null);
+      }
+    };
+    if (selectedItem) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleKeyDown);
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedItem]);
 
   // Debounce search after-typing (300ms)
   useEffect(() => {
@@ -289,7 +353,7 @@ export default function PuskesmasPublicPage() {
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
-              <Heartbeat className="w-4 h-4" weight="bold" /> Pemantauan Lansia
+              <LansiaIcon className="w-4 h-4" /> Pemantauan Lansia
             </button>
           </div>
 
@@ -323,11 +387,15 @@ export default function PuskesmasPublicPage() {
               Total {activeTab} Periksa
             </span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-slate-900">{totalRecords}</span>
+              {isLoading ? (
+                <Skeleton variant="rounded" className="h-8 w-16 my-0.5" />
+              ) : (
+                <span className="text-2xl font-bold text-slate-900">{totalRecords}</span>
+              )}
               {activeTab === "Balita" ? (
                 <Baby className="w-5 h-5 text-teal-600 shrink-0" weight="bold" />
               ) : (
-                <Heartbeat className="w-5 h-5 text-indigo-600 shrink-0" weight="bold" />
+                <LansiaIcon className="w-5 h-5 shrink-0" />
               )}
             </div>
             <p className="text-[10px] text-slate-500 font-medium">Hasil penginputan terkini</p>
@@ -338,7 +406,11 @@ export default function PuskesmasPublicPage() {
               <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Anak Kurang Tinggi</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-bold text-amber-700">{totalStunting}</span>
+                  {isLoading ? (
+                    <Skeleton variant="rounded" className="h-8 w-14 my-0.5" />
+                  ) : (
+                    <span className="text-2xl font-bold text-amber-700">{totalStunting}</span>
+                  )}
                   <Baby className="w-5 h-5 text-amber-600 shrink-0" weight="bold" />
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium">Kasus Stunting (TB/U)</p>
@@ -347,7 +419,11 @@ export default function PuskesmasPublicPage() {
               <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Perlu Rujukan</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-bold text-red-700">{totalRujukan}</span>
+                  {isLoading ? (
+                    <Skeleton variant="rounded" className="h-8 w-14 my-0.5" />
+                  ) : (
+                    <span className="text-2xl font-bold text-red-700">{totalRujukan}</span>
+                  )}
                   <WarningCircle className="w-5 h-5 text-red-600 shrink-0" weight="bold" />
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium">PMT / Tindak Lanjut Medis</p>
@@ -358,8 +434,12 @@ export default function PuskesmasPublicPage() {
               <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Tensi Tinggi</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-bold text-indigo-700">{totalHipertensi}</span>
-                  <Heartbeat className="w-5 h-5 text-indigo-600 shrink-0" weight="bold" />
+                  {isLoading ? (
+                    <Skeleton variant="rounded" className="h-8 w-14 my-0.5" />
+                  ) : (
+                    <span className="text-2xl font-bold text-indigo-700">{totalHipertensi}</span>
+                  )}
+                  <LansiaIcon className="w-5 h-5 shrink-0" />
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium">Hipertensi (Sistol ≥140)</p>
               </div>
@@ -367,7 +447,11 @@ export default function PuskesmasPublicPage() {
               <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Gula Darah Tinggi</span>
                 <div className="flex items-baseline justify-between">
-                  <span className="text-2xl font-bold text-rose-700">{totalDiabetes}</span>
+                  {isLoading ? (
+                    <Skeleton variant="rounded" className="h-8 w-14 my-0.5" />
+                  ) : (
+                    <span className="text-2xl font-bold text-rose-700">{totalDiabetes}</span>
+                  )}
                   <Drop className="w-5 h-5 text-rose-600 shrink-0" weight="bold" />
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium">Diabetes (GDS ≥200)</p>
@@ -378,7 +462,11 @@ export default function PuskesmasPublicPage() {
           <div className="bg-white p-4 rounded-lg border border-slate-200 space-y-1">
             <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Posyandu Aktif</span>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-slate-900">{posyandus.length}</span>
+              {isLoading ? (
+                <Skeleton variant="rounded" className="h-8 w-12 my-0.5" />
+              ) : (
+                <span className="text-2xl font-bold text-slate-900">{posyandus.length}</span>
+              )}
               <Buildings className="w-5 h-5 text-teal-600 shrink-0" weight="bold" />
             </div>
             <p className="text-[10px] text-slate-500 font-medium">Wilayah Binaan Puskesmas</p>
@@ -666,10 +754,7 @@ export default function PuskesmasPublicPage() {
           </div>
 
           {isLoading ? (
-            <div className="py-16 flex flex-col items-center justify-center space-y-2">
-              <CircleNotch className="w-7 h-7 text-indigo-600 animate-spin" weight="bold" />
-              <p className="text-xs font-medium text-slate-500">Memuat data pemeriksaan {activeTab.toLowerCase()}...</p>
-            </div>
+            <PuskesmasTableSkeleton rows={pageSize > 10 ? 10 : pageSize} />
           ) : paginatedData.length > 0 ? (
             <>
               <div className="overflow-x-auto border border-slate-200 rounded">
@@ -934,97 +1019,332 @@ export default function PuskesmasPublicPage() {
         </div>
       </div>
 
-      {/* DETAIL MODAL - CLEAN & COMPACT */}
+      {/* DETAIL MODAL - GRAFIK PERKEMBANGAN & RIWAYAT LENGKAP */}
       {selectedItem && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 print:hidden">
-          <div className="bg-white rounded-lg max-w-md w-full p-5 border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <span className={`w-7 h-7 rounded flex items-center justify-center text-white ${
-                  selectedItem.kategori === "Balita" ? "bg-teal-600" : "bg-indigo-600"
+        <div
+          onClick={() => setSelectedItem(null)}
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 print:hidden animate-in fade-in duration-200 cursor-pointer"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col border border-slate-200 shadow-2xl overflow-hidden cursor-default"
+          >
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center font-bold text-white shadow-sm shrink-0 ${
+                  selectedItem.kategori === "Balita" ? "bg-teal-600 shadow-teal-500/20" : "bg-indigo-600 shadow-indigo-500/20"
                 }`}>
-                  {selectedItem.kategori === "Balita" ? <Baby className="w-4 h-4" weight="bold" /> : <Heartbeat className="w-4 h-4" weight="bold" />}
-                </span>
+                  {selectedItem.kategori === "Balita" ? <Baby className="w-5 h-5 sm:w-6 sm:h-6" weight="bold" /> : <LansiaIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+                </div>
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900">Detail Hasil Pemeriksaan {selectedItem.kategori}</h3>
-                  <p className="text-[10px] text-slate-500">Tanggal Periksa: {selectedItem.tanggalPeriksa}</p>
+                  <h3 className="font-bold text-base sm:text-lg text-slate-900 leading-tight">
+                    Grafik Perkembangan & Riwayat: {selectedItem.namaWarga}
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5">
+                    Posyandu: <strong className="text-slate-800">{selectedItem.posyanduNama}</strong> ({selectedItem.wilayah}) • Tanggal Terkini: {selectedItem.tanggalPeriksa}
+                  </p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedItem(null)}
-                className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 font-bold text-sm transition-colors shrink-0"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded space-y-1">
-                <p className="text-[10px] font-bold uppercase text-slate-500">Identitas Warga</p>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900 text-sm">{selectedItem.namaWarga}</span>
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1 pr-3">
+              {/* Header Identity Banner */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-slate-50 to-teal-50/20 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-slate-900 text-sm">{selectedItem.namaWarga}</span>
+                    <span className="px-2 py-0.5 bg-white border border-slate-200 text-slate-700 font-bold text-[10px] rounded-full">
+                      {selectedItem.kategori} ({selectedItem.usiaInfo})
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Jenis Kelamin: <strong>{selectedItem.jenisKelamin === "L" ? "Laki-laki" : "Perempuan"}</strong>
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    Total Rekam Tercatat: <strong className="text-teal-700">{participantHistory.length} Kali Pemeriksaan</strong>
+                  </p>
                 </div>
-                <p className="text-slate-600 text-[11px]">
-                  Kategori: <strong className="text-slate-900">{selectedItem.kategori} ({selectedItem.usiaInfo})</strong> | Kelamin: {selectedItem.jenisKelamin === "L" ? "Laki-laki" : "Perempuan"}
-                </p>
-                <p className="text-slate-600 text-[11px]">
-                  Posyandu: <strong className="text-slate-900">{selectedItem.posyanduNama}</strong> ({selectedItem.wilayah})
-                </p>
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <span className={`px-3 py-1 text-xs font-bold rounded-full border ${
+                    selectedItem.statusRingkasan.toLowerCase().includes("normal")
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-red-50 text-red-700 border-red-200"
+                  }`}>
+                    {selectedItem.statusRingkasan}
+                  </span>
+                </div>
               </div>
 
-              <div className="space-y-2 border-t border-slate-100 pt-3">
-                <p className="font-semibold text-slate-900">Hasil Pengukuran Medis:</p>
-                <div className="grid grid-cols-2 gap-2 text-slate-800">
-                  <div className="p-2 bg-slate-50 border border-slate-200 rounded">
-                    <span className="text-[10px] text-slate-500 block">Berat Badan</span>
-                    <span className="font-bold text-xs text-slate-900">{selectedItem.beratBadan} kg</span>
-                  </div>
-                  <div className="p-2 bg-slate-50 border border-slate-200 rounded">
-                    <span className="text-[10px] text-slate-500 block">Tinggi Badan</span>
-                    <span className="font-bold text-xs text-slate-900">{selectedItem.tinggiBadan} cm</span>
-                  </div>
+              {/* Ringkasan Trend Perkembangan Terakhir */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Ringkasan Trend Perkembangan Terakhir
+                </h4>
 
-                  {selectedItem.kategori === "Balita" ? (
-                    <>
-                      <div className="p-2 bg-slate-50 border border-slate-200 rounded">
-                        <span className="text-[10px] text-slate-500 block">Status TB/U (Stunting)</span>
-                        <span className="font-semibold text-xs">{selectedItem.statusTbU || "Normal"}</span>
-                      </div>
-                      <div className="p-2 bg-slate-50 border border-slate-200 rounded">
-                        <span className="text-[10px] text-slate-500 block">Status BB/U</span>
-                        <span className="font-semibold text-xs">{selectedItem.statusBbU || "Normal"}</span>
-                      </div>
-                    </>
+                {selectedItem.kategori === "Balita" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* BB Trend */}
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Berat Badan (BB)</span>
+                      <p className="text-lg font-bold text-slate-900">{selectedItem.beratBadan} kg</p>
+                      {prevRecord ? (
+                        <div className="pt-0.5">
+                          {bbDiff > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                              <TrendingUp className="w-3 h-3" /> Naik +{bbDiff} kg
+                            </span>
+                          ) : bbDiff < 0 ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-700 bg-red-100/80 px-2 py-0.5 rounded-full">
+                              <TrendingDown className="w-3 h-3" /> Turun {bbDiff} kg
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-full">
+                              <Minus className="w-3 h-3" /> Tetap (0 kg)
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-500 font-semibold">Pemeriksaan Terkini</span>
+                      )}
+                    </div>
+
+                    {/* TB Trend */}
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Tinggi Badan (TB)</span>
+                      <p className="text-lg font-bold text-slate-900">{selectedItem.tinggiBadan} cm</p>
+                      {prevRecord ? (
+                        <div className="pt-0.5">
+                          {tbDiff > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                              <TrendingUp className="w-3 h-3" /> Tumbuh +{tbDiff} cm
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-full">
+                              <Minus className="w-3 h-3" /> Tetap ({tbDiff} cm)
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-500 font-semibold">Pemeriksaan Terkini</span>
+                      )}
+                    </div>
+
+                    {/* Status Gizi WHO */}
+                    <div className="p-3.5 bg-teal-50/50 border border-teal-200/80 rounded-xl space-y-1">
+                      <span className="text-[10px] font-bold text-teal-700 uppercase">Status Gizi (WHO)</span>
+                      <p className="text-xs font-bold text-teal-950 leading-snug">
+                        {selectedItem.statusBbU ? `BB/U: ${selectedItem.statusBbU}` : "Normal"}
+                      </p>
+                      <p className="text-[10px] font-semibold text-teal-800">
+                        TB/U: {selectedItem.statusTbU || "Normal"} • BB/TB: {selectedItem.statusBbTb || "Normal"}
+                      </p>
+                      <p className="text-[10px] text-teal-700">
+                        LK: {selectedItem.lingkarKepala ? `${selectedItem.lingkarKepala} cm` : "-"} • Vit A: {selectedItem.vitaminA ? "Ya" : "Tidak"}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Tekanan Darah */}
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Tekanan Darah (TD)</span>
+                      <p className="text-lg font-bold text-slate-900">
+                        {selectedItem.tekananDarah || (selectedItem.sistol ? `${selectedItem.sistol}/${selectedItem.diastol}` : "-")} <span className="text-xs font-normal">mmHg</span>
+                      </p>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        (selectedItem.sistol || (selectedItem.tekananDarah ? parseInt(selectedItem.tekananDarah.split('/')[0]) : 0)) >= 140
+                          ? "bg-red-100 text-red-700"
+                          : "bg-emerald-100 text-emerald-800"
+                      }`}>
+                        {(selectedItem.sistol || (selectedItem.tekananDarah ? parseInt(selectedItem.tekananDarah.split('/')[0]) : 0)) >= 140 ? "Hipertensi" : "Normal"}
+                      </span>
+                    </div>
+
+                    {/* Gula Darah */}
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Gula Darah (GDS)</span>
+                      <p className="text-lg font-bold text-slate-900">
+                        {selectedItem.gds ? `${selectedItem.gds} mg/dL` : "-"}
+                      </p>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        (selectedItem.gds || 0) >= 200 ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-800"
+                      }`}>
+                        {(selectedItem.gds || 0) >= 200 ? "GDS Tinggi" : "Normal"}
+                      </span>
+                    </div>
+
+                    {/* Kolesterol & Asam Urat */}
+                    <div className="p-3.5 bg-indigo-50/50 border border-indigo-200/80 rounded-xl space-y-1">
+                      <span className="text-[10px] font-bold text-indigo-700 uppercase">Kolesterol & Asam Urat</span>
+                      <p className="text-xs font-bold text-indigo-950">
+                        Kolesterol: {selectedItem.kolesterol || "-"} • Asam Urat: {selectedItem.asamUrat || "-"}
+                      </p>
+                      <p className="text-[10px] font-semibold text-indigo-800">
+                        IMT: {selectedItem.imt || "-"} • BB: {selectedItem.beratBadan} kg / TB: {selectedItem.tinggiBadan} cm
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Grafik Perkembangan Peserta (Line Chart) */}
+              <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <LineChartIcon className="w-4 h-4 text-teal-600" />
+                    Grafik Perkembangan {selectedItem.kategori === "Balita" ? "Berat & Tinggi Badan" : "Tekanan Darah & Gula Darah"}
+                  </h4>
+                  <span className="text-[10px] font-bold text-slate-500 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
+                    {participantHistory.length} Titik Data
+                  </span>
+                </div>
+
+                <div className="h-60 w-full pt-1">
+                  {participantHistory.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={participantHistory}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                        <XAxis dataKey="tanggal" tick={{ fontSize: 11 }} stroke="#64748B" />
+                        <YAxis tick={{ fontSize: 11 }} stroke="#64748B" />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#FFF",
+                            borderRadius: "8px",
+                            border: "1px solid #CBD5E1",
+                            fontSize: "12px",
+                          }}
+                        />
+                        <Legend />
+                        {selectedItem.kategori === "Balita" ? (
+                          <>
+                            <Line
+                              type="monotone"
+                              dataKey="bb"
+                              name="Berat Badan (kg)"
+                              stroke="#0D9488"
+                              strokeWidth={3}
+                              dot={{ r: 4 }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="tb"
+                              name="Tinggi Badan (cm)"
+                              stroke="#3B82F6"
+                              strokeWidth={3}
+                              dot={{ r: 4 }}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <Line
+                              type="monotone"
+                              dataKey="sistol"
+                              name="TD Sistol (mmHg)"
+                              stroke="#EF4444"
+                              strokeWidth={3}
+                              dot={{ r: 4 }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="diastol"
+                              name="TD Diastol (mmHg)"
+                              stroke="#3B82F6"
+                              strokeWidth={2}
+                              dot={{ r: 3 }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="gds"
+                              name="GDS (mg/dL)"
+                              stroke="#F59E0B"
+                              strokeWidth={2}
+                              strokeDasharray="4 4"
+                              dot={{ r: 3 }}
+                            />
+                          </>
+                        )}
+                      </LineChart>
+                    </ResponsiveContainer>
                   ) : (
-                    <>
-                      <div className="p-2 bg-slate-50 border border-slate-200 rounded">
-                        <span className="text-[10px] text-slate-500 block">Tekanan Darah</span>
-                        <span className="font-bold text-xs text-slate-900">{selectedItem.tekananDarah || "-"}</span>
-                      </div>
-                      <div className="p-2 bg-slate-50 border border-slate-200 rounded">
-                        <span className="text-[10px] text-slate-500 block">Gula Darah Sewaktu</span>
-                        <span className="font-bold text-xs text-slate-900">{selectedItem.gds ? `${selectedItem.gds} mg/dL` : "-"}</span>
-                      </div>
-                    </>
+                    <div className="h-full flex items-center justify-center text-xs text-slate-500">
+                      Belum ada data grafik historis untuk peserta ini.
+                    </div>
                   )}
                 </div>
               </div>
 
+              {/* Tabel Histori Lengkap */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Riwayat Histori Pemeriksaan Lengkap ({participantHistory.length})
+                </h4>
+                <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-100/80 border-b border-slate-200 font-bold text-slate-700">
+                        <th className="py-2.5 px-3">Tanggal</th>
+                        <th className="py-2.5 px-3">Posyandu</th>
+                        <th className="py-2.5 px-3">Parameter Ukur</th>
+                        <th className="py-2.5 px-3">Status / Indikator</th>
+                        <th className="py-2.5 px-3">Catatan / Rujukan</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {participantHistory.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-2.5 px-3 font-bold text-slate-900 whitespace-nowrap">{item.tanggalPeriksa}</td>
+                          <td className="py-2.5 px-3 font-medium text-slate-600">{item.posyanduNama}</td>
+                          <td className="py-2.5 px-3 text-slate-800">
+                            {item.kategori === "Balita" ? (
+                              <span>BB: <strong>{item.beratBadan} kg</strong>, TB: <strong>{item.tinggiBadan} cm</strong>{item.lingkarKepala ? `, LK: ${item.lingkarKepala} cm` : ""}</span>
+                            ) : (
+                              <span>TD: <strong>{item.tekananDarah || `${item.sistol || '-'}/${item.diastol || '-'}`}</strong>{item.gds ? `, GDS: ${item.gds} mg/dL` : ""}{item.kolesterol ? `, Kol: ${item.kolesterol}` : ""}</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 font-semibold">
+                            <span className={`px-2 py-0.5 text-[10px] rounded-full font-bold ${
+                              item.statusRingkasan.toLowerCase().includes("normal")
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-red-100 text-red-800"
+                            }`}>
+                              {item.statusRingkasan}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-600 max-w-xs truncate">
+                            {item.tindakanCatatan || "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Catatan Medis & Rujukan */}
               {selectedItem.tindakanCatatan && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded space-y-1">
+                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
                   <p className="text-[10px] font-bold uppercase text-amber-800">Catatan Medis & Tindakan Rujukan</p>
-                  <p className="text-xs text-amber-900 font-medium">{selectedItem.tindakanCatatan}</p>
+                  <p className="text-xs text-amber-950 font-medium">{selectedItem.tindakanCatatan}</p>
                 </div>
               )}
             </div>
 
-            <div className="pt-2 flex justify-end">
+            {/* Modal Footer */}
+            <div className="p-3 sm:p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end shrink-0">
               <button
                 type="button"
                 onClick={() => setSelectedItem(null)}
-                className="px-3.5 py-1.5 bg-slate-800 text-white font-semibold text-xs rounded hover:bg-slate-900 transition-colors"
+                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-bold transition-all shadow-xs"
               >
-                Tutup Detail
+                Tutup Jendela
               </button>
             </div>
           </div>

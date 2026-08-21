@@ -249,3 +249,307 @@ export function DetailViewSkeleton() {
     </div>
   );
 }
+
+// ── Pelayanan (Pencatatan Pelayanan Balita & Lansia) Skeleton ──
+export function PelayananSkeleton() {
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Header & Switch Tab Skeleton */}
+      <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton variant="rounded" className="h-4 w-28 rounded-full" />
+          <Skeleton variant="rounded" className="h-7 w-72" />
+          <Skeleton variant="rounded" className="h-3.5 w-96 max-w-full" />
+        </div>
+        <div className="flex items-center flex-wrap gap-3">
+          <Skeleton variant="rounded" className="h-10 w-48 rounded-xl" />
+          <Skeleton variant="rounded" className="h-10 w-36 rounded-input" />
+        </div>
+      </div>
+
+      {/* 2-Column Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Patient List */}
+        <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 flex flex-col h-[600px] space-y-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Skeleton variant="rounded" className="h-4 w-24" />
+              <Skeleton variant="rounded" className="h-4 w-16 rounded-full" />
+            </div>
+            <Skeleton variant="rounded" className="h-3 w-52" />
+          </div>
+
+          <Skeleton variant="rounded" className="h-10 w-full rounded-input" />
+
+          <div className="space-y-2.5 pt-2 flex-1 overflow-hidden">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="p-3 border border-gray-100 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Skeleton variant="rounded" className="w-8 h-8 rounded-lg shrink-0" />
+                  <div className="space-y-1.5">
+                    <Skeleton variant="rounded" className="h-3.5 w-28" />
+                    <Skeleton variant="rounded" className="h-2.5 w-20" />
+                  </div>
+                </div>
+                <Skeleton variant="rounded" className="w-4 h-4 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right Column: Form Area */}
+        <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 lg:col-span-2 h-[600px] flex flex-col justify-between">
+          <div className="space-y-4">
+            {/* Selected Patient Banner Skeleton */}
+            <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <Skeleton variant="rounded" className="h-3 w-24" />
+                <Skeleton variant="rounded" className="h-3 w-16" />
+              </div>
+              <div className="flex items-center gap-3">
+                <Skeleton variant="rounded" className="w-8 h-8 rounded-lg shrink-0" />
+                <div className="space-y-1.5 flex-1">
+                  <Skeleton variant="rounded" className="h-4 w-44" />
+                  <Skeleton variant="rounded" className="h-3 w-64 max-w-full" />
+                </div>
+              </div>
+            </div>
+
+            {/* Form Fields Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div className="space-y-1.5">
+                <Skeleton variant="rounded" className="h-3 w-24" />
+                <Skeleton variant="rounded" className="h-10 w-full rounded-input" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton variant="rounded" className="h-3 w-28" />
+                <Skeleton variant="rounded" className="h-10 w-full rounded-input" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton variant="rounded" className="h-3 w-28" />
+                <Skeleton variant="rounded" className="h-10 w-full rounded-input" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2">
+              <div className="space-y-1.5">
+                <Skeleton variant="rounded" className="h-3 w-28" />
+                <Skeleton variant="rounded" className="h-10 w-full rounded-input" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton variant="rounded" className="h-3 w-28" />
+                <Skeleton variant="rounded" className="h-10 w-full rounded-input" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton variant="rounded" className="h-3 w-20" />
+                <Skeleton variant="rounded" className="h-10 w-full rounded-input" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton variant="rounded" className="h-3 w-20" />
+                <Skeleton variant="rounded" className="h-10 w-full rounded-input" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div className="space-y-1.5">
+                <Skeleton variant="rounded" className="h-3 w-28" />
+                <Skeleton variant="rounded" className="h-10 w-full rounded-input" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton variant="rounded" className="h-3 w-28" />
+                <Skeleton variant="rounded" className="h-10 w-full rounded-input" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton variant="rounded" className="h-3 w-28" />
+                <Skeleton variant="rounded" className="h-10 w-full rounded-input" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-gray-50">
+            <Skeleton variant="rounded" className="h-10 w-44 rounded-input" />
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Session Log Skeleton */}
+      <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2">
+          <div className="space-y-1.5">
+            <Skeleton variant="rounded" className="h-5 w-56" />
+            <Skeleton variant="rounded" className="h-3.5 w-72" />
+          </div>
+          <Skeleton variant="rounded" className="h-8 w-48 rounded-lg" />
+        </div>
+        <div className="space-y-3 pt-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex justify-between items-center py-3 border-b border-gray-50 last:border-0">
+              <Skeleton variant="rounded" className="h-4 w-32" />
+              <Skeleton variant="rounded" className="h-4 w-16 rounded-md" />
+              <Skeleton variant="rounded" className="h-4 w-48" />
+              <Skeleton variant="rounded" className="h-5 w-24 rounded-full" />
+              <Skeleton variant="rounded" className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Puskesmas Portal Table Skeleton ──
+export function PuskesmasTableSkeleton({ rows = 6 }: { rows?: number }) {
+  return (
+    <div className="overflow-x-auto border border-slate-200 rounded animate-in fade-in duration-200">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50">
+            <th className="p-3 w-12"><Skeleton variant="rounded" className="h-3.5 w-6" /></th>
+            <th className="p-3 w-28"><Skeleton variant="rounded" className="h-3.5 w-20" /></th>
+            <th className="p-3 w-44"><Skeleton variant="rounded" className="h-3.5 w-32" /></th>
+            <th className="p-3 w-40"><Skeleton variant="rounded" className="h-3.5 w-28" /></th>
+            <th className="p-3 w-28"><Skeleton variant="rounded" className="h-3.5 w-20" /></th>
+            <th className="p-3"><Skeleton variant="rounded" className="h-3.5 w-48" /></th>
+            <th className="p-3 w-36"><Skeleton variant="rounded" className="h-3.5 w-24" /></th>
+            <th className="p-3 text-right w-20"><Skeleton variant="rounded" className="h-3.5 w-12 ml-auto" /></th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-200 text-xs">
+          {Array.from({ length: rows }).map((_, i) => (
+            <tr key={i} className="hover:bg-slate-50/50">
+              <td className="p-3"><Skeleton variant="rounded" className="h-3.5 w-5" /></td>
+              <td className="p-3"><Skeleton variant="rounded" className="h-3.5 w-24" /></td>
+              <td className="p-3">
+                <div className="space-y-1">
+                  <Skeleton variant="rounded" className="h-3.5 w-28" />
+                  <Skeleton variant="rounded" className="h-2.5 w-16" />
+                </div>
+              </td>
+              <td className="p-3"><Skeleton variant="rounded" className="h-4 w-32 font-bold" /></td>
+              <td className="p-3"><Skeleton variant="rounded" className="h-5 w-16 rounded-full" /></td>
+              <td className="p-3"><Skeleton variant="rounded" className="h-3.5 w-56" /></td>
+              <td className="p-3"><Skeleton variant="rounded" className="h-6 w-24 rounded-full" /></td>
+              <td className="p-3 text-right"><Skeleton variant="rounded" className="h-6 w-14 rounded ml-auto" /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Puskesmas Full Page Skeleton ──
+export function PuskesmasSkeleton() {
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300 max-w-7xl mx-auto px-4 py-8">
+      {/* Top Banner */}
+      <div className="bg-white rounded-lg p-5 border border-slate-200 space-y-3">
+        <Skeleton variant="rounded" className="h-4 w-64" />
+        <Skeleton variant="rounded" className="h-7 w-96 max-w-full" />
+        <Skeleton variant="rounded" className="h-4 w-full max-w-2xl" />
+      </div>
+
+      {/* 4 Cards Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-white p-4 rounded-lg border border-slate-200 space-y-2">
+            <Skeleton variant="rounded" className="h-3 w-24" />
+            <div className="flex items-center justify-between">
+              <Skeleton variant="rounded" className="h-8 w-16" />
+              <Skeleton variant="circular" className="w-6 h-6" />
+            </div>
+            <Skeleton variant="rounded" className="h-2.5 w-32" />
+          </div>
+        ))}
+      </div>
+
+      {/* Filter Bar */}
+      <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <Skeleton variant="rounded" className="h-9 w-full rounded-md" />
+          <Skeleton variant="rounded" className="h-9 w-full rounded-md" />
+          <Skeleton variant="rounded" className="h-9 w-full rounded-md" />
+          <Skeleton variant="rounded" className="h-9 w-full rounded-md" />
+        </div>
+      </div>
+
+      {/* Table */}
+      <PuskesmasTableSkeleton rows={8} />
+    </div>
+  );
+}
+
+// ── Riwayat Table Skeleton ──
+export function RiwayatTableSkeleton({ rows = 6 }: { rows?: number }) {
+  return (
+    <div className="overflow-x-auto animate-in fade-in duration-200">
+      <table className="w-full min-w-[700px] text-left border-collapse">
+        <thead>
+          <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
+            <th className="pb-3 px-3 w-32"><Skeleton variant="rounded" className="h-3.5 w-24" /></th>
+            <th className="pb-3 px-3 w-48"><Skeleton variant="rounded" className="h-3.5 w-32" /></th>
+            <th className="pb-3 px-3 w-28"><Skeleton variant="rounded" className="h-3.5 w-16" /></th>
+            <th className="pb-3 px-3"><Skeleton variant="rounded" className="h-3.5 w-48" /></th>
+            <th className="pb-3 px-3 w-36"><Skeleton variant="rounded" className="h-3.5 w-28" /></th>
+            <th className="pb-3 px-3 w-32"><Skeleton variant="rounded" className="h-3.5 w-20" /></th>
+            <th className="pb-3 px-3 text-right w-20"><Skeleton variant="rounded" className="h-3.5 w-10 ml-auto" /></th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50 text-sm">
+          {Array.from({ length: rows }).map((_, i) => (
+            <tr key={i} className="hover:bg-gray-50/40">
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-3.5 w-28" /></td>
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-4 w-36 font-bold" /></td>
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-5 w-18 rounded-md" /></td>
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-3.5 w-56" /></td>
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-6 w-28 rounded-full" /></td>
+              <td className="py-4 px-3"><Skeleton variant="rounded" className="h-3.5 w-24" /></td>
+              <td className="py-4 px-3 text-right"><Skeleton variant="rounded" className="h-8 w-8 rounded-lg ml-auto" /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Manajemen Akun Table Skeleton ──
+export function AkunTableSkeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="overflow-x-auto animate-in fade-in duration-200">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
+            <th className="pb-3 w-56"><Skeleton variant="rounded" className="h-3.5 w-20" /></th>
+            <th className="pb-3 text-center w-32"><Skeleton variant="rounded" className="h-3.5 w-16 mx-auto" /></th>
+            <th className="pb-3 text-center w-28"><Skeleton variant="rounded" className="h-3.5 w-14 mx-auto" /></th>
+            <th className="pb-3 text-right w-24"><Skeleton variant="rounded" className="h-3.5 w-12 ml-auto" /></th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50 text-sm">
+          {Array.from({ length: rows }).map((_, i) => (
+            <tr key={i} className="hover:bg-gray-50/20">
+              <td className="py-4">
+                <div className="space-y-1.5">
+                  <Skeleton variant="rounded" className="h-4 w-36 font-bold" />
+                  <Skeleton variant="rounded" className="h-3 w-48" />
+                </div>
+              </td>
+              <td className="py-4 text-center">
+                <Skeleton variant="rounded" className="h-6 w-20 rounded-full mx-auto" />
+              </td>
+              <td className="py-4 text-center">
+                <Skeleton variant="rounded" className="h-6 w-16 rounded-full mx-auto" />
+              </td>
+              <td className="py-4 text-right">
+                <Skeleton variant="rounded" className="h-8 w-8 rounded-lg ml-auto" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+
