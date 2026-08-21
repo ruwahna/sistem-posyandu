@@ -29,6 +29,7 @@ import {
   Lock,
   Eye,
   EyeSlash,
+  FileText,
 } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
 import { notificationApi, authApi, balitaApi, lansiaApi, AppNotification } from "../lib/api";
@@ -39,6 +40,7 @@ import PelayananModule from "../features/pelayanan/PelayananModule";
 import BalitaModule from "../features/balita/BalitaModule";
 import LansiaModule from "../features/lansia/LansiaModule";
 import RiwayatModule from "../features/riwayat/RiwayatModule";
+import LaporanModule from "../features/laporan/LaporanModule";
 import PengaturanModule from "../features/pengaturan/PengaturanModule";
 import ManajemenAkunModule from "../features/pengaturan/ManajemenAkunModule";
 import BantuanModule from "../features/bantuan/BantuanModule";
@@ -323,6 +325,7 @@ export default function Home() {
     { name: "Balita", icon: Baby },
     { name: "Lansia", icon: LansiaIcon },
     { name: "Riwayat", icon: ClockCounterClockwise },
+    { name: "Laporan", icon: FileText },
     { name: "Manajemen Akun", icon: Users },
     { name: "Pengaturan", icon: Gear },
   ];
@@ -358,6 +361,8 @@ export default function Home() {
         );
       case "Riwayat":
         return <RiwayatModule posyanduId={posyanduId} />;
+      case "Laporan":
+        return <LaporanModule posyanduId={posyanduId} />;
       case "Manajemen Akun":
         return <ManajemenAkunModule posyanduId={posyanduId} />;
       case "Pengaturan":
@@ -890,6 +895,7 @@ export default function Home() {
           { name: "Balita", label: "Balita", icon: Baby },
           { name: "Lansia", label: "Lansia", icon: LansiaIcon },
           { name: "Riwayat", label: "Riwayat", icon: ClockCounterClockwise },
+          { name: "Laporan", label: "Laporan", icon: FileText },
         ].map((item) => {
           const isActive = activeMenu === item.name;
           const Icon = item.icon;

@@ -47,8 +47,8 @@ export const exportRiwayatExcel = async (req: Request, res: Response, next: Next
       return;
     }
 
-    if (tahun && (Number(tahun) < 1900 || Number(tahun) > new Date().getFullYear())) {
-      res.status(400).json({ success: false, message: `Tahun harus antara 1900-${new Date().getFullYear()}` });
+    if (tahun && (Number(tahun) < 1900 || Number(tahun) > 2100)) {
+      res.status(400).json({ success: false, message: 'Tahun harus antara 1900-2100' });
       return;
     }
 
@@ -101,8 +101,8 @@ export const exportRiwayatPdf = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    if (tahun && (Number(tahun) < 1900 || Number(tahun) > new Date().getFullYear())) {
-      res.status(400).json({ success: false, message: `Tahun harus antara 1900-${new Date().getFullYear()}` });
+    if (tahun && (Number(tahun) < 1900 || Number(tahun) > 2100)) {
+      res.status(400).json({ success: false, message: 'Tahun harus antara 1900-2100' });
       return;
     }
 
