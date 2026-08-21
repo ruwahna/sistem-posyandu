@@ -30,6 +30,8 @@ import {
   Eye,
   EyeSlash,
   FileText,
+  CaretDoubleLeft,
+  CaretDoubleRight,
 } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
 import { notificationApi, authApi, balitaApi, lansiaApi, AppNotification } from "../lib/api";
@@ -68,6 +70,22 @@ export default function Home() {
   const [showNotification, setShowNotification] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("posyandu_sidebar_collapsed");
+    if (saved === "true") {
+      setIsSidebarCollapsed(true);
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("posyandu_sidebar_collapsed", String(next));
+      return next;
+    });
+  };
 
   const searchRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -318,16 +336,36 @@ export default function Home() {
     return <LoginPage />;
   }
 
-  // Navigation Items Config
-  const navMenuItems = [
-    { name: "Overview", icon: SquaresFour },
-    { name: "Pelayanan", icon: ClipboardText },
-    { name: "Balita", icon: Baby },
-    { name: "Lansia", icon: LansiaIcon },
-    { name: "Riwayat", icon: ClockCounterClockwise },
-    { name: "Laporan", icon: FileText },
-    { name: "Manajemen Akun", icon: Users },
-    { name: "Pengaturan", icon: Gear },
+  // Categorized Navigation Sections
+  const navSections = [
+    {
+      category: "Utama",
+      items: [
+        { name: "Overview", icon: SquaresFour },
+        { name: "Pelayanan", icon: ClipboardText },
+      ],
+    },
+    {
+      category: "Data Sasaran",
+      items: [
+        { name: "Balita", icon: Baby },
+        { name: "Lansia", icon: LansiaIcon },
+      ],
+    },
+    {
+      category: "Laporan & Riwayat",
+      items: [
+        { name: "Riwayat", icon: ClockCounterClockwise },
+        { name: "Laporan", icon: FileText },
+      ],
+    },
+    {
+      category: "Sistem & Akun",
+      items: [
+        { name: "Manajemen Akun", icon: Users },
+        { name: "Pengaturan", icon: Gear },
+      ],
+    },
   ];
 
   // ── Conditional Rendering of Views ──────────────────────
@@ -397,72 +435,212 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-canvas font-sans text-saas-dark overflow-hidden relative">
-      {/* 1. SIDEBAR NAVIGASI DESKTOP (Tampil di md+) */}
-      <aside className="hidden md:flex w-64 h-full bg-white border-r border-gray-100 flex-col justify-between p-6 shrink-0 overflow-y-auto">
+      {/* 1. SIDEBAR NAVIGASI DESKTOP (Bisa dibuka/tutup, Tampil di md+) */}
+      <aside
+        className={`hidden md:flex ${
+          isSidebarCollapsed ? "w-[76px] px-3 py-5" : "w-64 p-5"
+        } h-full bg-white border-r border-gray-100 flex-col justify-between shrink-0 overflow-y-auto transition-all duration-300 select-none z-20`}
+      >
         <div>
-          {/* Logo Brand */}
-          <div className="flex items-center gap-3 mb-8 px-2">
-            <div className="w-10 h-10 rounded-xl bg-saas-primary flex items-center justify-center text-white shadow-md shadow-teal-500/20">
-              <Heartbeat className="w-6 h-6" weight="bold" />
+          {/* Logo Brand & Toggle Collapse Button */}
+          {isSidebarCollapsed ? (
+            <div className="flex flex-col items-center gap-3 mb-6">
+              <div
+                onClick={toggleSidebar}
+                title="Buka Sidebar"
+                className="w-10 h-10 rounded-xl bg-saas-primary flex items-center justify-center text-white shadow-md shadow-teal-500/20 shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+              >
+                <Heartbeat className="w-6 h-6" weight="bold" />
+              </div>
+              <button
+                onClick={toggleSidebar}
+                title="Buka Sidebar"
+                className="w-8 h-8 rounded-lg text-gray-400 hover:text-saas-primary hover:bg-teal-50 flex items-center justify-center transition-colors"
+              >
+                <CaretDoubleRight className="w-4 h-4" weight="bold" />
+              </button>
             </div>
-            <div>
-              <h1 className="font-bold text-saas-dark text-base tracking-tight leading-none">PosyanduKita</h1>
-              <span className="text-[10px] text-saas-muted font-bold tracking-wider uppercase">Sistem Informasi</span>
+          ) : (
+            <div className="flex items-center justify-between mb-6 px-1">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-saas-primary flex items-center justify-center text-white shadow-md shadow-teal-500/20 shrink-0">
+                  <Heartbeat className="w-6 h-6" weight="bold" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="font-bold text-saas-dark text-base tracking-tight leading-none truncate">
+                    PosyanduKita
+                  </h1>
+                  <span className="text-[10px] text-saas-muted font-bold tracking-wider uppercase">
+                    Sistem Informasi
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={toggleSidebar}
+                title="Tutup Sidebar (Hanya Ikon)"
+                className="w-8 h-8 rounded-lg text-gray-400 hover:text-saas-primary hover:bg-teal-50 flex items-center justify-center transition-colors shrink-0"
+              >
+                <CaretDoubleLeft className="w-4 h-4" weight="bold" />
+              </button>
             </div>
-          </div>
+          )}
 
-          {/* Menu Link */}
-          <nav className="space-y-1">
-            {navMenuItems.map((menu) => {
-              const isActive = activeMenu === menu.name;
-              const Icon = menu.icon;
-              return (
-                <button
-                  key={menu.name}
-                  onClick={() => handleMenuSelect(menu.name)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                    isActive
-                      ? "bg-saas-primary text-white shadow-lg shadow-teal-500/15"
-                      : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80"
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-saas-muted group-hover:text-saas-dark"}`} weight="bold" />
-                  {menu.name}
-                </button>
-              );
-            })}
+          {/* Categorized Menu Links */}
+          <nav className="space-y-4">
+            {navSections.map((section) => (
+              <div key={section.category}>
+                {!isSidebarCollapsed ? (
+                  <p className="text-[10px] font-bold tracking-wider uppercase text-gray-400 px-3 mb-1.5">
+                    {section.category}
+                  </p>
+                ) : (
+                  <div className="w-6 mx-auto border-t border-gray-100 my-2" />
+                )}
+
+                <div className="space-y-1">
+                  {section.items.map((menu) => {
+                    const isActive = activeMenu === menu.name;
+                    const Icon = menu.icon;
+
+                    if (isSidebarCollapsed) {
+                      return (
+                        <div key={menu.name} className="relative group flex justify-center">
+                          <button
+                            onClick={() => handleMenuSelect(menu.name)}
+                            className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all ${
+                              isActive
+                                ? "bg-saas-primary text-white shadow-md shadow-teal-500/20"
+                                : "text-saas-muted hover:text-saas-dark hover:bg-gray-50"
+                            }`}
+                            aria-label={menu.name}
+                          >
+                            <Icon
+                              className={`w-5 h-5 ${isActive ? "text-white" : "text-saas-muted"}`}
+                              weight="bold"
+                            />
+                          </button>
+                          {/* Tooltip */}
+                          <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl top-1/2 -translate-y-1/2">
+                            {menu.name}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={menu.name}
+                        onClick={() => handleMenuSelect(menu.name)}
+                        className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                          isActive
+                            ? "bg-saas-primary text-white shadow-md shadow-teal-500/15"
+                            : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80"
+                        }`}
+                      >
+                        <Icon
+                          className={`w-4 h-4 shrink-0 ${
+                            isActive ? "text-white" : "text-saas-muted"
+                          }`}
+                          weight="bold"
+                        />
+                        <span className="truncate">{menu.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
         </div>
 
         {/* Menu Bawah */}
-        <div className="border-t border-gray-100 pt-4 space-y-1">
-          <a
-            href="/puskesmas"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-saas-primary hover:bg-teal-50 transition-all border border-teal-150/70"
-          >
-            <Buildings className="w-4 h-4 shrink-0 text-saas-primary" weight="bold" />
-            <span>Portal Puskesmas ↗</span>
-          </a>
-          <button
-            onClick={() => handleMenuSelect("Bantuan")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-              activeMenu === "Bantuan"
-                ? "bg-saas-primary text-white shadow-lg shadow-teal-500/15"
-                : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80"
-            }`}
-          >
-            <Question className={`w-4 h-4 ${activeMenu === "Bantuan" ? "text-white" : "text-saas-muted"}`} weight="bold" />
-            Bantuan
-          </button>
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50/60 transition-all"
-          >
-            <SignOut className="w-4 h-4" weight="bold" />
-            Keluar
-          </button>
+        <div className="border-t border-gray-100 pt-4 space-y-1.5">
+          {isSidebarCollapsed ? (
+            <>
+              <div className="relative group flex justify-center">
+                <a
+                  href="/puskesmas"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-11 h-11 flex items-center justify-center rounded-xl text-saas-primary hover:bg-teal-50 border border-teal-200 transition-all"
+                  aria-label="Portal Puskesmas"
+                >
+                  <Buildings className="w-5 h-5 text-saas-primary" weight="bold" />
+                </a>
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl top-1/2 -translate-y-1/2">
+                  Portal Puskesmas ↗
+                </div>
+              </div>
+
+              <div className="relative group flex justify-center">
+                <button
+                  onClick={() => handleMenuSelect("Bantuan")}
+                  className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all ${
+                    activeMenu === "Bantuan"
+                      ? "bg-saas-primary text-white shadow-md shadow-teal-500/20"
+                      : "text-saas-muted hover:text-saas-dark hover:bg-gray-50"
+                  }`}
+                  aria-label="Bantuan"
+                >
+                  <Question
+                    className={`w-5 h-5 ${activeMenu === "Bantuan" ? "text-white" : "text-saas-muted"}`}
+                    weight="bold"
+                  />
+                </button>
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl top-1/2 -translate-y-1/2">
+                  Bantuan
+                </div>
+              </div>
+
+              <div className="relative group flex justify-center">
+                <button
+                  onClick={logout}
+                  className="w-11 h-11 flex items-center justify-center rounded-xl text-red-500 hover:bg-red-50 transition-all"
+                  aria-label="Keluar"
+                >
+                  <SignOut className="w-5 h-5" weight="bold" />
+                </button>
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl top-1/2 -translate-y-1/2">
+                  Keluar
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <a
+                href="/puskesmas"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-saas-primary hover:bg-teal-50 transition-all border border-teal-200"
+              >
+                <Buildings className="w-4 h-4 shrink-0 text-saas-primary" weight="bold" />
+                <span>Portal Puskesmas ↗</span>
+              </a>
+              <button
+                onClick={() => handleMenuSelect("Bantuan")}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  activeMenu === "Bantuan"
+                    ? "bg-saas-primary text-white shadow-md shadow-teal-500/15"
+                    : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80"
+                }`}
+              >
+                <Question
+                  className={`w-4 h-4 ${
+                    activeMenu === "Bantuan" ? "text-white" : "text-saas-muted"
+                  }`}
+                  weight="bold"
+                />
+                <span>Bantuan</span>
+              </button>
+              <button
+                onClick={logout}
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50/70 transition-all"
+              >
+                <SignOut className="w-4 h-4" weight="bold" />
+                <span>Keluar</span>
+              </button>
+            </>
+          )}
         </div>
       </aside>
 
@@ -479,7 +657,7 @@ export default function Home() {
           <aside className="relative w-4/5 max-w-xs h-full bg-white shadow-2xl flex flex-col justify-between p-6 z-10 overflow-y-auto transform transition-transform duration-300">
             <div>
               {/* Header Drawer dengan Tombol Close */}
-              <div className="flex items-center justify-between mb-8 px-1">
+              <div className="flex items-center justify-between mb-6 px-1">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-saas-primary flex items-center justify-center text-white shadow-md shadow-teal-500/20">
                     <Heartbeat className="w-5 h-5" weight="bold" />
@@ -497,51 +675,69 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Menu Links */}
-              <nav className="space-y-1.5">
-                {navMenuItems.map((menu) => {
-                  const isActive = activeMenu === menu.name;
-                  const Icon = menu.icon;
-                  return (
-                    <button
-                      key={menu.name}
-                      onClick={() => handleMenuSelect(menu.name)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                        isActive
-                          ? "bg-saas-primary text-white shadow-lg shadow-teal-500/15"
-                          : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80"
-                      }`}
-                    >
-                      <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-saas-muted"}`} weight="bold" />
-                      {menu.name}
-                    </button>
-                  );
-                })}
+              {/* Categorized Menu Links on Mobile */}
+              <nav className="space-y-4">
+                {navSections.map((section) => (
+                  <div key={section.category}>
+                    <p className="text-[10px] font-bold tracking-wider uppercase text-gray-400 px-3 mb-1.5">
+                      {section.category}
+                    </p>
+                    <div className="space-y-1">
+                      {section.items.map((menu) => {
+                        const isActive = activeMenu === menu.name;
+                        const Icon = menu.icon;
+                        return (
+                          <button
+                            key={menu.name}
+                            onClick={() => handleMenuSelect(menu.name)}
+                            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                              isActive
+                                ? "bg-saas-primary text-white shadow-md shadow-teal-500/15"
+                                : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80"
+                            }`}
+                          >
+                            <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-saas-muted"}`} weight="bold" />
+                            <span>{menu.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </nav>
             </div>
 
             {/* Menu Bawah Drawer */}
             <div className="border-t border-gray-100 pt-4 space-y-1.5 mt-6">
+              <a
+                href="/puskesmas"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-saas-primary hover:bg-teal-50 transition-all border border-teal-200"
+              >
+                <Buildings className="w-4 h-4 shrink-0 text-saas-primary" weight="bold" />
+                <span>Portal Puskesmas ↗</span>
+              </a>
               <button
                 onClick={() => handleMenuSelect("Bantuan")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                   activeMenu === "Bantuan"
-                    ? "bg-saas-primary text-white shadow-lg shadow-teal-500/15"
+                    ? "bg-saas-primary text-white shadow-md shadow-teal-500/15"
                     : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80"
                 }`}
               >
                 <Question className={`w-4 h-4 ${activeMenu === "Bantuan" ? "text-white" : "text-saas-muted"}`} weight="bold" />
-                Bantuan
+                <span>Bantuan</span>
               </button>
               <button
                 onClick={() => {
                   setIsMobileMenuOpen(false);
                   logout();
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50/60 transition-all"
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50/60 transition-all"
               >
                 <SignOut className="w-4 h-4" weight="bold" />
-                Keluar
+                <span>Keluar</span>
               </button>
             </div>
           </aside>
