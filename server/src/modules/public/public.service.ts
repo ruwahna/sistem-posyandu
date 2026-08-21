@@ -107,10 +107,10 @@ export const getPublicPemeriksaanData = async (filter: PublicPemeriksaanFilter) 
         },
       },
       orderBy: { tanggalPeriksa: 'desc' },
-      take: 200,
+      take: 500,
     });
 
-    balitaItems = records.map((r) => {
+    balitaItems = records.map((r: any) => {
       const isPerluRujukan =
         r.statusBbU === 'SK' ||
         r.statusTbU === 'SP' ||
@@ -133,6 +133,7 @@ export const getPublicPemeriksaanData = async (filter: PublicPemeriksaanFilter) 
         tanggalPeriksa: r.tanggalPeriksa.toISOString().split('T')[0],
         namaWarga: r.balita.nama,
         jenisKelamin: r.balita.jenisKelamin as 'L' | 'P',
+        tanggalLahir: r.balita.tanggalLahir ? r.balita.tanggalLahir.toISOString().split('T')[0] : undefined,
         usiaInfo: `${r.usiaBulan} Bulan`,
         posyanduId: r.balita.posyandu.id,
         posyanduNama: r.balita.posyandu.nama,
@@ -146,6 +147,7 @@ export const getPublicPemeriksaanData = async (filter: PublicPemeriksaanFilter) 
         statusBbTb: r.statusBbTb,
         vitaminA: r.vitaminA,
         statusImunisasi: r.statusImunisasi || undefined,
+        petugas: r.petugas || 'Kader Posyandu',
         statusRingkasan,
         isPerluRujukan,
       };
@@ -176,6 +178,7 @@ export const getPublicPemeriksaanData = async (filter: PublicPemeriksaanFilter) 
             id: true,
             nama: true,
             jenisKelamin: true,
+            tanggalLahir: true,
             rtRw: true,
             posyandu: {
               select: { id: true, nama: true, desa: true },
@@ -184,10 +187,10 @@ export const getPublicPemeriksaanData = async (filter: PublicPemeriksaanFilter) 
         },
       },
       orderBy: { tanggalPeriksa: 'desc' },
-      take: 200,
+      take: 500,
     });
 
-    lansiaItems = records.map((r) => {
+    lansiaItems = records.map((r: any) => {
       const sis = r.tekananDarahSistol;
       const dia = r.tekananDarahDiastol;
       const gds = Number(r.gulaDarahSewaktu);
@@ -206,11 +209,12 @@ export const getPublicPemeriksaanData = async (filter: PublicPemeriksaanFilter) 
         tanggalPeriksa: r.tanggalPeriksa.toISOString().split('T')[0],
         namaWarga: r.lansia.nama,
         jenisKelamin: r.lansia.jenisKelamin as 'L' | 'P',
+        tanggalLahir: r.lansia.tanggalLahir ? r.lansia.tanggalLahir.toISOString().split('T')[0] : undefined,
         usiaInfo: 'Lansia',
         posyanduId: r.lansia.posyandu.id,
         posyanduNama: r.lansia.posyandu.nama,
         desa: r.lansia.posyandu.desa,
-        wilayah: `${r.lansia.rtRw}, Desa ${r.lansia.posyandu.desa}`,
+        wilayah: `${r.lansia.rtRw || ''}, Desa ${r.lansia.posyandu.desa}`,
         beratBadan: Number(r.beratBadan),
         tinggiBadan: Number(r.tinggiBadan),
         tekananDarah: `${sis}/${dia} mmHg`,
@@ -219,6 +223,7 @@ export const getPublicPemeriksaanData = async (filter: PublicPemeriksaanFilter) 
         gds,
         kolesterol: r.kolesterol ? Number(r.kolesterol) : undefined,
         asamUrat: r.asamUrat ? Number(r.asamUrat) : undefined,
+        petugas: r.petugas || 'Kader Posyandu',
         statusRingkasan,
         isPerluRujukan,
         tindakanCatatan: r.tindakan || r.keluhan || undefined,

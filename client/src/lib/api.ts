@@ -644,6 +644,8 @@ export interface PublicPemeriksaanItem {
   statusRingkasan: string;
   isPerluRujukan: boolean;
   tindakanCatatan?: string;
+  petugas?: string;
+  tanggalLahir?: string;
 }
 
 export interface PublicPosyanduInfo {
