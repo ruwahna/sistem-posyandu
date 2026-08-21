@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useCallback } from "react";
 import Modal from "../../components/Modal";
 import PageHelmet from "../../components/PageHelmet";
-import { TableSkeleton, DetailViewSkeleton } from "../../components/Skeleton";
+import { TableSkeleton } from "../../components/Skeleton";
 import { lansiaApi } from "../../lib/api";
 import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
 import {
@@ -22,8 +22,20 @@ import {
   ChevronRight,
   ClipboardList,
   ShieldCheck,
-  BrainCircuit
+  BrainCircuit,
+  Phone,
+  TrendingUp
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { hitungIMT } from "../../lib/zScoreCalculator";
 
 // Tipe Data
@@ -46,6 +58,7 @@ export interface Lansia {
   id: string;
   nama: string;
   nik: string;
+  noHp?: string;
   noBpjs?: string;
   tanggalLahir: string;
   jenisKelamin: "L" | "P";
@@ -57,79 +70,6 @@ export interface Lansia {
   gangguanMentalEmosional?: string;
   pemeriksaan: PemeriksaanLansia[];
 }
-
-// Initial Mock Data
-const initialLansias: Lansia[] = [
-  {
-    id: "l1",
-    nama: "Mbah Karto",
-    nik: "3301021203540001",
-    noBpjs: "0001827364521",
-    tanggalLahir: "1954-03-12", // 72 Tahun pada 2026
-    jenisKelamin: "L",
-    rtRw: "RT 02 / RW 02",
-    alamat: "Desa Karanggayam",
-    riwayatHt: true,
-    riwayatDm: true,
-    tingkatKemandirian: "A",
-    gangguanMentalEmosional: "Normal, tidak ada kecemasan berlebih.",
-    pemeriksaan: [
-      { id: "le1", tanggalPeriksa: "2026-07-10", beratBadan: 58.0, tinggiBadan: 160.0, tekananDarahSistol: 140, tekananDarahDiastol: 90, gulaDarahSewaktu: 180, lingkarPerut: 92 },
-      { id: "le2", tanggalPeriksa: "2026-06-10", beratBadan: 58.5, tinggiBadan: 160.0, tekananDarahSistol: 135, tekananDarahDiastol: 85, gulaDarahSewaktu: 195, lingkarPerut: 92.5 },
-      { id: "le3", tanggalPeriksa: "2026-05-10", beratBadan: 59.0, tinggiBadan: 160.0, tekananDarahSistol: 145, tekananDarahDiastol: 95, gulaDarahSewaktu: 210, lingkarPerut: 93 },
-    ],
-  },
-  {
-    id: "l2",
-    nama: "Mbah Sumi",
-    nik: "3301024508610003",
-    noBpjs: "0001928374561",
-    tanggalLahir: "1961-08-25", // 65 Tahun
-    jenisKelamin: "P",
-    rtRw: "RT 03 / RW 02",
-    alamat: "Desa Karanggayam",
-    riwayatHt: true,
-    riwayatDm: false,
-    tingkatKemandirian: "B",
-    gangguanMentalEmosional: "Sering mengeluh pusing dan cemas.",
-    pemeriksaan: [
-      { id: "le4", tanggalPeriksa: "2026-07-10", beratBadan: 52.0, tinggiBadan: 152.0, tekananDarahSistol: 150, tekananDarahDiastol: 95, gulaDarahSewaktu: 110, lingkarPerut: 84 },
-      { id: "le5", tanggalPeriksa: "2026-06-10", beratBadan: 52.2, tinggiBadan: 152.0, tekananDarahSistol: 145, tekananDarahDiastol: 90, gulaDarahSewaktu: 115, lingkarPerut: 84.2 },
-    ],
-  },
-  {
-    id: "l3",
-    nama: "Budi Santoso",
-    nik: "3301021901680005",
-    noBpjs: undefined,
-    tanggalLahir: "1968-01-19", // 58 Tahun
-    jenisKelamin: "L",
-    rtRw: "RT 01 / RW 02",
-    alamat: "Desa Karanggayam",
-    riwayatHt: false,
-    riwayatDm: false,
-    tingkatKemandirian: "A",
-    gangguanMentalEmosional: "Sehat, aktif berkebun.",
-    pemeriksaan: [
-      { id: "le6", tanggalPeriksa: "2026-07-10", beratBadan: 66.5, tinggiBadan: 168.0, tekananDarahSistol: 120, tekananDarahDiastol: 80, gulaDarahSewaktu: 95, lingkarPerut: 88 },
-    ],
-  },
-  {
-    id: "l4",
-    nama: "Mbah Harjo",
-    nik: "3301020412470002",
-    noBpjs: "0001229988776",
-    tanggalLahir: "1947-12-04", // 78 Tahun
-    jenisKelamin: "L",
-    rtRw: "RT 01 / RW 02",
-    alamat: "Desa Karanggayam",
-    riwayatHt: true,
-    riwayatDm: true,
-    tingkatKemandirian: "C",
-    gangguanMentalEmosional: "Memori menurun, pikun ringan.",
-    pemeriksaan: [],
-  },
-];
 
 // Helper Hitung Umur (Tahun)
 function calculateAgeInYears(birthDateStr: string, refDate: Date = new Date()): number {
@@ -144,18 +84,42 @@ function calculateAgeInYears(birthDateStr: string, refDate: Date = new Date()): 
 
 interface LansiaModuleProps {
   posyanduId: string;
+  searchQuery?: string;
+  selectedId?: string;
 }
 
-export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
+export default function LansiaModule({ posyanduId, searchQuery = "", selectedId }: LansiaModuleProps) {
   const [lansias, setLansias] = useState<Lansia[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [view, setView] = useState<"list" | "detail" | "add">("list");
-  const [selectedLansiaId, setSelectedLansiaId] = useState<string | null>(null);
+  const [selectedLansiaId, setSelectedLansiaId] = useState<string | null>(selectedId || null);
 
   // Search, Filter & Pagination State
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(searchQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
+
+  useEffect(() => {
+    if (searchQuery !== undefined) {
+      setQuery(searchQuery);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    if (selectedId) {
+      setSelectedLansiaId(selectedId);
+      setView("detail");
+    }
+  }, [selectedId]);
   const [ageFilter, setAgeFilter] = useState<"semua" | "45-59" | "60-69" | "70+">("semua");
   const [diseaseFilter, setDiseaseFilter] = useState<"semua" | "ht" | "dm">("semua");
   const [currentPage, setCurrentPage] = useState(1);
@@ -168,6 +132,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editNama, setEditNama] = useState("");
   const [editNik, setEditNik] = useState("");
+  const [editNoHp, setEditNoHp] = useState("");
   const [editBpjs, setEditBpjs] = useState("");
   const [editTglLahir, setEditTglLahir] = useState("");
   const [editJk, setEditJk] = useState<"L" | "P">("L");
@@ -213,7 +178,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
 
     lansiaApi
       .getAll(posyanduId, {
-        search: query || undefined,
+        search: debouncedQuery || undefined,
         kelompokUmur: kelompokUmurParam,
         ht: htParam,
         dm: dmParam,
@@ -242,7 +207,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
       })
       .catch((err) => setApiError(err.message))
       .finally(() => setIsLoading(false));
-  }, [posyanduId, query, ageFilter, diseaseFilter, currentPage, limit]);
+  }, [posyanduId, debouncedQuery, ageFilter, diseaseFilter, currentPage, limit]);
 
   useEffect(() => {
     fetchLansias();
@@ -264,6 +229,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
   // Form State Tambah Lansia
   const [formNama, setFormNama] = useState("");
   const [formNik, setFormNik] = useState("");
+  const [formNoHp, setFormNoHp] = useState("");
   const [formBpjs, setFormBpjs] = useState("");
   const [formTglLahir, setFormTglLahir] = useState("1960-01-01");
   const [formJk, setFormJk] = useState<"L" | "P">("L");
@@ -296,6 +262,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
   const openEditModal = (l: Lansia) => {
     setEditNama(l.nama);
     setEditNik(l.nik);
+    setEditNoHp(l.noHp || "");
     setEditBpjs(l.noBpjs || "");
     setEditTglLahir(formatTanggalInput(l.tanggalLahir));
     setEditJk(l.jenisKelamin);
@@ -325,6 +292,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
       await lansiaApi.update(posyanduId, selectedLansiaId, {
         nama: editNama,
         nik: editNik,
+        noHp: editNoHp || undefined,
         noBpjs: editBpjs || undefined,
         tanggalLahir: editTglLahir,
         jenisKelamin: editJk,
@@ -522,6 +490,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
       await lansiaApi.create(posyanduId, {
         nama: formNama,
         nik: formNik,
+        noHp: formNoHp || undefined,
         noBpjs: formBpjs || undefined,
         tanggalLahir: formTglLahir,
         jenisKelamin: formJk,
@@ -535,6 +504,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
       fetchLansias();
       setFormNama("");
       setFormNik("");
+      setFormNoHp("");
       setFormBpjs("");
       setFormTglLahir("1960-01-01");
       setFormJk("L");
@@ -655,7 +625,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
               <div className="relative w-full md:w-80">
                 <input
                   type="text"
-                  placeholder="Cari nama, NIK, atau BPJS..."
+                  placeholder="Cari nama, NIK, No. HP, atau BPJS..."
                   value={query}
                   onChange={(e) => {
                     setQuery(e.target.value);
@@ -729,9 +699,10 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                   <thead>
                     <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
                       <th className="pb-3">Nama Lansia</th>
+                      <th className="pb-3">No. HP / WA</th>
                       <th className="pb-3">Usia (Tahun)</th>
                       <th className="pb-3">RT/RW</th>
-                      <th className="pb-3">Penyakit bawaan</th>
+                      <th className="pb-3">Penyakit Bawaan</th>
                       <th className="pb-3">Kemandirian</th>
                       <th className="pb-3 text-right">Aksi</th>
                     </tr>
@@ -740,11 +711,29 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                     {filteredLansias.length > 0 ? (
                       filteredLansias.map((item) => {
                         const ageYears = calculateAgeInYears(item.tanggalLahir);
+                        const cleanPhone = item.noHp ? item.noHp.replace(/\D/g, "") : "";
+                        const waNumber = cleanPhone.startsWith("0") ? "62" + cleanPhone.slice(1) : cleanPhone;
                         return (
                           <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
                             <td className="py-4">
                               <p className="font-bold text-saas-dark">{item.nama}</p>
                               <p className="text-[11px] text-saas-muted font-medium mt-0.5">NIK: {item.nik}</p>
+                            </td>
+                            <td className="py-4">
+                              {item.noHp ? (
+                                <a
+                                  href={`https://wa.me/${waNumber}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold rounded-lg text-xs transition-colors border border-emerald-200/60"
+                                  title="Hubungi via WhatsApp"
+                                >
+                                  <Phone className="w-3.5 h-3.5" />
+                                  {item.noHp}
+                                </a>
+                              ) : (
+                                <span className="text-xs text-saas-muted font-medium">-</span>
+                              )}
                             </td>
                             <td className="py-4 font-bold text-saas-dark">{ageYears} Tahun</td>
                             <td className="py-4 text-saas-muted font-semibold">{item.rtRw}</td>
@@ -790,7 +779,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={6} className="py-12 text-center text-xs text-saas-muted font-medium">
+                        <td colSpan={7} className="py-12 text-center text-xs text-saas-muted font-medium">
                           Tidak ada data lansia yang cocok.
                         </td>
                       </tr>
@@ -889,6 +878,18 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                 {activeLansia.noBpjs && (
                   <p className="text-xs text-saas-muted font-mono mt-0.5">BPJS: {activeLansia.noBpjs}</p>
                 )}
+                {activeLansia.noHp && (
+                  <div className="mt-2">
+                    <a
+                      href={`https://wa.me/${activeLansia.noHp.replace(/\D/g, "").startsWith("0") ? "62" + activeLansia.noHp.replace(/\D/g, "").slice(1) : activeLansia.noHp.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold rounded-lg text-xs transition-colors border border-emerald-200"
+                    >
+                      <Phone className="w-3.5 h-3.5" /> WA: {activeLansia.noHp}
+                    </a>
+                  </div>
+                )}
               </div>
 
               {/* Detail Items */}
@@ -896,10 +897,30 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                 <div className="flex items-start gap-3">
                   <Calendar className="w-4.5 h-4.5 text-saas-muted mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-xs text-saas-muted">Tanggal Lahir & Usia</p>
+                    <p className="text-xs text-saas-muted">Tanggal Lahir &amp; Usia</p>
                     <p className="text-saas-dark text-xs mt-0.5">
                       {formatTanggalIndonesia(activeLansia.tanggalLahir)} ({calculateAgeInYears(activeLansia.tanggalLahir)} Tahun)
                     </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Phone className="w-4.5 h-4.5 text-saas-muted mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-saas-muted">No. HP / WhatsApp</p>
+                    {activeLansia.noHp ? (
+                      <a
+                        href={`https://wa.me/${activeLansia.noHp.replace(/\D/g, "").startsWith("0") ? "62" + activeLansia.noHp.replace(/\D/g, "").slice(1) : activeLansia.noHp.replace(/\D/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-700 hover:text-emerald-800 text-xs mt-0.5 font-bold inline-flex items-center gap-1 hover:underline"
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        {activeLansia.noHp} (Hubungi WA)
+                      </a>
+                    ) : (
+                      <p className="text-saas-dark text-xs mt-0.5 text-saas-muted font-medium">Belum ada nomor HP</p>
+                    )}
                   </div>
                 </div>
 
@@ -1161,6 +1182,88 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
             </div>
           </div>
 
+          {/* GRAFIK MONITORING KESEHATAN LANSIA (LINE CHART) */}
+          <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-base text-saas-dark flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-indigo-600" />
+                  Grafik Monitoring Kesehatan Lansia (Tensi &amp; Gula Darah)
+                </h3>
+                <p className="text-xs text-saas-muted mt-0.5">
+                  Grafik tren tekanan darah (Sistol/Diastol mmHg), gula darah sewaktu (mg/dL), dan berat badan (kg).
+                </p>
+              </div>
+              <span className="text-xs font-bold text-saas-muted bg-gray-50 px-2.5 py-1 rounded-full border border-gray-150">
+                {activeLansia.pemeriksaan.length} Data Periksa
+              </span>
+            </div>
+
+            <div className="h-64 w-full pt-2">
+              {activeLansia.pemeriksaan.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={[...activeLansia.pemeriksaan]
+                      .sort((a, b) => new Date(a.tanggalPeriksa).getTime() - new Date(b.tanggalPeriksa).getTime())
+                      .map(p => ({
+                        tanggal: formatTanggalIndonesia(p.tanggalPeriksa),
+                        "TD Sistol (mmHg)": p.tekananDarahSistol || null,
+                        "TD Diastol (mmHg)": p.tekananDarahDiastol || null,
+                        "Gula Darah (mg/dL)": p.gulaDarahSewaktu || null,
+                        "Berat Badan (kg)": p.beratBadan,
+                      }))}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <XAxis dataKey="tanggal" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#FFF",
+                        borderRadius: "12px",
+                        border: "1px solid #E5E7EB",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="TD Sistol (mmHg)"
+                      stroke="#EF4444"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="TD Diastol (mmHg)"
+                      stroke="#3B82F6"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Gula Darah (mg/dL)"
+                      stroke="#F59E0B"
+                      strokeWidth={2}
+                      strokeDasharray="4 4"
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Berat Badan (kg)"
+                      stroke="#10B981"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-xs text-saas-muted font-medium bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                  Belum ada riwayat pemeriksaan lansia untuk menampilkan grafik.
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Tabel Riwayat Pemeriksaan Lansia */}
           <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6">
             <div className="flex items-center justify-between mb-6">
@@ -1200,50 +1303,50 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                         </td>
                         <td className="py-4 font-bold">
                           <span
-                            className={`px-2 py-0.5 rounded-full ${
+                            className={`px-2 py-0.5 rounded-full text-[11px] ${
                               exam.tekananDarahSistol >= 140
                                 ? "bg-trend-dangerBg text-trend-dangerText"
                                 : "bg-trend-successBg text-trend-successText"
                             }`}
                           >
-                            {exam.tekananDarahSistol} / {exam.tekananDarahDiastol} mmHg
+                            {exam.tekananDarahSistol}/{exam.tekananDarahDiastol} mmHg
                           </span>
                         </td>
                         <td className="py-4 font-bold">
                           <span
-                            className={`px-2 py-0.5 rounded-full ${
-                              exam.gulaDarahSewaktu >= 140
-                                ? "bg-orange-50 text-orange-600"
+                            className={`px-2 py-0.5 rounded-full text-[11px] ${
+                              Number(exam.gulaDarahSewaktu) >= 200
+                                ? "bg-trend-dangerBg text-trend-dangerText"
                                 : "bg-trend-successBg text-trend-successText"
                             }`}
                           >
                             {exam.gulaDarahSewaktu} mg/dL
                           </span>
                         </td>
-                        <td className="py-4 font-bold text-saas-muted">
+                        <td className="py-4 font-semibold text-saas-dark">
                           {exam.kolesterol ? `${exam.kolesterol} mg/dL` : "-"}
                         </td>
-                        <td className="py-4 font-bold text-saas-muted">
+                        <td className="py-4 font-semibold text-saas-dark">
                           {exam.asamUrat ? `${exam.asamUrat} mg/dL` : "-"}
                         </td>
-                        <td className="py-4 font-bold">{exam.lingkarPerut} cm</td>
-                        <td className="py-4 text-saas-muted max-w-[150px] truncate" title={exam.keluhan}>
+                        <td className="py-4 font-semibold text-saas-muted">{exam.lingkarPerut} cm</td>
+                        <td className="py-4 max-w-xs font-semibold text-saas-muted leading-tight truncate">
                           {exam.keluhan || "-"}
                         </td>
-                        <td className="py-4 text-saas-muted max-w-[150px] truncate" title={exam.tindakan}>
+                        <td className="py-4 max-w-xs font-semibold text-saas-muted leading-tight truncate">
                           {exam.tindakan || "-"}
                         </td>
                         <td className="py-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex justify-end gap-1.5">
                             <button
                               onClick={() => openEditExamModal(exam)}
-                              className="px-2.5 py-1 text-xs font-bold border border-gray-200 text-saas-dark rounded hover:bg-saas-primary/10 hover:text-saas-primary transition-all"
+                              className="px-2 py-1 text-xs font-bold text-saas-primary hover:bg-teal-50 rounded-lg transition-colors"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => openDeleteExamModal(exam.id)}
-                              className="px-2.5 py-1 text-xs font-bold border border-red-200 text-trend-dangerText rounded hover:bg-red-50 transition-all"
+                              className="px-2 py-1 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                             >
                               Hapus
                             </button>
@@ -1254,7 +1357,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                   ) : (
                     <tr>
                       <td colSpan={12} className="py-8 text-center text-xs text-saas-muted font-medium">
-                        Belum ada riwayat pemeriksaan lansia. Silakan input pada form di atas.
+                        Belum ada riwayat pemeriksaan lansia. Silakan input form di atas.
                       </td>
                     </tr>
                   )}
@@ -1266,61 +1369,72 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
       )}
 
       {/* ========================================================================= */}
-      {/* 3. VIEW: TAMBAH LANSIA FORM */}
+      {/* 3. VIEW: ADD LANSIA */}
       {/* ========================================================================= */}
       {view === "add" && (
-        <div className="space-y-6 max-w-xl mx-auto bg-white p-6 rounded-card shadow-soft-card border border-gray-100/70">
-          <button
-            onClick={() => setView("list")}
-            className="flex items-center gap-2 text-xs font-bold text-saas-muted hover:text-saas-dark transition-colors mb-4"
-          >
-            <ArrowLeft className="w-4 h-4" /> Batal & Kembali
-          </button>
-
-          <div>
-            <h3 className="font-bold text-lg text-saas-dark">Daftarkan Lansia Baru</h3>
-            <p className="text-xs text-saas-muted mt-0.5">Masukkan profil identitas lansia dan penyakit bawaan awal.</p>
+        <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 sm:p-8 space-y-6 max-w-3xl">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+              <h2 className="text-xl font-bold text-saas-dark tracking-tight">Formulir Pendaftaran Lansia Baru</h2>
+              <p className="text-xs text-saas-muted mt-0.5">Isi data profil dan kondisi kesehatan lansia secara lengkap.</p>
+            </div>
+            <button
+              onClick={() => setView("list")}
+              className="text-xs font-bold text-saas-muted hover:text-saas-dark transition-colors"
+            >
+              Batal &amp; Kembali
+            </button>
           </div>
 
-          <form onSubmit={handleAddLansiaSubmit} className="space-y-4 pt-4">
+          <form onSubmit={handleAddLansiaSubmit} className="space-y-4">
             {formError && (
-              <div className="p-3 bg-red-50 text-trend-dangerText border border-red-100 rounded-lg text-xs font-bold flex gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" /> {formError}
+              <div className="p-3 bg-red-50 text-trend-dangerText border border-red-100 rounded-lg text-xs font-bold">
+                {formError}
               </div>
             )}
 
-            {/* Nama */}
+            {/* Nama Lengkap */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-saas-muted">Nama Lengkap Lansia</label>
+              <label className="text-xs font-bold text-saas-muted">Nama Lengkap Lansia *</label>
               <input
                 type="text"
-                placeholder="Contoh: Mbah Harjo"
+                placeholder="Contoh: Mbah Joyo"
                 value={formNama}
                 onChange={(e) => setFormNama(e.target.value)}
                 className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* NIK */}
+            {/* NIK, No. HP, No BPJS */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-saas-muted">NIK (16 digit wajib)</label>
+                <label className="text-xs font-bold text-saas-muted">NIK (16 digit angka) *</label>
                 <input
                   type="text"
                   maxLength={16}
-                  placeholder="NIK sesuai KTP"
+                  placeholder="330102xxxxxxxxxx"
                   value={formNik}
                   onChange={(e) => setFormNik(e.target.value)}
                   className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                 />
               </div>
 
-              {/* BPJS */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-saas-muted">No BPJS (Opsional)</label>
+                <label className="text-xs font-bold text-saas-muted">No. WhatsApp / HP (Opsional)</label>
                 <input
                   type="text"
-                  placeholder="Nomor BPJS jika ada"
+                  placeholder="Contoh: 081234567890"
+                  value={formNoHp}
+                  onChange={(e) => setFormNoHp(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-saas-muted">No. BPJS (Opsional)</label>
+                <input
+                  type="text"
+                  placeholder="000123456789"
                   value={formBpjs}
                   onChange={(e) => setFormBpjs(e.target.value)}
                   className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
@@ -1328,10 +1442,10 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* Tanggal Lahir */}
+            {/* Tgl Lahir, JK & Kemandirian */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-saas-muted">Tanggal Lahir</label>
+                <label className="text-xs font-bold text-saas-muted">Tanggal Lahir *</label>
                 <input
                   type="date"
                   value={formTglLahir}
@@ -1341,60 +1455,54 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                 />
               </div>
 
-              {/* Jenis Kelamin */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-saas-muted">Jenis Kelamin</label>
+                <label className="text-xs font-bold text-saas-muted">Jenis Kelamin *</label>
                 <div className="flex gap-4 pt-2">
-                  <label className="flex items-center gap-2 text-xs font-bold text-saas-dark cursor-pointer select-none">
+                  <label className="flex items-center gap-2 text-xs font-bold text-saas-dark cursor-pointer">
                     <input
                       type="radio"
-                      name="l-jk"
+                      name="formJkLansia"
                       checked={formJk === "L"}
                       onChange={() => setFormJk("L")}
-                      className="w-4 h-4 text-saas-primary focus:ring-saas-primary/30"
                     />
                     Laki-laki
                   </label>
-                  <label className="flex items-center gap-2 text-xs font-bold text-saas-dark cursor-pointer select-none">
+                  <label className="flex items-center gap-2 text-xs font-bold text-saas-dark cursor-pointer">
                     <input
                       type="radio"
-                      name="l-jk"
+                      name="formJkLansia"
                       checked={formJk === "P"}
                       onChange={() => setFormJk("P")}
-                      className="w-4 h-4 text-saas-primary focus:ring-saas-primary/30"
                     />
                     Perempuan
                   </label>
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-3 gap-4 border-t border-gray-50 pt-4">
-              {/* RT / RW */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-saas-muted">RT / RW</label>
+                <label className="text-xs font-bold text-saas-muted">RT / RW *</label>
                 <input
                   type="text"
-                  placeholder="Cth: RT 01 / RW 02"
+                  placeholder="RT 02 / RW 02"
                   value={formRtRw}
                   onChange={(e) => setFormRtRw(e.target.value)}
                   className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
                 />
               </div>
+            </div>
 
-              {/* Status Kemandirian */}
-              <div className="col-span-2 space-y-1.5">
-                <label className="text-xs font-bold text-saas-muted">Tingkat Kemandirian Aktivitas</label>
-                <select
-                  value={formKemandirian}
-                  onChange={(e) => setFormKemandirian(e.target.value as any)}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
-                >
-                  <option value="A">Kategori A (Mandiri Sepenuhnya)</option>
-                  <option value="B">Kategori B (Bantuan Sebagian)</option>
-                  <option value="C">Kategori C (Tergantung Total)</option>
-                </select>
-              </div>
+            {/* Status Kemandirian */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-saas-muted">Tingkat Kemandirian (Kategori ADL)</label>
+              <select
+                value={formKemandirian}
+                onChange={(e) => setFormKemandirian(e.target.value as any)}
+                className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+              >
+                <option value="A">Kategori A (Mandiri Sepenuhnya)</option>
+                <option value="B">Kategori B (Bantuan Sebagian)</option>
+                <option value="C">Kategori C (Ketergantungan Total)</option>
+              </select>
             </div>
 
             {/* Riwayat Penyakit */}
@@ -1481,7 +1589,7 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-saas-dark">NIK (16 digit)</label>
               <input
@@ -1490,6 +1598,16 @@ export default function LansiaModule({ posyanduId }: LansiaModuleProps) {
                 maxLength={16}
                 value={editNik}
                 onChange={(e) => setEditNik(e.target.value)}
+                className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-saas-dark">No. HP / WA (Opsional)</label>
+              <input
+                type="text"
+                value={editNoHp}
+                onChange={(e) => setEditNoHp(e.target.value)}
+                placeholder="081234567890"
                 className="w-full p-2.5 border border-hairline rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
               />
             </div>

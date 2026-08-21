@@ -2,8 +2,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
 import prisma from '../../shared/config/prisma';
 import { sendResetPasswordEmail } from '../../shared/config/email';
+
 
 export const authService = {
   async register(data: { nama: string; email: string; password: string; posyanduId: string }) {
@@ -284,4 +286,117 @@ export const authService = {
 
     return { message: 'Kata sandi Anda berhasil diperbarui. Silakan masuk dengan kata sandi baru Anda.' };
   },
+
+  async googleLogin(idToken: string) {
+    if (!idToken) {
+      const err = new Error('Token Google tidak ditemukan');
+      (err as any).statusCode = 400;
+      throw err;
+    }
+
+    let email: string | undefined;
+    let name: string | undefined;
+
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+
+    try {
+      if (googleClientId) {
+        const client = new OAuth2Client(googleClientId);
+        const ticket = await client.verifyIdToken({
+          idToken,
+          audience: googleClientId,
+        });
+        const payload = ticket.getPayload();
+        email = payload?.email;
+        name = payload?.name;
+      } else {
+        const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+        if (!response.ok) {
+          const err = new Error('Token Google tidak valid atau telah kadaluarsa');
+          (err as any).statusCode = 401;
+          throw err;
+        }
+        const payload: any = await response.json();
+        email = payload.email;
+        name = payload.name;
+      }
+    } catch (err: any) {
+      if (err.statusCode) throw err;
+      try {
+        const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+        if (response.ok) {
+          const payload: any = await response.json();
+          email = payload.email;
+          name = payload.name;
+        } else {
+          const verifyErr = new Error('Verifikasi token Google gagal: ' + (err.message || 'Token tidak valid'));
+          (verifyErr as any).statusCode = 401;
+          throw verifyErr;
+        }
+      } catch (fallbackErr: any) {
+        if (fallbackErr.statusCode) throw fallbackErr;
+        const finalErr = new Error('Verifikasi token Google gagal');
+        (finalErr as any).statusCode = 401;
+        throw finalErr;
+      }
+    }
+
+    if (!email) {
+      const err = new Error('Email tidak ditemukan dari kredensial Google');
+      (err as any).statusCode = 400;
+      throw err;
+    }
+
+    const kader = await prisma.kader.findUnique({
+      where: { email: email.toLowerCase() },
+      include: { posyandu: { select: { id: true, nama: true } } },
+    });
+
+    if (!kader) {
+      const err = new Error(`Email Google Anda (${email}) belum terdaftar sebagai Kader. Silakan hubungi Owner Posyandu untuk mendaftarkan email Anda.`);
+      (err as any).statusCode = 404;
+      throw err;
+    }
+
+    if (!kader.isActive) {
+      const err = new Error('Akun Anda telah dinonaktifkan.');
+      (err as any).statusCode = 403;
+      throw err;
+    }
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret) throw new Error('JWT_SECRET tidak dikonfigurasi');
+
+    const token = jwt.sign(
+      { userId: kader.id, posyanduId: kader.posyanduId, role: kader.role },
+      secret,
+      { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any }
+    );
+
+    try {
+      await prisma.auditLog.create({
+        data: {
+          posyanduId: kader.posyanduId,
+          kaderId: kader.id,
+          kaderNama: kader.nama,
+          action: 'LOGIN_GOOGLE',
+          details: `Kader ${kader.nama} berhasil masuk via Google (${email})`,
+        },
+      });
+    } catch {
+      // ignore
+    }
+
+    return {
+      token,
+      kader: {
+        id: kader.id,
+        nama: kader.nama,
+        email: kader.email,
+        role: kader.role,
+        posyandu: kader.posyandu,
+      },
+    };
+  },
 };
+

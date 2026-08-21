@@ -68,6 +68,7 @@ model Balita {
   posyanduId    String        @map("posyandu_id")
   nama          String
   nik           String?
+  noHp          String?       @map("no_hp")
   tanggalLahir  DateTime      @map("tanggal_lahir") @db.Date
   jenisKelamin  JenisKelamin  @map("jenis_kelamin")
   namaIbu       String        @map("nama_ibu")
@@ -117,6 +118,7 @@ model Lansia {
   nama                    String
   nik                     String
   noBpjs                  String?          @map("no_bpjs")
+  noHp                    String?          @map("no_hp")
   rtRw                    String           @map("rt_rw")
   tanggalLahir            DateTime         @map("tanggal_lahir") @db.Date
   jenisKelamin            JenisKelamin     @map("jenis_kelamin")

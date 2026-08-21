@@ -10,6 +10,7 @@ import balitaRoutes from './modules/balita/balita.routes';
 import lansiaRoutes from './modules/lansia/lansia.routes';
 import notificationRoutes from './modules/notification/notification.routes';
 import ownerRoutes from './modules/owner/owner.routes';
+import publicRoutes from './modules/public/public.routes';
 import { errorHandler, notFound } from './shared/middlewares/error.middleware';
 
 const app = express();
@@ -43,6 +44,7 @@ app.get('/health', (_req, res) => {
 // ─────────────────────────────────────────────────────────────
 // API ROUTES (MODULAR MONOLITH)
 // ─────────────────────────────────────────────────────────────
+app.use('/api/public', publicRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/posyandu', posyanduRoutes);
 app.use('/api/dashboard', dashboardRoutes);

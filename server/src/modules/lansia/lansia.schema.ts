@@ -10,6 +10,7 @@ export const createLansiaSchema = z.object({
     .length(16, 'NIK harus 16 digit')
     .regex(/^\d+$/, 'NIK harus berupa angka'),
   noBpjs: z.string().optional().or(z.literal('')),
+  noHp: z.string().optional().nullable().or(z.literal('')),
   rtRw: z.string().min(1, 'RT/RW wajib diisi'),
   tanggalLahir: z.string().refine((val) => {
     const date = new Date(val);

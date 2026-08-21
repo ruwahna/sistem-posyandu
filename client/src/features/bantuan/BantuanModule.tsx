@@ -8,7 +8,6 @@ import {
   ShieldAlert,
   UserCheck2,
   Users,
-  Building2,
   PhoneCall,
   ChevronDown,
   ChevronUp,
@@ -59,10 +58,10 @@ export default function BantuanModule() {
       description: "Cara mencatat berat badan, tinggi badan, dan vit A saat pelayanan posyandu berlangsung.",
       icon: FileText,
       steps: [
-        { title: "Langkah 1: Masuk Menu Pelayanan", text: "Klik tombol bertuliskan 'Pelayanan' di menu sebelah kiri (ikon kertas catatan)." },
-        { title: "Langkah 2: Cari Nama Warga", text: "Ketik nama anak atau lansia pada kolom pencarian di sebelah kiri, lalu klik nama warga tersebut." },
-        { title: "Langkah 3: Isi Formulir di Kanan", text: "Formulir input akan muncul di sebelah kanan. Masukkan angka Berat Badan (BB) dan Tinggi Badan (TB) sesuai hasil timbangan fisik." },
-        { title: "Langkah 4: Klik Simpan", text: "Periksa kembali angka yang dimasukkan. Jika sudah benar, klik tombol hijau/toska 'Simpan Pemeriksaan'. Data akan langsung terekam.", badge: "Penting" }
+        { title: "Langkah 1: Masuk Menu Pelayanan", text: "Klik tombol 'Pelayanan' di menu navigasi utama." },
+        { title: "Langkah 2: Pilih Halaman Balita / Lansia", text: "Klik tombol Balita atau Lansia di bagian atas untuk berpindah halaman pelayanan." },
+        { title: "Langkah 3: Cari Nama Warga & Isi Formulir", text: "Pilih nama warga di panel kiri, lalu masukkan data hasil penimbangan / pemeriksaan medis pada formulir di sebelah kanan." },
+        { title: "Langkah 4: Klik Simpan", text: "Periksa kembali angka yang dimasukkan, lalu klik tombol 'Simpan Pemeriksaan'. Data akan langsung terekam.", badge: "Penting" }
       ]
     },
     {
@@ -115,19 +114,6 @@ export default function BantuanModule() {
         { title: "Langkah 2: Klik Buat Akun", text: "Klik tombol 'Buat Akun Kader Baru' di kanan atas." },
         { title: "Langkah 3: Buat Username & Password", text: "Masukkan Nama Lengkap, Email, Kata Sandi awal (misal: 123456), dan tentukan perannya (Anggota/Owner)." },
         { title: "Langkah 4: Bagikan Akses", text: "Klik Simpan. Berikan email dan kata sandi tersebut kepada kader baru agar mereka bisa langsung masuk ke sistem." }
-      ]
-    },
-    {
-      id: "g6",
-      title: "Menggunakan Kode Undangan Mandiri",
-      category: "owner",
-      description: "Cara membagikan kode rahasia posyandu untuk kader mendaftar sendiri.",
-      icon: Building2,
-      steps: [
-        { title: "Langkah 1: Salin Kode Undangan", text: "Masuk ke menu 'Manajemen Akun' di sisi kiri, lihat kotak 'Kode Undangan Mandiri' di sebelah kanan." },
-        { title: "Langkah 2: Klik Ikon Salin", text: "Klik tombol salin (ikon kertas ganda) di samping kode (misal: SRILESTARI-KADER-99A8)." },
-        { title: "Langkah 3: Bagikan ke Kader Baru", text: "Kirim kode tersebut ke WhatsApp kader baru." },
-        { title: "Langkah 4: Kader Baru Mendaftar", text: "Saat kader baru mendaftar di halaman registrasi, mereka cukup memasukkan kode ini agar otomatis terhubung ke posyandu Anda." }
       ]
     }
   ];

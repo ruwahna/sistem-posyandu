@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
 import { authApi } from "../../lib/api";
@@ -22,6 +23,8 @@ import {
 } from "lucide-react";
 
 import PageHelmet from "../../components/PageHelmet";
+import GoogleLoginButton from "./GoogleLoginButton";
+
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -133,7 +136,9 @@ function LeftPanel() {
       {/* Footer minimal tag */}
       <div className="relative z-10 flex items-center justify-between border-t border-teal-200/50 pt-4 text-[11px] text-slate-500">
         <span className="font-bold text-emerald-600">● SISTEM AKTIF</span>
-        <span>Sistem Input Posyandu</span>
+        <Link href="/puskesmas" className="font-bold text-saas-primary hover:underline flex items-center gap-1">
+          <Building2 className="w-3.5 h-3.5" /> Portal Puskesmas →
+        </Link>
       </div>
     </div>
   );
@@ -150,7 +155,7 @@ function LoginForm({
   onSwitch: () => void;
   onForgotPassword: () => void;
 }) {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -263,6 +268,27 @@ function LoginForm({
             "Masuk ke Aplikasi"
           )}
         </button>
+
+        {/* Divider */}
+        <div className="relative my-5 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
+          </div>
+          <div className="relative bg-white px-3 text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+            atau masuk dengan
+          </div>
+        </div>
+
+        {/* Google Login Button */}
+        <GoogleLoginButton
+          onSuccess={async (idToken) => {
+            setError(null);
+            await loginWithGoogle(idToken);
+          }}
+          onError={(msg) => setError(msg)}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+        />
       </form>
 
       {/* Switch to Register */}
@@ -281,6 +307,7 @@ function LoginForm({
     </div>
   );
 }
+
 
 // ─────────────────────────────────────────────────────────────
 // FORGOT PASSWORD FORM
