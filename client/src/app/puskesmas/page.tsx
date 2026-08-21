@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Building2,
-  Baby,
   RotateCcw,
   Download,
   Loader2,
@@ -18,6 +17,7 @@ import {
 } from "lucide-react";
 import PageHelmet from "../../components/PageHelmet";
 import LansiaIcon from "../../components/LansiaIcon";
+import BalitaIcon from "../../components/BalitaIcon";
 import { publicPuskesmasApi, PublicPemeriksaanItem, PublicPosyanduInfo } from "../../lib/api";
 import {
   ResponsiveContainer,
@@ -859,7 +859,7 @@ export default function PuskesmasPublicPage() {
                 </div>
                 <div className="ml-1.5">
                   <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Baby className="w-5 h-5 text-purple-600" />
+                    <BalitaIcon className="w-5 h-5 text-purple-600" />
                   </div>
                 </div>
               </div>
@@ -1463,7 +1463,7 @@ export default function PuskesmasPublicPage() {
                   } shadow-md`}
                 >
                   {selectedItem.kategori === "Balita" ? (
-                    <Baby className="w-5 h-5" />
+                    <BalitaIcon className="w-5 h-5" />
                   ) : (
                     <LansiaIcon className="w-5 h-5" />
                   )}

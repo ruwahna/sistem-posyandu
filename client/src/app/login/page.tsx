@@ -12,7 +12,6 @@ import {
   Loader2,
   ArrowLeft,
   ArrowRight,
-  Baby,
   Heart,
   Users,
   MapPin,
@@ -24,6 +23,7 @@ import {
 
 import PageHelmet from "../../components/PageHelmet";
 import GoogleLoginButton from "./GoogleLoginButton";
+import BalitaIcon from "../../components/BalitaIcon";
 
 
 // ─────────────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ function LeftPanel() {
         {/* Product UI Mockup Card Layering */}
         <div className="relative h-52 mt-8">
           <StatBubble
-            icon={<Baby className="w-4 h-4 text-teal-600" />}
+            icon={<BalitaIcon className="w-4 h-4 text-teal-600" />}
             label="Data Balita"
             value="Tercatat Rapi"
             accentColor="bg-teal-50 text-teal-600"

@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import {
   SquaresFour,
   ClipboardText,
-  Baby,
   Heartbeat,
   ClockCounterClockwise,
   Users,
@@ -47,6 +46,7 @@ import PengaturanModule from "../features/pengaturan/PengaturanModule";
 import ManajemenAkunModule from "../features/pengaturan/ManajemenAkunModule";
 import BantuanModule from "../features/bantuan/BantuanModule";
 import LansiaIcon from "../components/LansiaIcon";
+import BalitaIcon from "../components/BalitaIcon";
 
 // Login Page (rendered inline when not authenticated)
 import LoginPage from "./login/page";
@@ -348,7 +348,7 @@ export default function Home() {
     {
       category: "Data Sasaran",
       items: [
-        { name: "Balita", icon: Baby },
+        { name: "Balita", icon: BalitaIcon },
         { name: "Lansia", icon: LansiaIcon },
       ],
     },
@@ -832,7 +832,7 @@ export default function Home() {
                               }`}
                             >
                               {item.tipe === "Balita" ? (
-                                <Baby className="w-4 h-4" weight="bold" />
+                                <BalitaIcon className="w-4 h-4" />
                               ) : (
                                 <LansiaIcon className="w-4 h-4" />
                               )}
@@ -1088,7 +1088,7 @@ export default function Home() {
         {[
           { name: "Overview", label: "Home", icon: SquaresFour },
           { name: "Pelayanan", label: "Layanan", icon: ClipboardText },
-          { name: "Balita", label: "Balita", icon: Baby },
+          { name: "Balita", label: "Balita", icon: BalitaIcon },
           { name: "Lansia", label: "Lansia", icon: LansiaIcon },
           { name: "Riwayat", label: "Riwayat", icon: ClockCounterClockwise },
           { name: "Laporan", label: "Laporan", icon: FileText },

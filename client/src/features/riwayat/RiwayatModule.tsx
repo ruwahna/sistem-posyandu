@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
 import Modal from "../../components/Modal";
 import LansiaIcon from "../../components/LansiaIcon";
+import BalitaIcon from "../../components/BalitaIcon";
 import { RiwayatTableSkeleton } from "../../components/Skeleton";
 import { riwayatApi, ItemRiwayat, balitaApi, lansiaApi } from "@/lib/api";
 import {
@@ -17,7 +18,6 @@ import {
 import {
   Search,
   Download,
-  Baby,
   Heart,
   CheckCircle2,
   AlertCircle,
@@ -597,7 +597,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                         <td className="py-4 px-3 font-semibold text-saas-muted whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             {log.tipe === "Balita" ? (
-                              <Baby className="w-3.5 h-3.5 text-saas-primary shrink-0" />
+                              <BalitaIcon className="w-3.5 h-3.5 text-saas-primary shrink-0" />
                             ) : (
                               <LansiaIcon className="w-3.5 h-3.5 shrink-0" />
                             )}
@@ -678,7 +678,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-white shadow-md ${
                   selectedDetailLog.tipe === "Balita" ? "bg-saas-primary shadow-teal-500/20" : "bg-indigo-600 shadow-indigo-500/20"
                 }`}>
-                  {selectedDetailLog.tipe === "Balita" ? <Baby className="w-6 h-6" /> : <LansiaIcon className="w-6 h-6" />}
+                  {selectedDetailLog.tipe === "Balita" ? <BalitaIcon className="w-6 h-6" /> : <LansiaIcon className="w-6 h-6" />}
                 </div>
                 <div>
                   <h3 className="text-lg font-extrabold text-saas-dark">{selectedDetailLog.nama}</h3>

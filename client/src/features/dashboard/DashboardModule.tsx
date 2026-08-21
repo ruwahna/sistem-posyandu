@@ -29,7 +29,6 @@ import {
   Clock,
   Plus,
   Search,
-  Baby,
   Heart,
   X,
   UserCheck2,
@@ -41,6 +40,7 @@ import {
 } from "lucide-react";
 import ActionMenu from "../../components/ActionMenu";
 import LansiaIcon from "../../components/LansiaIcon";
+import BalitaIcon from "../../components/BalitaIcon";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -983,7 +983,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                             p.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-red-50 text-red-500"
                           }`}>
-                            {p.tipe === "Balita" ? <Baby className="w-4 h-4" /> : <LansiaIcon className="w-4 h-4" />}
+                            {p.tipe === "Balita" ? <BalitaIcon className="w-4 h-4" /> : <LansiaIcon className="w-4 h-4" />}
                           </div>
                           <div>
                             <p className="font-bold text-saas-dark group-hover:text-saas-primary transition-colors">{p.nama}</p>

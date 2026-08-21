@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   Plus,
   Search,
-  Baby,
   Calendar,
   User,
   MapPin,
@@ -21,6 +20,7 @@ import {
   Phone,
   TrendingUp
 } from "lucide-react";
+import BalitaIcon from "../../components/BalitaIcon";
 import {
   ResponsiveContainer,
   LineChart,
@@ -911,7 +911,7 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center text-saas-primary">
-                    <Baby className="w-6 h-6" />
+                    <BalitaIcon className="w-6 h-6" />
                   </div>
                   <div className="flex items-center gap-2">
                     <button

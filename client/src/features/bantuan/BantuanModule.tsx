@@ -11,7 +11,6 @@ import {
   PhoneCall,
   ChevronDown,
   ChevronUp,
-  Baby,
   Heart,
   FileText,
   ArrowLeft,
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import PageHelmet from "../../components/PageHelmet";
 import LansiaIcon from "../../components/LansiaIcon";
+import BalitaIcon from "../../components/BalitaIcon";
 
 interface Guide {
   id: string;
@@ -70,7 +70,7 @@ export default function BantuanModule() {
       title: "Mendaftarkan Balita Baru",
       category: "kader",
       description: "Cara mendaftarkan anak/bayi yang baru pertama kali datang ke posyandu.",
-      icon: Baby,
+      icon: BalitaIcon,
       steps: [
         { title: "Langkah 1: Klik Tombol Balita Baru", text: "Buka menu 'Pelayanan', lalu klik tombol '+ Balita Baru' di sudut kanan atas halaman." },
         { title: "Langkah 2: Isi Nama & Tanggal Lahir", text: "Masukkan Nama Lengkap anak, NIK (jika ada di kartu keluarga), dan Tanggal Lahir (sistem akan menghitung usianya secara otomatis)." },
