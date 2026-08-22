@@ -568,6 +568,12 @@ export const kaderApi = {
       body: JSON.stringify(data),
     }),
 
+  update: (posyanduId: string, kaderId: string, data: { nama?: string; username?: string; email?: string; password?: string; role?: 'OWNER' | 'KADER' }) =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader/${kaderId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
   updateRole: (posyanduId: string, kaderId: string, role: 'OWNER' | 'KADER') =>
     request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader/${kaderId}/role`, {
       method: 'PATCH',

@@ -13,12 +13,30 @@ export interface ActionMenuItem {
 interface ActionMenuProps {
   items: ActionMenuItem[];
   triggerClassName?: string;
+  alignDirection?: "bottom" | "top";
 }
 
-export default function ActionMenu({ items, triggerClassName }: ActionMenuProps) {
+export default function ActionMenu({ items, triggerClassName, alignDirection }: ActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [computedDirection, setComputedDirection] = useState<"bottom" | "top">("bottom");
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Auto detect or set align direction
+  const handleToggle = () => {
+    if (!isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (alignDirection) {
+        setComputedDirection(alignDirection);
+      } else if (spaceBelow < 160) {
+        setComputedDirection("top");
+      } else {
+        setComputedDirection("bottom");
+      }
+    }
+    setIsOpen(!isOpen);
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -49,7 +67,7 @@ export default function ActionMenu({ items, triggerClassName }: ActionMenuProps)
       {/* Trigger Button */}
       <button
         ref={triggerRef}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className={
           triggerClassName ||
           "p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-all"
@@ -62,7 +80,9 @@ export default function ActionMenu({ items, triggerClassName }: ActionMenuProps)
       {isOpen && (
         <div
           ref={menuRef}
-          className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden"
+          className={`absolute right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden ${
+            computedDirection === "top" ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
         >
           {items.map((item, index) => (
             <button

@@ -10,6 +10,10 @@ import {
   EyeOff,
   UserPlus,
   Trash2,
+  Edit3,
+  MoreVertical,
+  User,
+  X,
   Loader2,
   Lock,
 } from "lucide-react";
@@ -17,6 +21,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { kaderApi, KaderMember } from "../../lib/api";
 import PageHelmet from "../../components/PageHelmet";
 import { AkunTableSkeleton } from "../../components/Skeleton";
+import ActionMenu from "../../components/ActionMenu";
 
 interface ManajemenAkunModuleProps {
   posyanduId?: string | null;
@@ -169,27 +174,104 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
     }
   };
 
+  // Edit Kader Modal State
+  const [editingKader, setEditingKader] = useState<KaderMember | null>(null);
+  const [editNama, setEditNama] = useState<string>("");
+  const [editUsername, setEditUsername] = useState<string>("");
+  const [editEmail, setEditEmail] = useState<string>("");
+  const [editRole, setEditRole] = useState<"OWNER" | "KADER">("KADER");
+  const [editPassword, setEditPassword] = useState<string>("");
+  const [showEditPassword, setShowEditPassword] = useState<boolean>(false);
+  const [isUpdatingKader, setIsUpdatingKader] = useState<boolean>(false);
+  const [editModalNotice, setEditModalNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const openEditModal = (kader: KaderMember) => {
+    setEditingKader(kader);
+    setEditNama(kader.nama);
+    setEditUsername(kader.username || "");
+    setEditEmail(kader.email);
+    setEditRole(kader.role);
+    setEditPassword("");
+    setShowEditPassword(false);
+    setEditModalNotice(null);
+  };
+
+  const handleSaveEditKader = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingKader || !currentPosyanduId) return;
+
+    setEditModalNotice(null);
+
+    if (!editNama.trim() || !editEmail.trim()) {
+      setEditModalNotice({ type: "error", message: "Nama dan email wajib diisi." });
+      return;
+    }
+
+    if (editPassword && editPassword.length < 6) {
+      setEditModalNotice({ type: "error", message: "Kata sandi minimal 6 karakter." });
+      return;
+    }
+
+    if (editUsername.trim() && !/^[a-zA-Z0-9._-]+$/.test(editUsername.trim())) {
+      setEditModalNotice({ type: "error", message: "Username hanya boleh huruf, angka, titik, underscore, dan strip." });
+      return;
+    }
+
+    try {
+      setIsUpdatingKader(true);
+      const res = await kaderApi.update(currentPosyanduId, editingKader.id, {
+        nama: editNama.trim(),
+        username: editUsername.trim() || undefined,
+        email: editEmail.trim().toLowerCase(),
+        role: editRole,
+        ...(editPassword.trim() ? { password: editPassword.trim() } : {}),
+      });
+
+      if (res.success && res.data) {
+        setKaders((prev) => prev.map((k) => (k.id === editingKader.id ? { ...k, ...res.data } : k)));
+        setEditModalNotice({ type: "success", message: `Akun ${res.data.nama} berhasil diperbarui.` });
+        setTimeout(() => {
+          setEditingKader(null);
+        }, 1200);
+      }
+    } catch (err: any) {
+      setEditModalNotice({ type: "error", message: err.message || "Gagal memperbarui data kader." });
+    } finally {
+      setIsUpdatingKader(false);
+    }
+  };
+
+  // Delete Confirmation Modal State
+  const [deletingKader, setDeletingKader] = useState<KaderMember | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
   // Revoke/Delete Kader Access
-  const handleRevokeAccess = async (targetKader: KaderMember) => {
+  const handleRevokeAccess = (targetKader: KaderMember) => {
     if (!currentPosyanduId || !isOwner) return;
     if (targetKader.role === "OWNER") {
       setActionNotice("Akses Akun dengan peran Owner tidak dapat dihapus.");
       setTimeout(() => setActionNotice(""), 3000);
       return;
     }
+    setDeletingKader(targetKader);
+  };
 
-    if (confirm(`Apakah Anda yakin ingin menghapus akses kader ${targetKader.nama} dari posyandu ini?`)) {
-      try {
-        const res = await kaderApi.delete(currentPosyanduId, targetKader.id);
-        if (res.success) {
-          setKaders((prev) => prev.filter((k) => k.id !== targetKader.id));
-          setActionNotice(`Akses kader ${targetKader.nama} berhasil dicabut.`);
-          setTimeout(() => setActionNotice(""), 3000);
-        }
-      } catch (err: any) {
-        setActionNotice(err.message || "Gagal mencabut akses kader.");
+  const confirmRevokeAccess = async () => {
+    if (!deletingKader || !currentPosyanduId) return;
+    try {
+      setIsDeleting(true);
+      const res = await kaderApi.delete(currentPosyanduId, deletingKader.id);
+      if (res.success) {
+        setKaders((prev) => prev.filter((k) => k.id !== deletingKader.id));
+        setActionNotice(`Akses kader ${deletingKader.nama} berhasil dicabut.`);
         setTimeout(() => setActionNotice(""), 3000);
+        setDeletingKader(null);
       }
+    } catch (err: any) {
+      setActionNotice(err.message || "Gagal mencabut akses kader.");
+      setTimeout(() => setActionNotice(""), 3000);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -402,9 +484,10 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
                     </tr>
                   </thead>
                   <tbody>
-                    {kaders.map((kader) => {
+                    {kaders.map((kader, index) => {
                       const isCurrentUser = kader.id === user?.id;
                       const isKaderOwner = kader.role === "OWNER";
+                      const isLastItem = index === kaders.length - 1;
 
                       return (
                         <tr
@@ -462,13 +545,26 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
 
                           {isOwner && (
                             <td className="py-4 text-right">
-                              <button
-                                disabled={isKaderOwner || isCurrentUser}
-                                onClick={() => handleRevokeAccess(kader)}
-                                className="px-2.5 py-1.5 border border-red-100 rounded-input text-xs font-bold text-trend-dangerText hover:bg-trend-dangerBg/50 transition-colors disabled:opacity-30 disabled:pointer-events-none inline-flex items-center gap-1"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" /> Hapus Akses
-                              </button>
+                              <ActionMenu
+                                alignDirection={isLastItem ? "top" : undefined}
+                                items={[
+                                  {
+                                    label: "Edit Akun",
+                                    icon: <Edit3 className="w-4 h-4 text-saas-primary" />,
+                                    onClick: () => openEditModal(kader),
+                                  },
+                                  ...(!isKaderOwner && !isCurrentUser
+                                    ? [
+                                        {
+                                          label: "Hapus Akses",
+                                          icon: <Trash2 className="w-4 h-4 text-red-600" />,
+                                          onClick: () => handleRevokeAccess(kader),
+                                          variant: "danger" as const,
+                                        },
+                                      ]
+                                    : []),
+                                ]}
+                              />
                             </td>
                           )}
                         </tr>
@@ -511,6 +607,211 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
           </div>
         </div>
       </div>
+
+      {/* Modal Edit Akun Kader */}
+      {editingKader && (
+        <div
+          onClick={() => setEditingKader(null)}
+          className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[9999] !mt-0 flex items-center justify-center p-4 bg-saas-dark/40 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 p-6 relative"
+          >
+            <button
+              onClick={() => setEditingKader(null)}
+              className="absolute top-4 right-4 text-saas-muted hover:text-saas-dark p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-saas-primary/10 flex items-center justify-center text-saas-primary border border-saas-primary/20">
+                <User className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-saas-dark leading-tight">Edit Akun Kader</h3>
+                <p className="text-xs text-saas-muted">Perbarui nama lengkap, username, email, atau kata sandi.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveEditKader} className="space-y-4">
+              {editModalNotice && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-semibold flex items-center gap-2 border ${
+                    editModalNotice.type === "success"
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                      : "bg-red-50 text-red-800 border-red-200"
+                  }`}
+                >
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {editModalNotice.message}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-saas-dark mb-1.5">Nama Lengkap</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={editNama}
+                    onChange={(e) => setEditNama(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary focus:bg-white transition-all"
+                    placeholder="Nama lengkap"
+                    required
+                  />
+                  <User className="absolute left-3 top-3 w-4 h-4 text-saas-muted" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-saas-dark mb-1.5">Username (Opsional)</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={editUsername}
+                    onChange={(e) => setEditUsername(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary focus:bg-white transition-all"
+                    placeholder="Username"
+                  />
+                  <span className="absolute left-3.5 top-2.5 text-saas-muted font-bold text-sm">@</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-saas-dark mb-1.5">Alamat Email</label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary focus:bg-white transition-all"
+                    placeholder="nama@email.com"
+                    required
+                  />
+                  <Users className="absolute left-3 top-3 w-4 h-4 text-saas-muted" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-saas-dark mb-1.5">Peran / Hak Akses</label>
+                <div className="relative">
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as "OWNER" | "KADER")}
+                    disabled={editingKader.id === user?.id}
+                    className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary focus:bg-white transition-all disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
+                  >
+                    <option value="KADER">Anggota Kader (Akses Operasional Lapangan)</option>
+                    <option value="OWNER">Kader Owner (Akses Administrasi Penuh)</option>
+                  </select>
+                  <Shield className="absolute left-3 top-3 w-4 h-4 text-saas-muted" />
+                </div>
+                {editingKader.id === user?.id && (
+                  <p className="text-[10px] text-saas-muted mt-1 font-medium">Anda tidak dapat mengubah peran akun Anda sendiri.</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-saas-dark mb-1.5">Reset Kata Sandi Baru (Opsional)</label>
+                <div className="relative">
+                  <input
+                    type={showEditPassword ? "text" : "password"}
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                    placeholder="Kosongkan jika tidak ingin diubah"
+                    className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary focus:bg-white transition-all"
+                  />
+                  <Lock className="absolute left-3 top-3 w-4 h-4 text-saas-muted" />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="absolute right-3 top-3 text-saas-muted hover:text-saas-dark"
+                  >
+                    {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingKader(null)}
+                  className="px-4 py-2 text-xs font-bold text-saas-muted hover:text-saas-dark hover:bg-gray-100 rounded-xl transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingKader}
+                  className="px-5 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isUpdatingKader ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    "Simpan Perubahan"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Akses */}
+      {deletingKader && (
+        <div
+          onClick={() => setDeletingKader(null)}
+          className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[9999] !mt-0 flex items-center justify-center p-4 bg-saas-dark/40 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-gray-100 p-6 relative text-center space-y-4"
+          >
+            <button
+              onClick={() => setDeletingKader(null)}
+              className="absolute top-4 right-4 text-saas-muted hover:text-saas-dark p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="pt-2">
+              <h3 className="font-bold text-base text-saas-dark">Hapus Akses Kader?</h3>
+              <p className="text-xs text-saas-muted mt-1.5 leading-relaxed">
+                Apakah Anda yakin ingin mencabut akses kader <strong className="text-saas-dark">{deletingKader.nama}</strong>? Tindakan ini tidak dapat dibatalkan.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingKader(null)}
+                className="w-1/2 py-2.5 text-xs font-bold text-saas-muted hover:text-saas-dark hover:bg-gray-100 rounded-xl transition-all border border-gray-200"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={confirmRevokeAccess}
+                className="w-1/2 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md shadow-red-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Menghapus...
+                  </>
+                ) : (
+                  "Ya, Hapus"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1118,7 +1118,7 @@ export default function Home() {
       {isEditProfileOpen && (
         <div
           onClick={() => setIsEditProfileOpen(false)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-saas-dark/40 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[9999] flex items-center justify-center p-4 bg-saas-dark/40 backdrop-blur-sm animate-in fade-in duration-200"
         >
           <div
             onClick={(e) => e.stopPropagation()}

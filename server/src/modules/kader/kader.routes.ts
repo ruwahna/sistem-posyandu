@@ -4,6 +4,7 @@ import {
   createKader,
   updateKaderRole,
   updateKaderStatus,
+  updateKader,
   deleteKader,
 } from './kader.controller';
 import { authenticate, authorize } from '../../shared/middlewares/auth.middleware';
@@ -12,6 +13,7 @@ import {
   createKaderSchema,
   updateKaderRoleSchema,
   updateKaderStatusSchema,
+  updateKaderSchema,
 } from './kader.schema';
 
 const router = Router({ mergeParams: true });
@@ -21,6 +23,9 @@ router.get('/', authenticate, getKadersByPosyandu);
 
 // POST /api/posyandu/:posyanduId/kader
 router.post('/', authenticate, authorize('OWNER'), validate(createKaderSchema), createKader);
+
+// PUT /api/posyandu/:posyanduId/kader/:id
+router.put('/:id', authenticate, authorize('OWNER'), validate(updateKaderSchema), updateKader);
 
 // PATCH /api/posyandu/:posyanduId/kader/:id/role
 router.patch('/:id/role', authenticate, authorize('OWNER'), validate(updateKaderRoleSchema), updateKaderRole);

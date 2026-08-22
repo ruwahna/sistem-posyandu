@@ -108,6 +108,36 @@ export const updateKaderStatus = async (req: Request, res: Response, next: NextF
   }
 };
 
+export const updateKader = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const posyanduId = String(req.params.posyanduId);
+    const kaderId = String(req.params.id);
+
+    if (req.user?.posyanduId !== posyanduId) {
+      res.status(403).json({ success: false, message: 'Anda tidak memiliki akses ke posyandu ini' });
+      return;
+    }
+
+    if (req.user?.role !== 'OWNER') {
+      res.status(403).json({ success: false, message: 'Hanya Kader Owner yang dapat mengubah data kader' });
+      return;
+    }
+
+    const updated = await kaderService.updateKader(posyanduId, kaderId, req.user!.userId, req.body);
+    res.json({
+      success: true,
+      message: `Data akun ${updated.nama} berhasil diperbarui`,
+      data: updated,
+    });
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({ success: false, message: err.message });
+      return;
+    }
+    next(err);
+  }
+};
+
 export const deleteKader = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const posyanduId = String(req.params.posyanduId);

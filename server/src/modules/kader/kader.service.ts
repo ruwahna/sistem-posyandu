@@ -131,6 +131,81 @@ export const kaderService = {
     });
   },
 
+  async updateKader(posyanduId: string, kaderId: string, currentUserId: string, data: { nama?: string; username?: string; email?: string; password?: string; role?: 'OWNER' | 'KADER' }) {
+    const targetKader = await prisma.kader.findFirst({
+      where: { id: kaderId, posyanduId },
+    });
+
+    if (!targetKader) {
+      const err = new Error('Akun kader tidak ditemukan');
+      (err as any).statusCode = 404;
+      throw err;
+    }
+
+    const updateData: any = {};
+
+    if (data.role && data.role !== targetKader.role) {
+      if (targetKader.id === currentUserId && data.role !== 'OWNER') {
+        const ownerCount = await prisma.kader.count({
+          where: { posyanduId, role: 'OWNER', isActive: true },
+        });
+        if (ownerCount <= 1) {
+          const err = new Error('Posyandu harus memiliki minimal 1 Kader Owner aktif.');
+          (err as any).statusCode = 400;
+          throw err;
+        }
+      }
+      updateData.role = data.role === 'OWNER' ? 'OWNER' : 'KADER';
+    }
+
+    if (data.nama && data.nama.trim()) {
+      updateData.nama = data.nama.trim();
+    }
+
+    if (data.email && data.email.trim() && data.email.trim().toLowerCase() !== targetKader.email) {
+      const existingEmail = await prisma.kader.findUnique({ where: { email: data.email.trim().toLowerCase() } });
+      if (existingEmail) {
+        const err = new Error('Email sudah digunakan oleh akun lain');
+        (err as any).statusCode = 409;
+        throw err;
+      }
+      updateData.email = data.email.trim().toLowerCase();
+    }
+
+    if (data.username !== undefined) {
+      const trimmedUsername = data.username.trim();
+      if (trimmedUsername && trimmedUsername !== targetKader.username) {
+        const existingUsername = await prisma.kader.findUnique({ where: { username: trimmedUsername } });
+        if (existingUsername) {
+          const err = new Error('Username sudah digunakan oleh akun lain');
+          (err as any).statusCode = 409;
+          throw err;
+        }
+        updateData.username = trimmedUsername;
+      } else if (!trimmedUsername) {
+        updateData.username = null;
+      }
+    }
+
+    if (data.password && data.password.trim()) {
+      updateData.password = await bcrypt.hash(data.password.trim(), 12);
+    }
+
+    return prisma.kader.update({
+      where: { id: kaderId },
+      data: updateData,
+      select: {
+        id: true,
+        nama: true,
+        username: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
+  },
+
   async deleteKader(posyanduId: string, kaderId: string) {
     const targetKader = await prisma.kader.findFirst({
       where: { id: kaderId, posyanduId },
