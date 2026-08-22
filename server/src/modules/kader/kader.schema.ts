@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const createKaderSchema = z.object({
   nama: z.string().min(2, 'Nama minimal 2 karakter'),
+  username: z.string().min(3, 'Username minimal 3 karakter').max(30, 'Username maksimal 30 karakter').regex(/^[a-zA-Z0-9._-]+$/, 'Username hanya boleh huruf, angka, titik, underscore, dan strip').optional().or(z.literal('')),
   email: z.string().email('Format email tidak valid'),
   password: z.string().min(6, 'Password minimal 6 karakter'),
   role: z.enum(['OWNER', 'KADER']).default('KADER'),

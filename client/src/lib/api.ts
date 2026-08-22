@@ -34,6 +34,7 @@ export function removeToken(): void {
 export interface KaderInfo {
   id: string;
   nama: string;
+  username?: string | null;
   email: string;
   role: 'OWNER' | 'KADER';
   posyandu: { id: string; nama: string };
@@ -196,10 +197,10 @@ async function request<T>(
 // ─────────────────────────────────────────────────────────────
 
 export const authApi = {
-  login: (email: string, password: string) =>
+  login: (emailOrUsername: string, password: string) =>
     request<ApiResponse<LoginResponse>>('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ emailOrUsername, password }),
     }),
 
   loginWithGoogle: (idToken: string) =>
@@ -215,6 +216,7 @@ export const authApi = {
     kecamatan: string;
     alamat: string;
     namaKader: string;
+    username?: string;
     email: string;
     password: string;
   }) =>
@@ -241,7 +243,7 @@ export const authApi = {
       body: JSON.stringify({ token, newPassword }),
     }),
 
-  updateProfile: (data: { nama: string; email: string; password?: string }) =>
+  updateProfile: (data: { nama: string; email: string; username?: string; password?: string }) =>
     request<ApiResponse<KaderInfo>>('/api/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -549,6 +551,7 @@ export const notificationApi = {
 export interface KaderMember {
   id: string;
   nama: string;
+  username?: string | null;
   email: string;
   role: 'OWNER' | 'KADER';
   isActive: boolean;
@@ -559,7 +562,7 @@ export const kaderApi = {
   getAll: (posyanduId: string) =>
     request<ApiResponse<KaderMember[]>>(`/api/posyandu/${posyanduId}/kader`),
 
-  create: (posyanduId: string, data: { nama: string; email: string; password: string; role: 'OWNER' | 'KADER' }) =>
+  create: (posyanduId: string, data: { nama: string; username?: string; email: string; password: string; role: 'OWNER' | 'KADER' }) =>
     request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader`, {
       method: 'POST',
       body: JSON.stringify(data),

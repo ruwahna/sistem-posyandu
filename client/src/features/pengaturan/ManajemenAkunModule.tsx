@@ -35,6 +35,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
   // Form State
   const [showAddMemberForm, setShowAddMemberForm] = useState<boolean>(false);
   const [newMemberNama, setNewMemberNama] = useState<string>("");
+  const [newMemberUsername, setNewMemberUsername] = useState<string>("");
   const [newMemberEmail, setNewMemberEmail] = useState<string>("");
   const [newMemberPassword, setNewMemberPassword] = useState<string>("");
   const [newMemberRole, setNewMemberRole] = useState<"OWNER" | "KADER">("KADER");
@@ -73,12 +74,18 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
     setAddMemberSuccess("");
 
     if (!newMemberNama.trim() || !newMemberEmail.trim() || !newMemberPassword.trim()) {
-      setAddMemberError("Mohon lengkapi seluruh kolom input.");
+      setAddMemberError("Mohon lengkapi seluruh kolom input wajib.");
       return;
     }
 
     if (newMemberPassword.length < 6) {
       setAddMemberError("Kata sandi minimal harus 6 karakter.");
+      return;
+    }
+
+    // Validasi format username jika diisi
+    if (newMemberUsername.trim() && !/^[a-zA-Z0-9._-]+$/.test(newMemberUsername.trim())) {
+      setAddMemberError("Username hanya boleh berisi huruf, angka, titik, underscore, dan strip.");
       return;
     }
 
@@ -88,6 +95,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
     try {
       const res = await kaderApi.create(currentPosyanduId, {
         nama: newMemberNama.trim(),
+        username: newMemberUsername.trim() || undefined,
         email: newMemberEmail.trim().toLowerCase(),
         password: newMemberPassword.trim(),
         role: newMemberRole,
@@ -97,6 +105,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
         setKaders((prev) => [...prev, res.data]);
         setAddMemberSuccess(`Akun untuk ${newMemberNama} berhasil dibuat.`);
         setNewMemberNama("");
+        setNewMemberUsername("");
         setNewMemberEmail("");
         setNewMemberPassword("");
         setNewMemberRole("KADER");
@@ -300,6 +309,17 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
                   </div>
 
                   <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-saas-muted">Username <span className="text-gray-400 font-normal">(opsional)</span></label>
+                    <input
+                      type="text"
+                      placeholder="Cth: rina.amalia"
+                      value={newMemberUsername}
+                      onChange={(e) => setNewMemberUsername(e.target.value)}
+                      className="w-full p-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-saas-muted">Email</label>
                     <input
                       type="email"
@@ -402,6 +422,9 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
                                     </span>
                                   )}
                                 </p>
+                                {kader.username && (
+                                  <p className="text-xs text-saas-primary font-semibold mt-0.5">@{kader.username}</p>
+                                )}
                                 <p className="text-xs text-saas-muted font-medium mt-0.5">{kader.email}</p>
                               </div>
                             </div>

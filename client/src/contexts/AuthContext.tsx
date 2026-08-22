@@ -28,7 +28,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   posyanduId: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (emailOrUsername: string, password: string) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   registerPosyandu: (data: {
     namaPosyandu: string;
@@ -36,6 +36,7 @@ interface AuthContextValue {
     kecamatan: string;
     alamat: string;
     namaKader: string;
+    username?: string;
     email: string;
     password: string;
   }) => Promise<void>;
@@ -73,8 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await authApi.login(email, password);
+  const login = useCallback(async (emailOrUsername: string, password: string) => {
+    const res = await authApi.login(emailOrUsername, password);
     if (!res.success || !res.data) {
       throw new Error(res.message || "Login gagal");
     }

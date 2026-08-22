@@ -275,6 +275,7 @@ function ProfilSection() {
 function AkunSection() {
   const { user, updateUser } = useAuth();
   const [namaKader, setNamaKader] = useState(user?.nama || "");
+  const [usernameKader, setUsernameKader] = useState(user?.username || "");
   const [emailKader, setEmailKader] = useState(user?.email || "");
   const [newPassword, setNewPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -284,6 +285,7 @@ function AkunSection() {
   useEffect(() => {
     if (user) {
       setNamaKader(user.nama);
+      setUsernameKader(user.username || "");
       setEmailKader(user.email);
     }
   }, [user]);
@@ -307,12 +309,14 @@ function AkunSection() {
       const res = await authApi.updateProfile({
         nama: namaKader.trim(),
         email: emailKader.trim(),
+        username: usernameKader.trim(),
         ...(newPassword.trim() ? { password: newPassword.trim() } : {}),
       });
 
       if (res.success && res.data) {
         updateUser({
           nama: res.data.nama,
+          username: res.data.username,
           email: res.data.email,
         });
         setNewPassword("");
@@ -371,6 +375,9 @@ function AkunSection() {
             </div>
             <div>
               <p className="text-sm font-bold text-saas-dark">{user?.nama}</p>
+              {user?.username && (
+                <p className="text-xs text-blue-600 font-semibold">@{user.username}</p>
+              )}
               <p className="text-xs text-saas-muted">{user?.email}</p>
               <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold border border-teal-100">
                 {user?.role === "OWNER" ? "Pengelola (Owner)" : "Kader"}
@@ -386,6 +393,16 @@ function AkunSection() {
                 onChange={(e) => setNamaKader(e.target.value)}
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
                 required
+              />
+            </FormField>
+
+            <FormField label="Username (opsional)">
+              <input
+                type="text"
+                value={usernameKader}
+                onChange={(e) => setUsernameKader(e.target.value)}
+                placeholder="Cth: siti.aminah"
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
               />
             </FormField>
 

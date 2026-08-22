@@ -31,7 +31,7 @@ export const authService = {
 
     return prisma.kader.create({
       data: { id: uuidv4(), nama, email, password: hashedPassword, posyanduId, role: role as 'OWNER' | 'KADER' },
-      select: { id: true, nama: true, email: true, role: true, posyanduId: true },
+      select: { id: true, nama: true, username: true, email: true, role: true, posyanduId: true },
     });
   },
 
@@ -41,15 +41,25 @@ export const authService = {
     kecamatan: string;
     alamat: string;
     namaKader: string;
+    username?: string;
     email: string;
     password: string;
   }) {
-    const { namaPosyandu, desa, kecamatan, alamat, namaKader, email, password } = data;
+    const { namaPosyandu, desa, kecamatan, alamat, namaKader, username, email, password } = data;
 
     if (!namaPosyandu || !desa || !kecamatan || !alamat || !namaKader || !email || !password) {
       const err = new Error('Semua field wajib diisi');
       (err as any).statusCode = 400;
       throw err;
+    }
+
+    if (username && username.trim()) {
+      const existingUsername = await prisma.kader.findUnique({ where: { username: username.trim() } });
+      if (existingUsername) {
+        const err = new Error('Username sudah digunakan oleh akun lain');
+        (err as any).statusCode = 409;
+        throw err;
+      }
     }
 
     if (password.length < 8) {
@@ -76,12 +86,13 @@ export const authService = {
         data: {
           id: uuidv4(),
           nama: namaKader,
+          username: username?.trim() || null,
           email,
           password: hashedPassword,
           posyanduId: posyandu.id,
           role: 'OWNER',
         },
-        select: { id: true, nama: true, email: true, role: true },
+        select: { id: true, nama: true, username: true, email: true, role: true },
       });
 
       return { posyandu, kader };
@@ -105,16 +116,22 @@ export const authService = {
     };
   },
 
-  async login(data: { email: string; password: string }) {
-    const { email, password } = data;
+  async login(data: { emailOrUsername: string; password: string }) {
+    const { emailOrUsername, password } = data;
 
-    const kader = await prisma.kader.findUnique({
-      where: { email },
+    // Cari berdasarkan email atau username
+    const kader = await prisma.kader.findFirst({
+      where: {
+        OR: [
+          { email: emailOrUsername },
+          { username: emailOrUsername },
+        ],
+      },
       include: { posyandu: { select: { id: true, nama: true } } },
     });
 
     if (!kader || !(await bcrypt.compare(password, kader.password))) {
-      const err = new Error('Email atau password salah');
+      const err = new Error('Email/username atau password salah');
       (err as any).statusCode = 401;
       throw err;
     }
@@ -139,6 +156,7 @@ export const authService = {
       kader: {
         id: kader.id,
         nama: kader.nama,
+        username: kader.username,
         email: kader.email,
         role: kader.role,
         posyandu: kader.posyandu,
@@ -152,6 +170,7 @@ export const authService = {
       select: {
         id: true,
         nama: true,
+        username: true,
         email: true,
         role: true,
         isActive: true,
@@ -168,8 +187,8 @@ export const authService = {
     return kader;
   },
 
-  async updateProfile(userId: string, data: { nama: string; email: string; password?: string }) {
-    const { nama, email, password } = data;
+  async updateProfile(userId: string, data: { nama: string; email: string; username?: string; password?: string }) {
+    const { nama, email, username, password } = data;
 
     if (!nama || !email) {
       const err = new Error('Nama dan email wajib diisi');
@@ -186,7 +205,22 @@ export const authService = {
       throw err;
     }
 
+    // Validasi uniqueness username jika diisi
+    if (username && username.trim()) {
+      const existingUsername = await prisma.kader.findFirst({
+        where: { username: username.trim(), NOT: { id: userId } },
+      });
+      if (existingUsername) {
+        const err = new Error('Username sudah digunakan oleh pengguna lain');
+        (err as any).statusCode = 409;
+        throw err;
+      }
+    }
+
     const updateData: any = { nama, email };
+    if (username !== undefined) {
+      updateData.username = username.trim() || null;
+    }
     if (password && password.trim().length >= 6) {
       updateData.password = await bcrypt.hash(password.trim(), 12);
     }
@@ -197,6 +231,7 @@ export const authService = {
       select: {
         id: true,
         nama: true,
+        username: true,
         email: true,
         role: true,
         posyandu: { select: { id: true, nama: true } },
@@ -392,6 +427,7 @@ export const authService = {
       kader: {
         id: kader.id,
         nama: kader.nama,
+        username: kader.username,
         email: kader.email,
         role: kader.role,
         posyandu: kader.posyandu,

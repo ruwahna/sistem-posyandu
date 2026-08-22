@@ -40,6 +40,7 @@ model Kader {
   id          String   @id @default(uuid())
   posyanduId  String   @map("posyandu_id")
   nama        String
+  username    String?  @unique
   email       String   @unique
   password    String
   role        Role     @default(KADER)

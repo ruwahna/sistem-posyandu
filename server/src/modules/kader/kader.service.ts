@@ -9,6 +9,7 @@ export const kaderService = {
       select: {
         id: true,
         nama: true,
+        username: true,
         email: true,
         role: true,
         isActive: true,
@@ -18,8 +19,8 @@ export const kaderService = {
     });
   },
 
-  async createKader(posyanduId: string, data: { nama: string; email: string; password: string; role?: string }) {
-    const { nama, email, password, role } = data;
+  async createKader(posyanduId: string, data: { nama: string; username?: string; email: string; password: string; role?: string }) {
+    const { nama, username, email, password, role } = data;
 
     const existing = await prisma.kader.findUnique({ where: { email } });
     if (existing) {
@@ -28,12 +29,23 @@ export const kaderService = {
       throw err;
     }
 
+    // Validasi uniqueness username jika diisi
+    if (username && username.trim()) {
+      const existingUsername = await prisma.kader.findUnique({ where: { username: username.trim() } });
+      if (existingUsername) {
+        const err = new Error('Username sudah digunakan oleh akun lain');
+        (err as any).statusCode = 409;
+        throw err;
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
 
     return prisma.kader.create({
       data: {
         id: uuidv4(),
         nama,
+        username: username?.trim() || null,
         email,
         password: hashedPassword,
         posyanduId,
@@ -43,6 +55,7 @@ export const kaderService = {
       select: {
         id: true,
         nama: true,
+        username: true,
         email: true,
         role: true,
         isActive: true,
@@ -79,6 +92,7 @@ export const kaderService = {
       select: {
         id: true,
         nama: true,
+        username: true,
         email: true,
         role: true,
         isActive: true,
@@ -109,6 +123,7 @@ export const kaderService = {
       select: {
         id: true,
         nama: true,
+        username: true,
         email: true,
         role: true,
         isActive: true,

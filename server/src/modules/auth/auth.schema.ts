@@ -8,7 +8,7 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email('Format email tidak valid'),
+  emailOrUsername: z.string().min(1, 'Email atau username wajib diisi'),
   password: z.string().min(1, 'Password wajib diisi'),
 });
 
@@ -28,4 +28,3 @@ export const googleAuthSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
-
