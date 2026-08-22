@@ -99,6 +99,7 @@ export default function Home() {
   // Quick Edit Profile Modal State
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editNama, setEditNama] = useState("");
+  const [editUsername, setEditUsername] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -108,6 +109,7 @@ export default function Home() {
   const openEditProfileModal = () => {
     if (user) {
       setEditNama(user.nama);
+      setEditUsername(user.username || "");
       setEditEmail(user.email);
       setEditPassword("");
       setShowPassword(false);
@@ -120,8 +122,8 @@ export default function Home() {
     e.preventDefault();
     setModalNotice(null);
 
-    if (!editNama.trim() || !editEmail.trim()) {
-      setModalNotice({ type: "error", message: "Nama dan email tidak boleh kosong" });
+    if (!editNama.trim() || !editUsername.trim() || !editEmail.trim()) {
+      setModalNotice({ type: "error", message: "Nama, username, dan email tidak boleh kosong" });
       return;
     }
 
@@ -134,6 +136,7 @@ export default function Home() {
       setIsSavingProfile(true);
       const res = await authApi.updateProfile({
         nama: editNama.trim(),
+        username: editUsername.trim(),
         email: editEmail.trim(),
         ...(editPassword.trim() ? { password: editPassword.trim() } : {}),
       });
@@ -141,6 +144,7 @@ export default function Home() {
       if (res.success && res.data) {
         updateUser({
           nama: res.data.nama,
+          username: res.data.username,
           email: res.data.email,
         });
         setModalNotice({ type: "success", message: "Profil berhasil diperbarui!" });
@@ -1112,8 +1116,14 @@ export default function Home() {
 
       {/* 6. MODAL QUICK EDIT PROFIL SAYA */}
       {isEditProfileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-saas-dark/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 p-6 relative">
+        <div
+          onClick={() => setIsEditProfileOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-saas-dark/40 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 p-6 relative"
+          >
             <button
               onClick={() => setIsEditProfileOpen(false)}
               className="absolute top-4 right-4 text-saas-muted hover:text-saas-dark p-1 rounded-lg hover:bg-gray-100 transition-colors"
@@ -1127,7 +1137,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="font-bold text-base text-saas-dark leading-tight">Edit Profil Saya</h3>
-                <p className="text-xs text-saas-muted">Perbarui nama lengkap, email, atau kata sandi Anda.</p>
+                <p className="text-xs text-saas-muted">Perbarui nama lengkap, username, email, atau kata sandi Anda.</p>
               </div>
             </div>
 
@@ -1161,6 +1171,21 @@ export default function Home() {
                     required
                   />
                   <User className="absolute left-3 top-3 w-4 h-4 text-saas-muted" weight="bold" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-saas-dark mb-1.5">Username</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={editUsername}
+                    onChange={(e) => setEditUsername(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary focus:bg-white transition-all"
+                    placeholder="Username"
+                    required
+                  />
+                  <span className="absolute left-3.5 top-2.5 text-saas-muted font-bold text-sm">@</span>
                 </div>
               </div>
 
