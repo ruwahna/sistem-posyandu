@@ -37,6 +37,8 @@ import {
   RefreshCw,
   Filter,
   Eye,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import ActionMenu from "../../components/ActionMenu";
 import LansiaIcon from "../../components/LansiaIcon";
@@ -282,11 +284,25 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   const [toastSuccess, setToastSuccess] = useState("");
 
   // Filter Kunjungan
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 5;
+
   const filteredKunjungan = kunjungans.filter((k) => {
     const matchesSearch = k.nama.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTab = activeTab === "Semua" || k.tipe === activeTab;
     return matchesSearch && matchesTab;
   });
+
+  const totalPages = Math.ceil(filteredKunjungan.length / itemsPerPage) || 1;
+  const paginatedKunjungan = filteredKunjungan.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset pagination to page 1 when filter tab or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
 
   // Filter Pasien in Modal
   const filteredPasiens = dbPasiens.filter((p) =>
@@ -683,34 +699,6 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Aktivitas Kunjungan</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat partisipasi kader & posyandu</p>
             </div>
-            <ActionMenu
-              items={[
-                {
-                  label: "Lihat Detail",
-                  icon: <Eye className="w-4 h-4" />,
-                  onClick: handleDetailAktivitas,
-                },
-                {
-                  label: "Refresh Data",
-                  icon: <RefreshCw className="w-4 h-4" />,
-                  onClick: () => {
-                    fetchSummary();
-                  },
-                },
-                {
-                  label: "Tampilkan Semua Kategori",
-                  icon: <Filter className="w-4 h-4" />,
-                  onClick: () => {
-                    setActiveTab("Semua");
-                  },
-                },
-                {
-                  label: "Unduh Laporan",
-                  icon: <Download className="w-4 h-4" />,
-                  onClick: handleExportAktivitas,
-                },
-              ]}
-            />
           </div>
 
           <div className="flex flex-col items-center justify-center">
@@ -804,8 +792,8 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                 </tr>
               </thead>
               <tbody>
-                {filteredKunjungan.length > 0 ? (
-                  filteredKunjungan.map((item) => (
+                {paginatedKunjungan.length > 0 ? (
+                  paginatedKunjungan.map((item) => (
                     <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
                       <td className="px-4 py-3.5 font-bold text-saas-dark whitespace-nowrap">{item.nama}</td>
                       <td className="px-4 py-3.5 text-saas-muted font-medium whitespace-nowrap">{item.tipe}</td>
@@ -874,6 +862,57 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {filteredKunjungan.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-gray-100 mt-4 text-xs">
+              <p className="text-saas-muted font-semibold">
+                Menampilkan{" "}
+                <span className="text-saas-dark font-bold">
+                  {Math.min((currentPage - 1) * itemsPerPage + 1, filteredKunjungan.length)}
+                </span>{" "}
+                -{" "}
+                <span className="text-saas-dark font-bold">
+                  {Math.min(currentPage * itemsPerPage, filteredKunjungan.length)}
+                </span>{" "}
+                dari <span className="text-saas-dark font-bold">{filteredKunjungan.length}</span> data
+              </p>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded-lg border border-gray-200 text-saas-dark hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  title="Halaman Sebelumnya"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
+                      currentPage === page
+                        ? "bg-saas-primary text-white shadow-sm"
+                        : "text-saas-muted hover:text-saas-dark hover:bg-gray-100"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 rounded-lg border border-gray-200 text-saas-dark hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  title="Halaman Berikutnya"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Distribusi RT/RW */}
@@ -883,27 +922,6 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Distribusi Kehadiran RT/RW</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat kehadiran per wilayah</p>
             </div>
-            <ActionMenu
-              items={[
-                {
-                  label: "Lihat Detail per RT",
-                  icon: <Eye className="w-4 h-4" />,
-                  onClick: handleDetailDistribusi,
-                },
-                {
-                  label: "Refresh Statistik Wilayah",
-                  icon: <RefreshCw className="w-4 h-4" />,
-                  onClick: () => {
-                    fetchSummary();
-                  },
-                },
-                {
-                  label: "Unduh Laporan",
-                  icon: <Download className="w-4 h-4" />,
-                  onClick: handleExportDistribusi,
-                },
-              ]}
-            />
           </div>
 
           <div className="space-y-6">
