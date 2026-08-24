@@ -373,13 +373,26 @@ export default function Home() {
   ];
 
   // ── Conditional Rendering of Views ──────────────────────
+  const handleDashboardNavigate = (menu: string, patientId?: string) => {
+    const target = menu.toLowerCase();
+    if (target === "balita") {
+      if (patientId) setSelectedBalitaId(patientId);
+      setActiveMenu("Balita");
+    } else if (target === "lansia") {
+      if (patientId) setSelectedLansiaId(patientId);
+      setActiveMenu("Lansia");
+    } else {
+      setActiveMenu(menu);
+    }
+  };
+
   const renderActiveView = () => {
     switch (activeMenu) {
       case "Overview":
         return (
           <DashboardModule
             searchQuery={searchQuery}
-            onNavigate={setActiveMenu}
+            onNavigate={handleDashboardNavigate}
             posyanduId={posyanduId}
           />
         );
@@ -415,7 +428,7 @@ export default function Home() {
         return (
           <DashboardModule
             searchQuery={searchQuery}
-            onNavigate={setActiveMenu}
+            onNavigate={handleDashboardNavigate}
             posyanduId={posyanduId}
           />
         );

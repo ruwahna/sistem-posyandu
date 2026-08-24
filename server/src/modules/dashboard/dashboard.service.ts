@@ -317,4 +317,137 @@ export const dashboardService = {
 
     return result;
   },
+
+  /**
+   * Agregasi Aktivitas Kunjungan (Balita Selesai, Lansia Selesai, Belum Mengisi Data beserta daftar pasien)
+   */
+  async getAktivitasKunjungan(posyanduId: string) {
+    const [balitas, lansias] = await Promise.all([
+      prisma.balita.findMany({
+        where: { posyanduId },
+        include: {
+          pemeriksaans: {
+            orderBy: { tanggalPeriksa: 'desc' },
+            take: 1,
+          },
+        },
+      }),
+      prisma.lansia.findMany({
+        where: { posyanduId },
+        include: {
+          pemeriksaans: {
+            orderBy: { tanggalPeriksa: 'desc' },
+            take: 1,
+          },
+        },
+      }),
+    ]);
+
+    const balitaSelesaiList: Array<{
+      id: string;
+      nama: string;
+      tipe: 'Balita' | 'Lansia';
+      detailInfo: string;
+      statusPeriksa: 'Selesai Periksa' | 'Belum Mengisi Data';
+      tanggalPeriksa?: string | null;
+      detailPemeriksaan?: string | null;
+    }> = [];
+
+    const lansiaSelesaiList: Array<{
+      id: string;
+      nama: string;
+      tipe: 'Balita' | 'Lansia';
+      detailInfo: string;
+      statusPeriksa: 'Selesai Periksa' | 'Belum Mengisi Data';
+      tanggalPeriksa?: string | null;
+      detailPemeriksaan?: string | null;
+    }> = [];
+
+    const belumMengisiList: Array<{
+      id: string;
+      nama: string;
+      tipe: 'Balita' | 'Lansia';
+      detailInfo: string;
+      statusPeriksa: 'Selesai Periksa' | 'Belum Mengisi Data';
+      tanggalPeriksa?: string | null;
+      detailPemeriksaan?: string | null;
+    }> = [];
+
+    const now = new Date();
+
+    balitas.forEach((b) => {
+      const birthDate = new Date(b.tanggalLahir);
+      const ageMonths = Math.floor((now.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4375));
+      const latestExam = b.pemeriksaans[0];
+      const detailInfo = `Usia ${ageMonths} Bln • Ibu: ${b.namaIbu}`;
+
+      if (latestExam) {
+        balitaSelesaiList.push({
+          id: b.id,
+          nama: b.nama,
+          tipe: 'Balita',
+          detailInfo,
+          statusPeriksa: 'Selesai Periksa',
+          tanggalPeriksa: latestExam.tanggalPeriksa.toISOString().split('T')[0],
+          detailPemeriksaan: `BB: ${latestExam.beratBadan} kg, TB: ${latestExam.tinggiBadan} cm (BB/U: ${latestExam.statusBbU})`,
+        });
+      } else {
+        belumMengisiList.push({
+          id: b.id,
+          nama: b.nama,
+          tipe: 'Balita',
+          detailInfo,
+          statusPeriksa: 'Belum Mengisi Data',
+          tanggalPeriksa: null,
+          detailPemeriksaan: 'Belum ada data pemeriksaan',
+        });
+      }
+    });
+
+    lansias.forEach((l) => {
+      const birthDate = new Date(l.tanggalLahir);
+      const ageYears = Math.floor((now.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+      const latestExam = l.pemeriksaans[0];
+      const detailInfo = `Usia ${ageYears} Thn • ${l.rtRw || 'RT/RW -'}`;
+
+      if (latestExam) {
+        lansiaSelesaiList.push({
+          id: l.id,
+          nama: l.nama,
+          tipe: 'Lansia',
+          detailInfo,
+          statusPeriksa: 'Selesai Periksa',
+          tanggalPeriksa: latestExam.tanggalPeriksa.toISOString().split('T')[0],
+          detailPemeriksaan: `TD: ${latestExam.tekananDarahSistol}/${latestExam.tekananDarahDiastol} mmHg, GDS: ${latestExam.gulaDarahSewaktu || '-'}`,
+        });
+      } else {
+        belumMengisiList.push({
+          id: l.id,
+          nama: l.nama,
+          tipe: 'Lansia',
+          detailInfo,
+          statusPeriksa: 'Belum Mengisi Data',
+          tanggalPeriksa: null,
+          detailPemeriksaan: 'Belum ada data pemeriksaan',
+        });
+      }
+    });
+
+    const balitaSelesaiCount = balitaSelesaiList.length;
+    const lansiaSelesaiCount = lansiaSelesaiList.length;
+    const belumMengisiCount = belumMengisiList.length;
+    const totalSasaran = balitaSelesaiCount + lansiaSelesaiCount + belumMengisiCount;
+    const persentaseSelesai = totalSasaran > 0 ? Math.round(((balitaSelesaiCount + lansiaSelesaiCount) / totalSasaran) * 100) : 0;
+
+    return {
+      balitaSelesaiCount,
+      lansiaSelesaiCount,
+      belumMengisiCount,
+      totalSasaran,
+      persentaseSelesai,
+      balitaSelesaiList,
+      lansiaSelesaiList,
+      belumMengisiList,
+    };
+  },
 };

@@ -272,6 +272,27 @@ export interface DistribusiKehadiran {
   persentase: number;
 }
 
+export interface ItemAktivitasKunjungan {
+  id: string;
+  nama: string;
+  tipe: 'Balita' | 'Lansia';
+  detailInfo: string;
+  statusPeriksa: 'Selesai Periksa' | 'Belum Mengisi Data';
+  tanggalPeriksa?: string | null;
+  detailPemeriksaan?: string | null;
+}
+
+export interface AktivitasKunjunganData {
+  balitaSelesaiCount: number;
+  lansiaSelesaiCount: number;
+  belumMengisiCount: number;
+  totalSasaran: number;
+  persentaseSelesai: number;
+  balitaSelesaiList: ItemAktivitasKunjungan[];
+  lansiaSelesaiList: ItemAktivitasKunjungan[];
+  belumMengisiList: ItemAktivitasKunjungan[];
+}
+
 export const dashboardApi = {
   getSummary: (posyanduId: string) =>
     request<ApiResponse<DashboardSummary>>(`/api/dashboard/${posyanduId}`),
@@ -279,6 +300,8 @@ export const dashboardApi = {
     request<ApiResponse<TrenGiziItem[]>>(`/api/dashboard/${posyanduId}/tren-gizi?period=${period}`),
   getDistribusiKehadiran: (posyanduId: string) =>
     request<ApiResponse<DistribusiKehadiran[]>>(`/api/dashboard/${posyanduId}/distribusi-kehadiran`),
+  getAktivitasKunjungan: (posyanduId: string) =>
+    request<ApiResponse<AktivitasKunjunganData>>(`/api/dashboard/${posyanduId}/aktivitas-kunjungan`),
 };
 
 // ─────────────────────────────────────────────────────────────

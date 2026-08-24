@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { dashboardApi, DashboardSummary, DistribusiKehadiran, balitaApi, lansiaApi, TrenGiziItem } from "../../lib/api";
+import { dashboardApi, DashboardSummary, DistribusiKehadiran, balitaApi, lansiaApi, TrenGiziItem, AktivitasKunjunganData, ItemAktivitasKunjungan } from "../../lib/api";
 import { formatTanggalIndonesia } from "../../lib/dateUtils";
 import Modal from "../../components/Modal";
 import PageHelmet from "../../components/PageHelmet";
@@ -48,7 +48,7 @@ import { useAuth } from "../../contexts/AuthContext";
 
 interface DashboardModuleProps {
   searchQuery: string;
-  onNavigate: (menu: string) => void;
+  onNavigate: (menu: string, patientId?: string) => void;
   posyanduId: string;
 }
 
@@ -84,6 +84,29 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   const [dbPasiens, setDbPasiens] = useState<Pasien[]>([]);
   const [distribusiKehadiran, setDistribusiKehadiran] = useState<DistribusiKehadiran[]>([]);
   const [isDistribusiLoading, setIsDistribusiLoading] = useState(false);
+
+  // ── Aktivitas Kunjungan State ─────────────────────────────
+  const [aktivitasData, setAktivitasData] = useState<AktivitasKunjunganData | null>(null);
+  const [isAktivitasLoading, setIsAktivitasLoading] = useState(false);
+  const [aktivitasTab, setAktivitasTab] = useState<"balita" | "lansia" | "belum">("balita");
+  const [aktivitasSearch, setAktivitasSearch] = useState("");
+
+  const fetchAktivitas = () => {
+    setIsAktivitasLoading(true);
+    dashboardApi
+      .getAktivitasKunjungan(posyanduId)
+      .then((res) => {
+        if (res.success && res.data) {
+          setAktivitasData(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsAktivitasLoading(false));
+  };
+
+  useEffect(() => {
+    fetchAktivitas();
+  }, [posyanduId]);
 
   // ── Action Menu & Detail Modals ──
   const [showDetailAktivitas, setShowDetailAktivitas] = useState(false);
@@ -390,6 +413,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
 
       setToastSuccess(`Pemeriksaan untuk ${selectedPasien.nama} berhasil dicatat.`);
       fetchSummary();
+      fetchAktivitas();
 
       // Close & Reset
       setIsOpenModal(false);
@@ -699,56 +723,94 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Aktivitas Kunjungan</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat partisipasi kader & posyandu</p>
             </div>
+            <button
+              onClick={() => handleDetailAktivitas()}
+              className="p-1.5 hover:bg-gray-100 text-saas-muted hover:text-saas-dark rounded-lg transition-colors"
+              title="Lihat Detail Aktivitas"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="flex flex-col items-center justify-center">
-            <div className="relative w-44 h-44 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="transparent"
-                  stroke="#F3F4F6"
-                  strokeWidth="10"
-                  strokeDasharray="251.2"
-                  strokeDashoffset="62.8"
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="transparent"
-                  stroke="#14B8A6"
-                  strokeWidth="10"
-                  strokeDasharray="251.2"
-                  strokeDashoffset="110"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center text-center">
-                <span className="text-2xl font-black text-saas-dark leading-none">78%</span>
-                <span className="text-[10px] text-saas-muted font-bold uppercase tracking-wider mt-1">Selesai</span>
+          {isAktivitasLoading ? (
+            <div className="py-12 text-center text-xs text-saas-muted">Memuat data aktivitas...</div>
+          ) : (
+            <div className="flex flex-col items-center justify-center">
+              <div className="relative w-44 h-44 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="transparent"
+                    stroke="#F3F4F6"
+                    strokeWidth="10"
+                  />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="transparent"
+                    stroke="#14B8A6"
+                    strokeWidth="10"
+                    strokeDasharray="251.2"
+                    strokeDashoffset={251.2 - (251.2 * (aktivitasData?.persentaseSelesai ?? 0)) / 100}
+                    strokeLinecap="round"
+                    className="transition-all duration-700 ease-out"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center text-center">
+                  <span className="text-2xl font-black text-saas-dark leading-none">
+                    {aktivitasData?.persentaseSelesai ?? 0}%
+                  </span>
+                  <span className="text-[10px] text-saas-muted font-bold uppercase tracking-wider mt-1">Selesai</span>
+                </div>
+              </div>
+
+              <div className="w-full space-y-2 mt-6">
+                {[
+                  {
+                    key: "balita" as const,
+                    label: "Balita Selesai Periksa",
+                    count: `${aktivitasData?.balitaSelesaiCount ?? 0} Anak`,
+                    color: "bg-saas-primary",
+                  },
+                  {
+                    key: "lansia" as const,
+                    label: "Lansia Selesai Periksa",
+                    count: `${aktivitasData?.lansiaSelesaiCount ?? 0} Lansia`,
+                    color: "bg-green-500",
+                  },
+                  {
+                    key: "belum" as const,
+                    label: "Belum Mengisi Data",
+                    count: `${aktivitasData?.belumMengisiCount ?? 0} Orang`,
+                    color: "bg-yellow-400",
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => {
+                      setAktivitasTab(item.key);
+                      setShowDetailAktivitas(true);
+                    }}
+                    className="w-full flex items-center justify-between text-xs border-b border-gray-50 pb-2.5 pt-1.5 hover:bg-gray-50/80 px-2 rounded-lg transition-colors group cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${item.color}`}></span>
+                      <span className="text-saas-muted group-hover:text-saas-dark font-semibold transition-colors">
+                        {item.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-saas-dark">{item.count}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-saas-primary group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
-
-            <div className="w-full space-y-3 mt-6">
-              {[
-                { label: "Balita Selesai Periksa", count: "45 Anak", color: "bg-saas-primary" },
-                { label: "Lansia Selesai Periksa", count: "23 Lansia", color: "bg-green-500" },
-                { label: "Belum Mengisi Data", count: "12 Orang", color: "bg-yellow-400" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between text-xs border-b border-gray-50 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${item.color}`}></span>
-                    <span className="text-saas-muted font-semibold">{item.label}</span>
-                  </div>
-                  <span className="font-bold text-saas-dark">{item.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -795,7 +857,18 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                 {paginatedKunjungan.length > 0 ? (
                   paginatedKunjungan.map((item) => (
                     <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
-                      <td className="px-4 py-3.5 font-bold text-saas-dark whitespace-nowrap">{item.nama}</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <button
+                          onClick={() => {
+                            const realId = item.id.replace(/^(b-|l-)/, '');
+                            onNavigate(item.tipe === "Balita" ? "Balita" : "Lansia", realId);
+                          }}
+                          className="font-bold text-saas-dark hover:text-saas-primary hover:underline transition-colors text-left"
+                          title={`Lihat Profil ${item.nama}`}
+                        >
+                          {item.nama}
+                        </button>
+                      </td>
                       <td className="px-4 py-3.5 text-saas-muted font-medium whitespace-nowrap">{item.tipe}</td>
                       <td className="px-4 py-3.5 text-saas-muted font-medium whitespace-nowrap">{item.detail}</td>
                       <td className="px-4 py-3.5 text-center whitespace-nowrap">
@@ -827,11 +900,12 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                           <div className="absolute right-0 top-10 z-30 w-48 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs text-left">
                             <button
                               onClick={() => {
-                                onNavigate(item.tipe === "Balita" ? "balita" : "lansia");
+                                const realId = item.id.replace(/^(b-|l-)/, '');
+                                onNavigate(item.tipe === "Balita" ? "Balita" : "Lansia", realId);
                               }}
                               className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all"
                             >
-                              <ArrowUpRight className="w-3.5 h-3.5" /> Buka Data {item.tipe}
+                              <ArrowUpRight className="w-3.5 h-3.5" /> Lihat Profil {item.tipe}
                             </button>
                             <button
                               onClick={() => {
@@ -1418,22 +1492,338 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       <Modal
         isOpen={showDetailAktivitas}
         onClose={() => setShowDetailAktivitas(false)}
-        title="Detail Aktivitas Kunjungan"
+        title="Detail Aktivitas Kunjungan Posyandu"
       >
-        <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-bold text-blue-900 mb-2">Selesai Periksa</h4>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between"><span>Balita Selesai</span><span className="font-bold">{summary?.pemeriksaanTerbaru.balita.length ?? 0} Anak</span></div>
-              <div className="flex justify-between"><span>Lansia Selesai</span><span className="font-bold">{summary?.pemeriksaanTerbaru.lansia.length ?? 0} Lansia</span></div>
-            </div>
+        <div className="space-y-4 max-w-xl">
+          {/* Header Stats Selector Cards */}
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => setAktivitasTab("balita")}
+              className={`p-3 rounded-xl border text-left transition-all ${
+                aktivitasTab === "balita"
+                  ? "bg-sky-50 border-sky-300 ring-2 ring-sky-400/20"
+                  : "bg-gray-50/60 border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 text-sky-700 font-bold text-xs mb-1">
+                <BalitaIcon className="w-3.5 h-3.5" />
+                <span>Balita Selesai</span>
+              </div>
+              <div className="text-lg font-black text-saas-dark">
+                {aktivitasData?.balitaSelesaiCount ?? 0} <span className="text-xs font-normal text-saas-muted">Anak</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setAktivitasTab("lansia")}
+              className={`p-3 rounded-xl border text-left transition-all ${
+                aktivitasTab === "lansia"
+                  ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400/20"
+                  : "bg-gray-50/60 border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs mb-1">
+                <LansiaIcon className="w-3.5 h-3.5" />
+                <span>Lansia Selesai</span>
+              </div>
+              <div className="text-lg font-black text-saas-dark">
+                {aktivitasData?.lansiaSelesaiCount ?? 0} <span className="text-xs font-normal text-saas-muted">Lansia</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setAktivitasTab("belum")}
+              className={`p-3 rounded-xl border text-left transition-all ${
+                aktivitasTab === "belum"
+                  ? "bg-amber-50 border-amber-300 ring-2 ring-amber-400/20"
+                  : "bg-gray-50/60 border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 text-amber-700 font-bold text-xs mb-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Belum Data</span>
+              </div>
+              <div className="text-lg font-black text-saas-dark">
+                {aktivitasData?.belumMengisiCount ?? 0} <span className="text-xs font-normal text-saas-muted">Orang</span>
+              </div>
+            </button>
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-xs">
-            <h4 className="font-bold text-yellow-900 mb-2">Total Sasaran Posyandu</h4>
-            <div className="flex justify-between"><span>Total Terdaftar</span><span className="font-bold">{(summary?.totalBalita ?? 0) + (summary?.totalLansia ?? 0)} Warga</span></div>
+
+          {/* Search filter in modal */}
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Cari nama pasien atau keterangan..."
+              value={aktivitasSearch}
+              onChange={(e) => setAktivitasSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-saas-primary"
+            />
+            {aktivitasSearch && (
+              <button
+                onClick={() => setAktivitasSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          <div className="text-center pt-2">
-            <p className="text-xs text-saas-muted">Partisipasi Bulan Ini: <span className="font-bold text-sm text-saas-primary">{(summary?.pemeriksaanTerbaru.balita.length ?? 0) + (summary?.pemeriksaanTerbaru.lansia.length ?? 0)} Pemeriksaan</span></p>
+
+          {/* List display */}
+          <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+            {aktivitasTab === "balita" && (
+              <>
+                {(aktivitasData?.balitaSelesaiList ?? [])
+                  .filter((item) =>
+                    item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                    item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                  )
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 bg-white border border-gray-150 rounded-xl shadow-xs flex items-center justify-between hover:border-sky-200 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setShowDetailAktivitas(false);
+                            onNavigate("Balita", item.id);
+                          }}
+                          className="w-9 h-9 rounded-full bg-sky-50 flex items-center justify-center text-sky-600 font-bold shrink-0 hover:bg-sky-100 transition-colors cursor-pointer"
+                          title="Lihat Profil Balita"
+                        >
+                          <BalitaIcon className="w-5 h-5" />
+                        </button>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setShowDetailAktivitas(false);
+                                onNavigate("Balita", item.id);
+                              }}
+                              className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
+                            >
+                              {item.nama}
+                            </button>
+                            <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-semibold">
+                              Balita
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
+                          {item.detailPemeriksaan && (
+                            <p className="text-[11px] font-semibold text-sky-700 mt-0.5">
+                              {item.detailPemeriksaan}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right hidden sm:block">
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-md inline-block mb-1">
+                            Selesai Periksa
+                          </span>
+                          {item.tanggalPeriksa && (
+                            <p className="text-[10px] text-saas-muted">
+                              {formatTanggalIndonesia(item.tanggalPeriksa)}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowDetailAktivitas(false);
+                            onNavigate("Balita", item.id);
+                          }}
+                          className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Buka profil lengkap balita"
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>Profil</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                {(aktivitasData?.balitaSelesaiList ?? []).filter((item) =>
+                  item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                  item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                ).length === 0 && (
+                  <div className="py-8 text-center text-xs text-saas-muted bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    Tidak ada balita selesai periksa ditemukan.
+                  </div>
+                )}
+              </>
+            )}
+
+            {aktivitasTab === "lansia" && (
+              <>
+                {(aktivitasData?.lansiaSelesaiList ?? [])
+                  .filter((item) =>
+                    item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                    item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                  )
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 bg-white border border-gray-150 rounded-xl shadow-xs flex items-center justify-between hover:border-emerald-200 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setShowDetailAktivitas(false);
+                            onNavigate("Lansia", item.id);
+                          }}
+                          className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold shrink-0 hover:bg-emerald-100 transition-colors cursor-pointer"
+                          title="Lihat Profil Lansia"
+                        >
+                          <LansiaIcon className="w-5 h-5" />
+                        </button>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setShowDetailAktivitas(false);
+                                onNavigate("Lansia", item.id);
+                              }}
+                              className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
+                            >
+                              {item.nama}
+                            </button>
+                            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                              Lansia
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
+                          {item.detailPemeriksaan && (
+                            <p className="text-[11px] font-semibold text-emerald-700 mt-0.5">
+                              {item.detailPemeriksaan}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right hidden sm:block">
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-md inline-block mb-1">
+                            Selesai Periksa
+                          </span>
+                          {item.tanggalPeriksa && (
+                            <p className="text-[10px] text-saas-muted">
+                              {formatTanggalIndonesia(item.tanggalPeriksa)}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowDetailAktivitas(false);
+                            onNavigate("Lansia", item.id);
+                          }}
+                          className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Buka profil lengkap lansia"
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>Profil</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                {(aktivitasData?.lansiaSelesaiList ?? []).filter((item) =>
+                  item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                  item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                ).length === 0 && (
+                  <div className="py-8 text-center text-xs text-saas-muted bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    Tidak ada lansia selesai periksa ditemukan.
+                  </div>
+                )}
+              </>
+            )}
+
+            {aktivitasTab === "belum" && (
+              <>
+                {(aktivitasData?.belumMengisiList ?? [])
+                  .filter((item) =>
+                    item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                    item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                  )
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 bg-white border border-amber-150 rounded-xl shadow-xs flex items-center justify-between hover:border-amber-300 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setShowDetailAktivitas(false);
+                            onNavigate(item.tipe, item.id);
+                          }}
+                          className="w-9 h-9 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 font-bold shrink-0 hover:bg-amber-100 transition-colors cursor-pointer"
+                          title={`Lihat Profil ${item.tipe}`}
+                        >
+                          {item.tipe === "Balita" ? <BalitaIcon className="w-5 h-5" /> : <LansiaIcon className="w-5 h-5" />}
+                        </button>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setShowDetailAktivitas(false);
+                                onNavigate(item.tipe, item.id);
+                              }}
+                              className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
+                            >
+                              {item.nama}
+                            </button>
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                                item.tipe === "Balita"
+                                  ? "bg-sky-100 text-sky-700"
+                                  : "bg-emerald-100 text-emerald-700"
+                              }`}
+                            >
+                              {item.tipe}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => {
+                            setShowDetailAktivitas(false);
+                            onNavigate(item.tipe, item.id);
+                          }}
+                          className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-saas-dark font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Buka profil lengkap"
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>Profil</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const targetPasien = dbPasiens.find((p) => p.id === item.id) || {
+                              id: item.id,
+                              nama: item.nama,
+                              tipe: item.tipe,
+                              detailInfo: item.detailInfo,
+                            };
+                            setSelectedPasien(targetPasien);
+                            setShowDetailAktivitas(false);
+                            setIsOpenModal(true);
+                          }}
+                          className="px-2.5 py-1 bg-saas-primary hover:bg-teal-600 text-white font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Input Data</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                {(aktivitasData?.belumMengisiList ?? []).filter((item) =>
+                  item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                  item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                ).length === 0 && (
+                  <div className="py-8 text-center text-xs text-emerald-600 bg-emerald-50/50 rounded-xl border border-dashed border-emerald-200 font-semibold">
+                    🎉 Luar biasa! Semua warga telah mengisi data pemeriksaan.
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </Modal>
