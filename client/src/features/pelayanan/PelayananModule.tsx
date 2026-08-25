@@ -10,10 +10,12 @@ import {
   UserPlus,
   SlidersHorizontal,
   UserCheck2,
-  Loader2
+  Loader2,
+  Calendar,
+  Settings
 } from "lucide-react";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
-import { balitaApi, lansiaApi, Balita, Lansia } from "../../lib/api";
+import { balitaApi, lansiaApi, periodeApi, Balita, Lansia, PeriodePelayanan } from "../../lib/api";
 import { useAuth } from "../../contexts/AuthContext";
 
 // Reusable Modal Component
@@ -71,9 +73,11 @@ function calculateAgeInYears(birthDateStr: string, refDateStr: string = "2026-07
 
 interface PelayananModuleProps {
   posyanduId: string;
+  activePeriode?: PeriodePelayanan | null;
+  onOpenPeriodeModal?: () => void;
 }
 
-export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
+export default function PelayananModule({ posyanduId, activePeriode, onOpenPeriodeModal }: PelayananModuleProps) {
   const { user } = useAuth();
   const [pasiens, setPasiens] = useState<Pasien[]>([]);
   const [query, setQuery] = useState("");
@@ -152,7 +156,17 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
   }, [posyanduId]);
 
   // Form Fields - Common (Checkup)
-  const [examDate, setExamDate] = useState("2026-07-28");
+  const initialDate = activePeriode?.tanggal 
+    ? new Date(activePeriode.tanggal).toISOString().slice(0, 10) 
+    : new Date().toISOString().slice(0, 10);
+  const [examDate, setExamDate] = useState(initialDate);
+
+  useEffect(() => {
+    if (activePeriode?.tanggal) {
+      setExamDate(new Date(activePeriode.tanggal).toISOString().slice(0, 10));
+    }
+  }, [activePeriode]);
+
   const [examBB, setExamBB] = useState("");
   const [examTB, setExamTB] = useState("");
 
@@ -538,6 +552,46 @@ export default function PelayananModule({ posyanduId }: PelayananModuleProps) {
           <span className="text-xs font-bold">{successToast}</span>
         </div>
       )}
+
+      {/* Banner Periode Pelayanan Aktif */}
+      <div className="bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 text-white rounded-card shadow-md p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/20">
+            <Calendar className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-extrabold tracking-wider uppercase bg-white/20 text-white px-2 py-0.5 rounded-full border border-white/20">
+                Periode Pelayanan Aktif
+              </span>
+              {activePeriode?.status === "AKTIF" && (
+                <span className="text-[10px] font-bold bg-emerald-400/30 text-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300/30">
+                  AKTIF
+                </span>
+              )}
+            </div>
+            <h3 className="text-lg font-extrabold tracking-tight mt-1 text-white">
+              {activePeriode ? activePeriode.nama : "Belum Ada Periode Aktif"}
+            </h3>
+            {activePeriode && (
+              <p className="text-xs text-teal-100 font-medium mt-0.5">
+                Tanggal Pelaksanaan: <span className="font-bold text-white">{new Date(activePeriode.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</span>
+                {activePeriode.catatan ? ` • ${activePeriode.catatan}` : ""}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {onOpenPeriodeModal && (
+          <button
+            type="button"
+            onClick={onOpenPeriodeModal}
+            className="px-4 py-2 bg-white text-saas-primary hover:bg-teal-50 text-xs font-extrabold rounded-input shadow-sm transition-all hover:scale-[1.02] shrink-0 flex items-center gap-2"
+          >
+            <Settings className="w-4 h-4" /> Buka / Pilih Periode Pelayanan
+          </button>
+        )}
+      </div>
 
       {/* Header & Tombol Switch Halaman */}
       <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">

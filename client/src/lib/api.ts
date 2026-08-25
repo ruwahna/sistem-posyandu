@@ -568,6 +568,52 @@ export const notificationApi = {
 };
 
 // ─────────────────────────────────────────────────────────────
+// API: PERIODE PELAYANAN
+// ─────────────────────────────────────────────────────────────
+export interface PeriodePelayanan {
+  id: string;
+  posyanduId: string;
+  nama: string;
+  bulan: number;
+  tahun: number;
+  tanggal: string;
+  status: 'AKTIF' | 'SELESAI';
+  catatan?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const periodeApi = {
+  getAll: (posyanduId: string) =>
+    request<ApiResponse<PeriodePelayanan[]>>(`/api/posyandu/${posyanduId}/periode`),
+
+  getActive: (posyanduId: string) =>
+    request<ApiResponse<PeriodePelayanan | null>>(`/api/posyandu/${posyanduId}/periode/active`),
+
+  create: (posyanduId: string, data: { nama: string; bulan: number; tahun: number; tanggal: string; status?: 'AKTIF' | 'SELESAI'; catatan?: string }) =>
+    request<ApiResponse<PeriodePelayanan>>(`/api/posyandu/${posyanduId}/periode`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (posyanduId: string, id: string, data: Partial<Omit<PeriodePelayanan, 'id' | 'posyanduId' | 'createdAt' | 'updatedAt'>>) =>
+    request<ApiResponse<PeriodePelayanan>>(`/api/posyandu/${posyanduId}/periode/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  activate: (posyanduId: string, id: string) =>
+    request<ApiResponse<PeriodePelayanan>>(`/api/posyandu/${posyanduId}/periode/${id}/activate`, {
+      method: 'POST',
+    }),
+
+  delete: (posyanduId: string, id: string) =>
+    request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/periode/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
 // API: KADER MANAGEMENT
 // ─────────────────────────────────────────────────────────────
 

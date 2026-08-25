@@ -31,9 +31,11 @@ import {
   FileText,
   CaretDoubleLeft,
   CaretDoubleRight,
+  Calendar,
 } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
-import { notificationApi, authApi, balitaApi, lansiaApi, AppNotification } from "../lib/api";
+import { notificationApi, authApi, balitaApi, lansiaApi, periodeApi, AppNotification, PeriodePelayanan } from "../lib/api";
+import PeriodeModal from "../components/PeriodeModal";
 
 // Feature Modules
 import DashboardModule from "../features/dashboard/DashboardModule";
@@ -95,6 +97,22 @@ export default function Home() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState<boolean>(false);
+
+  // Active Periode State
+  const [activePeriode, setActivePeriode] = useState<PeriodePelayanan | null>(null);
+  const [isPeriodeModalOpen, setIsPeriodeModalOpen] = useState(false);
+
+  const loadActivePeriode = async () => {
+    if (!posyanduId) return;
+    try {
+      const res = await periodeApi.getActive(posyanduId);
+      if (res.success) {
+        setActivePeriode(res.data);
+      }
+    } catch (err) {
+      console.error("Gagal memuat periode pelayanan aktif:", err);
+    }
+  };
 
   // Quick Edit Profile Modal State
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -178,6 +196,7 @@ export default function Home() {
   useEffect(() => {
     if (user && posyanduId) {
       loadNotifications();
+      loadActivePeriode();
     }
   }, [user, posyanduId, activeMenu]);
 
@@ -397,7 +416,13 @@ export default function Home() {
           />
         );
       case "Pelayanan":
-        return <PelayananModule posyanduId={posyanduId} />;
+        return (
+          <PelayananModule
+            posyanduId={posyanduId}
+            activePeriode={activePeriode}
+            onOpenPeriodeModal={() => setIsPeriodeModalOpen(true)}
+          />
+        );
       case "Balita":
         return (
           <BalitaModule
@@ -883,8 +908,26 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right: Search Toggle Mobile, Notifikasi & Profil */}
-          <div className="flex items-center gap-3 sm:gap-6">
+          {/* Right: Search Toggle Mobile, Periode Pelayanan, Notifikasi & Profil */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Periode Pelayanan Badge & Selector */}
+            <button
+              onClick={() => setIsPeriodeModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-teal-50 hover:bg-teal-100/80 border border-teal-200/80 rounded-xl text-xs font-bold text-saas-primary transition-all shadow-sm group"
+              title="Buka atau Pilih Periode Pelayanan"
+            >
+              <div className="w-6 h-6 rounded-lg bg-saas-primary text-white flex items-center justify-center shrink-0">
+                <Calendar className="w-3.5 h-3.5" weight="bold" />
+              </div>
+              <div className="text-left hidden sm:block">
+                <span className="block text-[9px] text-teal-700 font-extrabold uppercase leading-none">Periode Pelayanan</span>
+                <span className="block text-[11px] font-extrabold text-saas-primary leading-tight truncate max-w-[130px]">
+                  {activePeriode ? activePeriode.nama : "Pilih Periode"}
+                </span>
+              </div>
+              <CaretDown className="w-3 h-3 text-saas-primary shrink-0 group-hover:translate-y-0.5 transition-transform" weight="bold" />
+            </button>
+
             {/* Container Lonceng & Dropdown Notifikasi */}
             <div className="relative" ref={notificationRef}>
               <button
@@ -1269,6 +1312,16 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* 5. MODAL KELOLA PERIODE PELAYANAN */}
+      <PeriodeModal
+        isOpen={isPeriodeModalOpen}
+        onClose={() => setIsPeriodeModalOpen(false)}
+        posyanduId={posyanduId}
+        activePeriode={activePeriode}
+        onSelectPeriode={(p) => setActivePeriode(p)}
+        onRefreshPeriode={loadActivePeriode}
+      />
     </div>
   );
 }
