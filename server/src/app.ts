@@ -11,6 +11,7 @@ import lansiaRoutes from './modules/lansia/lansia.routes';
 import notificationRoutes from './modules/notification/notification.routes';
 import ownerRoutes from './modules/owner/owner.routes';
 import publicRoutes from './modules/public/public.routes';
+import periodeRoutes from './modules/periode/periode.routes';
 import { errorHandler, notFound } from './shared/middlewares/error.middleware';
 
 const app = express();
@@ -54,6 +55,8 @@ app.use('/api/owner', ownerRoutes);
 app.use('/api/posyandu/:posyanduId/balita', balitaRoutes);
 app.use('/api/posyandu/:posyanduId/lansia', lansiaRoutes);
 app.use('/api/posyandu/:posyanduId/notifications', notificationRoutes);
+app.use('/api/posyandu/:posyanduId/periode', periodeRoutes);
+
 
 // ─────────────────────────────────────────────────────────────
 // ERROR HANDLING (harus di akhir)

@@ -29,6 +29,7 @@ model Posyandu {
   lansias       Lansia[]
   notifications Notification[]
   auditLogs     AuditLog[]
+  periodePelayanans PeriodePelayanan[]
 
   @@map("posyandu")
 }
@@ -234,3 +235,29 @@ model AuditLog {
 
   @@map("audit_log")
 }
+
+// ─────────────────────────────────────────────────────────────
+// PERIODE PELAYANAN
+// ─────────────────────────────────────────────────────────────
+model PeriodePelayanan {
+  id          String        @id @default(uuid())
+  posyanduId  String        @map("posyandu_id")
+  nama        String        // E.g. "Periode Pelayanan Agustus 2026"
+  bulan       Int           // 1 - 12
+  tahun       Int           // E.g. 2026
+  tanggal     DateTime      @db.Date
+  status      StatusPeriode @default(AKTIF)
+  catatan     String?       @db.Text
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  posyandu    Posyandu      @relation(fields: [posyanduId], references: [id], onDelete: Cascade)
+
+  @@map("periode_pelayanan")
+}
+
+enum StatusPeriode {
+  AKTIF
+  SELESAI
+}
+
