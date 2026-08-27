@@ -425,6 +425,7 @@ export default function Home() {
             posyanduId={posyanduId}
             activePeriode={activePeriode}
             onOpenPeriodeModal={() => setIsPeriodeModalOpen(true)}
+            onNavigate={handleDashboardNavigate}
           />
         );
       case "Balita":

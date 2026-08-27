@@ -671,6 +671,48 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
     }
   };
 
+  // Pre-fill form pemeriksaan jika balita sudah memiliki data pemeriksaan
+  useEffect(() => {
+    if (!activeBalita) {
+      setExamBB("");
+      setExamTB("");
+      setExamLK("");
+      setExamLiLA("");
+      setExamKms("N");
+      setExamVitA(false);
+      setExamAsi(false);
+      setExamCacing(false);
+      setExamImunisasi("");
+      return;
+    }
+
+    const latest = activeBalita.pemeriksaan?.[0];
+    if (latest) {
+      if (latest.tanggalPeriksa) {
+        setExamDate(formatTanggalInput(latest.tanggalPeriksa));
+      }
+      setExamBB(latest.beratBadan ? String(latest.beratBadan) : "");
+      setExamTB(latest.tinggiBadan ? String(latest.tinggiBadan) : "");
+      setExamLK(latest.lingkarKepala ? String(latest.lingkarKepala) : "");
+      setExamLiLA(latest.lingkarLengan ? String(latest.lingkarLengan) : "");
+      setExamKms(latest.statusKms || "N");
+      setExamVitA(Boolean(latest.vitaminA));
+      setExamAsi(Boolean(latest.asiEksklusif));
+      setExamCacing(Boolean(latest.obatCacing));
+      setExamImunisasi(latest.statusImunisasi || "");
+    } else {
+      setExamBB("");
+      setExamTB("");
+      setExamLK("");
+      setExamLiLA("");
+      setExamKms("N");
+      setExamVitA(false);
+      setExamAsi(false);
+      setExamCacing(false);
+      setExamImunisasi("");
+    }
+  }, [activeBalita]);
+
   return (
     <div className="space-y-6">
       <PageHelmet

@@ -71,6 +71,7 @@ interface Pasien {
   detailInfo: string; // "12 Bulan" or "RT 02"
   tanggalLahir?: string;
   jenisKelamin?: "L" | "P";
+  currentPeriodExam?: any;
 }
 
 import { DashboardSkeleton, Skeleton } from "../../components/Skeleton";
@@ -158,31 +159,52 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId, a
   }, [posyanduId, activePeriode]);
 
   useEffect(() => {
+    const targetMonth = activePeriode ? activePeriode.bulan : (new Date().getMonth() + 1);
+    const targetYear = activePeriode ? activePeriode.tahun : new Date().getFullYear();
+
     Promise.all([
       balitaApi.getAll(posyanduId),
       lansiaApi.getAll(posyanduId)
     ])
       .then(([balitaRes, lansiaRes]) => {
-        const balitas: Pasien[] = (balitaRes.data || []).map((b) => ({
-          id: b.id,
-          nama: b.nama,
-          tipe: "Balita",
-          detailInfo: `Usia ${b.usiaBulan || calculateAgeInMonths(b.tanggalLahir)} Bulan, Ibu: ${b.namaIbu}`,
-          tanggalLahir: b.tanggalLahir,
-          jenisKelamin: b.jenisKelamin,
-        }));
-        const lansias: Pasien[] = (lansiaRes.data || []).map((l) => ({
-          id: l.id,
-          nama: l.nama,
-          tipe: "Lansia",
-          detailInfo: `RT/RW ${l.rtRw || "-"}`,
-          tanggalLahir: l.tanggalLahir,
-          jenisKelamin: l.jenisKelamin,
-        }));
+        const balitas: Pasien[] = (balitaRes.data || []).map((b) => {
+          const currentExam = (b.pemeriksaans || []).find((exam) => {
+            const d = new Date(exam.tanggalPeriksa);
+            return (d.getMonth() + 1) === targetMonth && d.getFullYear() === targetYear;
+          });
+
+          return {
+            id: b.id,
+            nama: b.nama,
+            tipe: "Balita",
+            detailInfo: `Usia ${b.usiaBulan || calculateAgeInMonths(b.tanggalLahir)} Bulan, Ibu: ${b.namaIbu}`,
+            tanggalLahir: b.tanggalLahir,
+            jenisKelamin: b.jenisKelamin,
+            currentPeriodExam: currentExam,
+          };
+        });
+
+        const lansias: Pasien[] = (lansiaRes.data || []).map((l) => {
+          const currentExam = (l.pemeriksaans || []).find((exam) => {
+            const d = new Date(exam.tanggalPeriksa);
+            return (d.getMonth() + 1) === targetMonth && d.getFullYear() === targetYear;
+          });
+
+          return {
+            id: l.id,
+            nama: l.nama,
+            tipe: "Lansia",
+            detailInfo: `RT/RW ${l.rtRw || "-"}`,
+            tanggalLahir: l.tanggalLahir,
+            jenisKelamin: l.jenisKelamin,
+            currentPeriodExam: currentExam,
+          };
+        });
+
         setDbPasiens([...balitas, ...lansias]);
       })
       .catch(console.error);
-  }, [posyanduId]);
+  }, [posyanduId, activePeriode]);
 
   // Fetch Distribusi Kehadiran RT/RW (Poin 20)
   useEffect(() => {
@@ -275,6 +297,74 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId, a
   const [examUricAcid, setExamUricAcid] = useState("");
   const [examKeluhan, setExamKeluhan] = useState("");
   const [examTindakan, setExamTindakan] = useState("");
+
+  // Pre-fill form modal jika pasien sudah memiliki data di periode ini
+  useEffect(() => {
+    if (!selectedPasien) {
+      setExamBB("");
+      setExamTB("");
+      setExamLK("");
+      setExamLiLA("");
+      setExamVitA(false);
+      setExamAsi(false);
+      setExamCacing(false);
+      setExamImunisasi("");
+      setExamSistol("");
+      setExamDiastol("");
+      setExamGds("");
+      setExamLp("");
+      setExamCholesterol("");
+      setExamUricAcid("");
+      setExamKeluhan("");
+      setExamTindakan("");
+      return;
+    }
+
+    const exam = selectedPasien.currentPeriodExam;
+    if (exam) {
+      if (exam.tanggalPeriksa) {
+        setExamDate(new Date(exam.tanggalPeriksa).toISOString().slice(0, 10));
+      }
+      setExamBB(exam.beratBadan ? String(exam.beratBadan) : "");
+      setExamTB(exam.tinggiBadan ? String(exam.tinggiBadan) : "");
+
+      if (selectedPasien.tipe === "Balita") {
+        setExamLK(exam.lingkarKepala ? String(exam.lingkarKepala) : "");
+        setExamLiLA(exam.lingkarLengan ? String(exam.lingkarLengan) : "");
+        setExamKms(exam.statusKms || "N");
+        setExamVitA(Boolean(exam.vitaminA));
+        setExamAsi(Boolean(exam.asiEksklusif));
+        setExamCacing(Boolean(exam.obatCacing));
+        setExamImunisasi(exam.statusImunisasi || "");
+      } else {
+        setExamSistol(exam.tekananDarahSistol ? String(exam.tekananDarahSistol) : "");
+        setExamDiastol(exam.tekananDarahDiastol ? String(exam.tekananDarahDiastol) : "");
+        setExamGds(exam.gulaDarahSewaktu ? String(exam.gulaDarahSewaktu) : "");
+        setExamLp(exam.lingkarPerut ? String(exam.lingkarPerut) : "");
+        setExamCholesterol(exam.kolesterol ? String(exam.kolesterol) : "");
+        setExamUricAcid(exam.asamUrat ? String(exam.asamUrat) : "");
+        setExamKeluhan(exam.keluhan || "");
+        setExamTindakan(exam.tindakan || "");
+      }
+    } else {
+      setExamBB("");
+      setExamTB("");
+      setExamLK("");
+      setExamLiLA("");
+      setExamVitA(false);
+      setExamAsi(false);
+      setExamCacing(false);
+      setExamImunisasi("");
+      setExamSistol("");
+      setExamDiastol("");
+      setExamGds("");
+      setExamLp("");
+      setExamCholesterol("");
+      setExamUricAcid("");
+      setExamKeluhan("");
+      setExamTindakan("");
+    }
+  }, [selectedPasien]);
 
   // Helper Hitung Usia (Bulan)
   const calculateAgeInMonths = (birthDateStr: string, refDate: Date = new Date()): number => {
