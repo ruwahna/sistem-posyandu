@@ -27,7 +27,6 @@ export const balitaService = {
           include: {
             pemeriksaans: {
               orderBy: { tanggalPeriksa: 'desc' },
-              take: 1,
             },
           },
         }),
@@ -48,7 +47,6 @@ export const balitaService = {
         include: {
           pemeriksaans: {
             orderBy: { tanggalPeriksa: 'desc' },
-            take: 1,
           },
         },
       });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { dashboardApi, DashboardSummary, DistribusiKehadiran, balitaApi, lansiaApi, TrenGiziItem, AktivitasKunjunganData, ItemAktivitasKunjungan } from "../../lib/api";
+import { dashboardApi, DashboardSummary, DistribusiKehadiran, balitaApi, lansiaApi, TrenGiziItem, AktivitasKunjunganData, ItemAktivitasKunjungan, periodeApi, PeriodePelayanan } from "../../lib/api";
 import { formatTanggalIndonesia } from "../../lib/dateUtils";
 import Modal from "../../components/Modal";
 import PageHelmet from "../../components/PageHelmet";
@@ -50,6 +50,7 @@ interface DashboardModuleProps {
   searchQuery: string;
   onNavigate: (menu: string, patientId?: string) => void;
   posyanduId: string;
+  activePeriode?: PeriodePelayanan | null;
 }
 
 interface Kunjungan {
@@ -74,7 +75,7 @@ interface Pasien {
 
 import { DashboardSkeleton, Skeleton } from "../../components/Skeleton";
 
-export default function DashboardModule({ searchQuery, onNavigate, posyanduId }: DashboardModuleProps) {
+export default function DashboardModule({ searchQuery, onNavigate, posyanduId, activePeriode }: DashboardModuleProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"Semua" | "Balita" | "Lansia">("Semua");
 
@@ -88,7 +89,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   // ── Aktivitas Kunjungan State ─────────────────────────────
   const [aktivitasData, setAktivitasData] = useState<AktivitasKunjunganData | null>(null);
   const [isAktivitasLoading, setIsAktivitasLoading] = useState(false);
-  const [aktivitasTab, setAktivitasTab] = useState<"balita" | "lansia" | "belum">("balita");
+  const [aktivitasTab, setAktivitasTab] = useState<"balita" | "lansia" | "belum_balita" | "belum_lansia">("balita");
   const [aktivitasSearch, setAktivitasSearch] = useState("");
 
   const fetchAktivitas = () => {
@@ -106,7 +107,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
 
   useEffect(() => {
     fetchAktivitas();
-  }, [posyanduId]);
+  }, [posyanduId, activePeriode]);
 
   // ── Action Menu & Detail Modals ──
   const [showDetailAktivitas, setShowDetailAktivitas] = useState(false);
@@ -154,7 +155,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   useEffect(() => {
     setIsSummaryLoading(true);
     fetchSummary();
-  }, [posyanduId]);
+  }, [posyanduId, activePeriode]);
 
   useEffect(() => {
     Promise.all([
@@ -773,19 +774,25 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                     key: "balita" as const,
                     label: "Balita Selesai Periksa",
                     count: `${aktivitasData?.balitaSelesaiCount ?? 0} Anak`,
-                    color: "bg-saas-primary",
+                    color: "bg-sky-500",
                   },
                   {
                     key: "lansia" as const,
                     label: "Lansia Selesai Periksa",
                     count: `${aktivitasData?.lansiaSelesaiCount ?? 0} Lansia`,
-                    color: "bg-green-500",
+                    color: "bg-emerald-500",
                   },
                   {
-                    key: "belum" as const,
-                    label: "Belum Mengisi Data",
-                    count: `${aktivitasData?.belumMengisiCount ?? 0} Orang`,
-                    color: "bg-yellow-400",
+                    key: "belum_balita" as const,
+                    label: "Balita Belum Periksa",
+                    count: `${(aktivitasData?.belumMengisiList ?? []).filter(i => i.tipe === 'Balita').length} Anak`,
+                    color: "bg-amber-400",
+                  },
+                  {
+                    key: "belum_lansia" as const,
+                    label: "Lansia Belum Periksa",
+                    count: `${(aktivitasData?.belumMengisiList ?? []).filter(i => i.tipe === 'Lansia').length} Lansia`,
+                    color: "bg-orange-400",
                   },
                 ].map((item) => (
                   <button
@@ -1496,55 +1503,74 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       >
         <div className="space-y-4 max-w-xl">
           {/* Header Stats Selector Cards */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <button
               onClick={() => setAktivitasTab("balita")}
-              className={`p-3 rounded-xl border text-left transition-all ${
+              className={`p-2.5 rounded-xl border text-left transition-all ${
                 aktivitasTab === "balita"
                   ? "bg-sky-50 border-sky-300 ring-2 ring-sky-400/20"
                   : "bg-gray-50/60 border-gray-200 hover:bg-gray-50"
               }`}
             >
-              <div className="flex items-center gap-1.5 text-sky-700 font-bold text-xs mb-1">
-                <BalitaIcon className="w-3.5 h-3.5" />
-                <span>Balita Selesai</span>
+              <div className="flex items-center gap-1 text-sky-700 font-bold text-[11px] mb-0.5 truncate">
+                <BalitaIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Balita Selesai</span>
               </div>
-              <div className="text-lg font-black text-saas-dark">
-                {aktivitasData?.balitaSelesaiCount ?? 0} <span className="text-xs font-normal text-saas-muted">Anak</span>
+              <div className="text-base font-black text-saas-dark">
+                {aktivitasData?.balitaSelesaiCount ?? 0} <span className="text-[10px] font-normal text-saas-muted">Anak</span>
               </div>
             </button>
 
             <button
               onClick={() => setAktivitasTab("lansia")}
-              className={`p-3 rounded-xl border text-left transition-all ${
+              className={`p-2.5 rounded-xl border text-left transition-all ${
                 aktivitasTab === "lansia"
                   ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400/20"
                   : "bg-gray-50/60 border-gray-200 hover:bg-gray-50"
               }`}
             >
-              <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs mb-1">
-                <LansiaIcon className="w-3.5 h-3.5" />
-                <span>Lansia Selesai</span>
+              <div className="flex items-center gap-1 text-emerald-700 font-bold text-[11px] mb-0.5 truncate">
+                <LansiaIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Lansia Selesai</span>
               </div>
-              <div className="text-lg font-black text-saas-dark">
-                {aktivitasData?.lansiaSelesaiCount ?? 0} <span className="text-xs font-normal text-saas-muted">Lansia</span>
+              <div className="text-base font-black text-saas-dark">
+                {aktivitasData?.lansiaSelesaiCount ?? 0} <span className="text-[10px] font-normal text-saas-muted">Lansia</span>
               </div>
             </button>
 
             <button
-              onClick={() => setAktivitasTab("belum")}
-              className={`p-3 rounded-xl border text-left transition-all ${
-                aktivitasTab === "belum"
+              onClick={() => setAktivitasTab("belum_balita")}
+              className={`p-2.5 rounded-xl border text-left transition-all ${
+                aktivitasTab === "belum_balita"
                   ? "bg-amber-50 border-amber-300 ring-2 ring-amber-400/20"
                   : "bg-gray-50/60 border-gray-200 hover:bg-gray-50"
               }`}
             >
-              <div className="flex items-center gap-1.5 text-amber-700 font-bold text-xs mb-1">
-                <AlertCircle className="w-3.5 h-3.5" />
-                <span>Belum Data</span>
+              <div className="flex items-center gap-1 text-amber-700 font-bold text-[11px] mb-0.5 truncate">
+                <BalitaIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Balita Belum</span>
               </div>
-              <div className="text-lg font-black text-saas-dark">
-                {aktivitasData?.belumMengisiCount ?? 0} <span className="text-xs font-normal text-saas-muted">Orang</span>
+              <div className="text-base font-black text-saas-dark">
+                {(aktivitasData?.belumMengisiList ?? []).filter(i => i.tipe === "Balita").length}{" "}
+                <span className="text-[10px] font-normal text-saas-muted">Anak</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setAktivitasTab("belum_lansia")}
+              className={`p-2.5 rounded-xl border text-left transition-all ${
+                aktivitasTab === "belum_lansia"
+                  ? "bg-orange-50 border-orange-300 ring-2 ring-orange-400/20"
+                  : "bg-gray-50/60 border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center gap-1 text-orange-700 font-bold text-[11px] mb-0.5 truncate">
+                <LansiaIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Lansia Belum</span>
+              </div>
+              <div className="text-base font-black text-saas-dark">
+                {(aktivitasData?.belumMengisiList ?? []).filter(i => i.tipe === "Lansia").length}{" "}
+                <span className="text-[10px] font-normal text-saas-muted">Lansia</span>
               </div>
             </button>
           </div>
@@ -1578,70 +1604,75 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                     item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
                     item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
                   )
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3 bg-white border border-gray-150 rounded-xl shadow-xs flex items-center justify-between hover:border-sky-200 transition-colors group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => {
-                            setShowDetailAktivitas(false);
-                            onNavigate("Balita", item.id);
-                          }}
-                          className="w-9 h-9 rounded-full bg-sky-50 flex items-center justify-center text-sky-600 font-bold shrink-0 hover:bg-sky-100 transition-colors cursor-pointer"
-                          title="Lihat Profil Balita"
-                        >
-                          <BalitaIcon className="w-5 h-5" />
-                        </button>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                setShowDetailAktivitas(false);
-                                onNavigate("Balita", item.id);
-                              }}
-                              className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
-                            >
-                              {item.nama}
-                            </button>
-                            <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-semibold">
-                              Balita
-                            </span>
+                  .map((item) => {
+                    const isFemale = item.jenisKelamin === "P" || item.jenisKelamin === "Perempuan";
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-3 bg-white border border-gray-150 rounded-xl shadow-xs flex items-center justify-between hover:border-sky-200 transition-colors group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate("Balita", item.id);
+                            }}
+                            className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                              isFemale ? "bg-pink-50 border-pink-100" : "bg-blue-50 border-blue-100"
+                            }`}
+                            title="Lihat Profil Balita"
+                          >
+                            <BalitaIcon className="w-5 h-5" gender={item.jenisKelamin} />
+                          </button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setShowDetailAktivitas(false);
+                                  onNavigate("Balita", item.id);
+                                }}
+                                className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
+                              >
+                                {item.nama}
+                              </button>
+                              <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-semibold">
+                                Balita
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
+                            {item.detailPemeriksaan && (
+                              <p className="text-[11px] font-semibold text-sky-700 mt-0.5">
+                                {item.detailPemeriksaan}
+                              </p>
+                            )}
                           </div>
-                          <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
-                          {item.detailPemeriksaan && (
-                            <p className="text-[11px] font-semibold text-sky-700 mt-0.5">
-                              {item.detailPemeriksaan}
-                            </p>
-                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="text-right hidden sm:block">
+                            <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-md inline-block mb-1">
+                              Selesai Periksa
+                            </span>
+                            {item.tanggalPeriksa && (
+                              <p className="text-[10px] text-saas-muted">
+                                {formatTanggalIndonesia(item.tanggalPeriksa)}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate("Balita", item.id);
+                            }}
+                            className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Buka profil lengkap balita"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Profil</span>
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className="text-right hidden sm:block">
-                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-md inline-block mb-1">
-                            Selesai Periksa
-                          </span>
-                          {item.tanggalPeriksa && (
-                            <p className="text-[10px] text-saas-muted">
-                              {formatTanggalIndonesia(item.tanggalPeriksa)}
-                            </p>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => {
-                            setShowDetailAktivitas(false);
-                            onNavigate("Balita", item.id);
-                          }}
-                          className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                          title="Buka profil lengkap balita"
-                        >
-                          <Eye className="w-3 h-3" />
-                          <span>Profil</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 {(aktivitasData?.balitaSelesaiList ?? []).filter((item) =>
                   item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
                   item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
@@ -1660,70 +1691,75 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                     item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
                     item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
                   )
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3 bg-white border border-gray-150 rounded-xl shadow-xs flex items-center justify-between hover:border-emerald-200 transition-colors group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => {
-                            setShowDetailAktivitas(false);
-                            onNavigate("Lansia", item.id);
-                          }}
-                          className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold shrink-0 hover:bg-emerald-100 transition-colors cursor-pointer"
-                          title="Lihat Profil Lansia"
-                        >
-                          <LansiaIcon className="w-5 h-5" />
-                        </button>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                setShowDetailAktivitas(false);
-                                onNavigate("Lansia", item.id);
-                              }}
-                              className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
-                            >
-                              {item.nama}
-                            </button>
-                            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
-                              Lansia
-                            </span>
+                  .map((item) => {
+                    const isFemale = item.jenisKelamin === "P" || item.jenisKelamin === "Perempuan";
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-3 bg-white border border-gray-150 rounded-xl shadow-xs flex items-center justify-between hover:border-emerald-200 transition-colors group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate("Lansia", item.id);
+                            }}
+                            className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                              isFemale ? "bg-pink-50 border-pink-100" : "bg-blue-50 border-blue-100"
+                            }`}
+                            title="Lihat Profil Lansia"
+                          >
+                            <LansiaIcon className="w-5 h-5" gender={item.jenisKelamin} />
+                          </button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setShowDetailAktivitas(false);
+                                  onNavigate("Lansia", item.id);
+                                }}
+                                className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
+                              >
+                                {item.nama}
+                              </button>
+                              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                                Lansia
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
+                            {item.detailPemeriksaan && (
+                              <p className="text-[11px] font-semibold text-emerald-700 mt-0.5">
+                                {item.detailPemeriksaan}
+                              </p>
+                            )}
                           </div>
-                          <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
-                          {item.detailPemeriksaan && (
-                            <p className="text-[11px] font-semibold text-emerald-700 mt-0.5">
-                              {item.detailPemeriksaan}
-                            </p>
-                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="text-right hidden sm:block">
+                            <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-md inline-block mb-1">
+                              Selesai Periksa
+                            </span>
+                            {item.tanggalPeriksa && (
+                              <p className="text-[10px] text-saas-muted">
+                                {formatTanggalIndonesia(item.tanggalPeriksa)}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate("Lansia", item.id);
+                            }}
+                            className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Buka profil lengkap lansia"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Profil</span>
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className="text-right hidden sm:block">
-                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-md inline-block mb-1">
-                            Selesai Periksa
-                          </span>
-                          {item.tanggalPeriksa && (
-                            <p className="text-[10px] text-saas-muted">
-                              {formatTanggalIndonesia(item.tanggalPeriksa)}
-                            </p>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => {
-                            setShowDetailAktivitas(false);
-                            onNavigate("Lansia", item.id);
-                          }}
-                          className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                          title="Buka profil lengkap lansia"
-                        >
-                          <Eye className="w-3 h-3" />
-                          <span>Profil</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 {(aktivitasData?.lansiaSelesaiList ?? []).filter((item) =>
                   item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
                   item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
@@ -1735,91 +1771,99 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               </>
             )}
 
-            {aktivitasTab === "belum" && (
+            {(aktivitasTab === "belum_balita" || aktivitasTab === "belum_lansia") && (
               <>
                 {(aktivitasData?.belumMengisiList ?? [])
+                  .filter((item) => item.tipe === (aktivitasTab === "belum_balita" ? "Balita" : "Lansia"))
                   .filter((item) =>
                     item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
                     item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
                   )
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3 bg-white border border-amber-150 rounded-xl shadow-xs flex items-center justify-between hover:border-amber-300 transition-colors group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => {
-                            setShowDetailAktivitas(false);
-                            onNavigate(item.tipe, item.id);
-                          }}
-                          className="w-9 h-9 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 font-bold shrink-0 hover:bg-amber-100 transition-colors cursor-pointer"
-                          title={`Lihat Profil ${item.tipe}`}
-                        >
-                          {item.tipe === "Balita" ? <BalitaIcon className="w-5 h-5" gender={item.jenisKelamin} /> : <LansiaIcon className="w-5 h-5" gender={item.jenisKelamin} />}
-                        </button>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                setShowDetailAktivitas(false);
-                                onNavigate(item.tipe, item.id);
-                              }}
-                              className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
-                            >
-                              {item.nama}
-                            </button>
-                            <span
-                              className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                                item.tipe === "Balita"
-                                  ? "bg-sky-100 text-sky-700"
-                                  : "bg-emerald-100 text-emerald-700"
-                              }`}
-                            >
-                              {item.tipe}
-                            </span>
+                  .map((item) => {
+                    const isFemale = item.jenisKelamin === "P" || item.jenisKelamin === "Perempuan";
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-3 bg-white border border-amber-150 rounded-xl shadow-xs flex items-center justify-between hover:border-amber-300 transition-colors group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate(item.tipe, item.id);
+                            }}
+                            className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                              isFemale ? "bg-pink-50 border-pink-100" : "bg-blue-50 border-blue-100"
+                            }`}
+                            title={`Lihat Profil ${item.tipe}`}
+                          >
+                            {item.tipe === "Balita" ? <BalitaIcon className="w-5 h-5" gender={item.jenisKelamin} /> : <LansiaIcon className="w-5 h-5" gender={item.jenisKelamin} />}
+                          </button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setShowDetailAktivitas(false);
+                                  onNavigate(item.tipe, item.id);
+                                }}
+                                className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
+                              >
+                                {item.nama}
+                              </button>
+                              <span
+                                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                                  item.tipe === "Balita"
+                                    ? "bg-sky-100 text-sky-700"
+                                    : "bg-emerald-100 text-emerald-700"
+                                }`}
+                              >
+                                {item.tipe}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
                           </div>
-                          <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate(item.tipe, item.id);
+                            }}
+                            className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-saas-dark font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Buka profil lengkap"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Profil</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              const targetPasien = dbPasiens.find((p) => p.id === item.id) || {
+                                id: item.id,
+                                nama: item.nama,
+                                tipe: item.tipe,
+                                detailInfo: item.detailInfo,
+                              };
+                              setSelectedPasien(targetPasien);
+                              setShowDetailAktivitas(false);
+                              setIsOpenModal(true);
+                            }}
+                            className="px-2.5 py-1 bg-saas-primary hover:bg-teal-600 text-white font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Input Data</span>
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => {
-                            setShowDetailAktivitas(false);
-                            onNavigate(item.tipe, item.id);
-                          }}
-                          className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-saas-dark font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                          title="Buka profil lengkap"
-                        >
-                          <Eye className="w-3 h-3" />
-                          <span>Profil</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            const targetPasien = dbPasiens.find((p) => p.id === item.id) || {
-                              id: item.id,
-                              nama: item.nama,
-                              tipe: item.tipe,
-                              detailInfo: item.detailInfo,
-                            };
-                            setSelectedPasien(targetPasien);
-                            setShowDetailAktivitas(false);
-                            setIsOpenModal(true);
-                          }}
-                          className="px-2.5 py-1 bg-saas-primary hover:bg-teal-600 text-white font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Input Data</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                {(aktivitasData?.belumMengisiList ?? []).filter((item) =>
-                  item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
-                  item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
-                ).length === 0 && (
+                    );
+                  })}
+                {(aktivitasData?.belumMengisiList ?? [])
+                  .filter((item) => item.tipe === (aktivitasTab === "belum_balita" ? "Balita" : "Lansia"))
+                  .filter((item) =>
+                    item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                    item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                  ).length === 0 && (
                   <div className="py-8 text-center text-xs text-emerald-600 bg-emerald-50/50 rounded-xl border border-dashed border-emerald-200 font-semibold">
-                    🎉 Luar biasa! Semua warga telah mengisi data pemeriksaan.
+                    🎉 Luar biasa! Semua {aktivitasTab === "belum_balita" ? "balita" : "lansia"} telah mengisi data pemeriksaan.
                   </div>
                 )}
               </>

@@ -236,46 +236,61 @@ export const dashboardService = {
       }),
     ]);
 
-    // Fetch pemeriksaan terbaru untuk setiap Balita
+    const activePeriode = await prisma.periodePelayanan.findFirst({
+      where: { posyanduId, status: 'AKTIF' },
+      orderBy: { tanggal: 'desc' },
+    });
+
+    const now = new Date();
+    const targetMonth = activePeriode ? activePeriode.bulan : (now.getMonth() + 1);
+    const targetYear = activePeriode ? activePeriode.tahun : now.getFullYear();
+
+    // Fetch pemeriksaan Balita pada periode aktif
     const balitaExams = await prisma.pemeriksaanBalita.findMany({
       where: { balita: { posyanduId } },
       orderBy: { tanggalPeriksa: 'desc' },
       distinct: ['balitaId'],
       select: {
         balitaId: true,
+        tanggalPeriksa: true,
         balita: { select: { alamat: true } },
       },
     });
 
-    // Fetch pemeriksaan terbaru untuk setiap Lansia
+    // Fetch pemeriksaan Lansia pada periode aktif
     const lansiaExams = await prisma.pemeriksaanLansia.findMany({
       where: { lansia: { posyanduId } },
       orderBy: { tanggalPeriksa: 'desc' },
       distinct: ['lansiaId'],
       select: {
         lansiaId: true,
+        tanggalPeriksa: true,
         lansia: { select: { rtRw: true } },
       },
     });
 
-    // Aggregate kehadiran per RT/RW
+    // Aggregate kehadiran per RT/RW (hanya yang periksa di periode ini)
     const rtRwMap = new Map<string, { total: number; hadir: number }>();
 
-    // Count dari Balita (extract RT/RW dari alamat)
     balitaExams.forEach((exam) => {
-      const match = exam.balita.alamat?.match(/RT\s*\d+\s*\/\s*RW\s*\d+/);
-      const rtRw = match ? match[0] : 'RT ?/RW ?';
-      const current = rtRwMap.get(rtRw) || { total: 0, hadir: 0 };
-      current.hadir += 1;
-      rtRwMap.set(rtRw, current);
+      const examDate = new Date(exam.tanggalPeriksa);
+      if ((examDate.getMonth() + 1) === targetMonth && examDate.getFullYear() === targetYear) {
+        const match = exam.balita.alamat?.match(/RT\s*\d+\s*\/\s*RW\s*\d+/);
+        const rtRw = match ? match[0] : 'RT ?/RW ?';
+        const current = rtRwMap.get(rtRw) || { total: 0, hadir: 0 };
+        current.hadir += 1;
+        rtRwMap.set(rtRw, current);
+      }
     });
 
-    // Count dari Lansia
     lansiaExams.forEach((exam) => {
-      const rtRw = exam.lansia.rtRw || 'RT ?/RW ?';
-      const current = rtRwMap.get(rtRw) || { total: 0, hadir: 0 };
-      current.hadir += 1;
-      rtRwMap.set(rtRw, current);
+      const examDate = new Date(exam.tanggalPeriksa);
+      if ((examDate.getMonth() + 1) === targetMonth && examDate.getFullYear() === targetYear) {
+        const rtRw = exam.lansia.rtRw || 'RT ?/RW ?';
+        const current = rtRwMap.get(rtRw) || { total: 0, hadir: 0 };
+        current.hadir += 1;
+        rtRwMap.set(rtRw, current);
+      }
     });
 
     // Set total count untuk setiap RT/RW
@@ -398,6 +413,7 @@ export const dashboardService = {
           id: b.id,
           nama: b.nama,
           tipe: 'Balita',
+          jenisKelamin: b.jenisKelamin,
           detailInfo,
           statusPeriksa: 'Selesai Periksa',
           tanggalPeriksa: latestExam.tanggalPeriksa.toISOString().split('T')[0],
@@ -408,6 +424,7 @@ export const dashboardService = {
           id: b.id,
           nama: b.nama,
           tipe: 'Balita',
+          jenisKelamin: b.jenisKelamin,
           detailInfo,
           statusPeriksa: 'Belum Mengisi Data',
           tanggalPeriksa: null,
@@ -432,6 +449,7 @@ export const dashboardService = {
           id: l.id,
           nama: l.nama,
           tipe: 'Lansia',
+          jenisKelamin: l.jenisKelamin,
           detailInfo,
           statusPeriksa: 'Selesai Periksa',
           tanggalPeriksa: latestExam.tanggalPeriksa.toISOString().split('T')[0],
@@ -442,6 +460,7 @@ export const dashboardService = {
           id: l.id,
           nama: l.nama,
           tipe: 'Lansia',
+          jenisKelamin: l.jenisKelamin,
           detailInfo,
           statusPeriksa: 'Belum Mengisi Data',
           tanggalPeriksa: null,
