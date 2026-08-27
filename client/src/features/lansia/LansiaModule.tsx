@@ -598,6 +598,37 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId 
     }
   };
 
+  // Pre-fill form pemeriksaan jika lansia sudah memiliki data pemeriksaan
+  useEffect(() => {
+    if (!activeLansia) {
+      setExamBB(""); setExamTB(""); setExamSistol(""); setExamDiastol("");
+      setExamGds(""); setExamLp(""); setExamCholesterol(""); setExamUricAcid("");
+      setExamKeluhan(""); setExamTindakan(""); setExamWarning("");
+      return;
+    }
+
+    const latest = activeLansia.pemeriksaan?.[0];
+    if (latest) {
+      if (latest.tanggalPeriksa) {
+        setExamDate(formatTanggalInput(latest.tanggalPeriksa));
+      }
+      setExamBB(latest.beratBadan ? String(latest.beratBadan) : "");
+      setExamTB(latest.tinggiBadan ? String(latest.tinggiBadan) : "");
+      setExamSistol(latest.tekananDarahSistol ? String(latest.tekananDarahSistol) : "");
+      setExamDiastol(latest.tekananDarahDiastol ? String(latest.tekananDarahDiastol) : "");
+      setExamGds(latest.gulaDarahSewaktu ? String(latest.gulaDarahSewaktu) : "");
+      setExamLp(latest.lingkarPerut ? String(latest.lingkarPerut) : "");
+      setExamCholesterol(latest.kolesterol ? String(latest.kolesterol) : "");
+      setExamUricAcid(latest.asamUrat ? String(latest.asamUrat) : "");
+      setExamKeluhan(latest.keluhan || "");
+      setExamTindakan(latest.tindakan || "");
+    } else {
+      setExamBB(""); setExamTB(""); setExamSistol(""); setExamDiastol("");
+      setExamGds(""); setExamLp(""); setExamCholesterol(""); setExamUricAcid("");
+      setExamKeluhan(""); setExamTindakan(""); setExamWarning("");
+    }
+  }, [activeLansia]);
+
   return (
     <div className="space-y-6">
       <PageHelmet

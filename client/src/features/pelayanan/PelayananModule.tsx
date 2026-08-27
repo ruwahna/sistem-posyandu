@@ -77,9 +77,10 @@ interface PelayananModuleProps {
   posyanduId: string;
   activePeriode?: PeriodePelayanan | null;
   onOpenPeriodeModal?: () => void;
+  onNavigate?: (menu: string, patientId?: string) => void;
 }
 
-export default function PelayananModule({ posyanduId, activePeriode, onOpenPeriodeModal }: PelayananModuleProps) {
+export default function PelayananModule({ posyanduId, activePeriode, onOpenPeriodeModal, onNavigate }: PelayananModuleProps) {
   const { user } = useAuth();
   const [pasiens, setPasiens] = useState<Pasien[]>([]);
   const [query, setQuery] = useState("");
@@ -991,7 +992,19 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
                         {selectedPasien.tipe === "Balita" ? <BalitaIcon className="w-4 h-4" gender={selectedPasien.jenisKelamin} /> : <LansiaIcon className="w-4 h-4" gender={selectedPasien.jenisKelamin} />}
                       </div>
                       <div>
-                        <p className="font-extrabold text-saas-dark text-sm leading-none">{selectedPasien.nama}</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onNavigate) {
+                              onNavigate(selectedPasien.tipe === "Balita" ? "Balita" : "Lansia", selectedPasien.id);
+                            }
+                          }}
+                          className="font-extrabold text-saas-dark text-sm leading-none hover:text-saas-primary hover:underline text-left cursor-pointer flex items-center gap-1 group/link"
+                          title={`Lihat profil lengkap ${selectedPasien.nama}`}
+                        >
+                          <span>{selectedPasien.nama}</span>
+                          <span className="text-[10px] text-saas-primary opacity-0 group-hover/link:opacity-100 transition-opacity font-bold">↗</span>
+                        </button>
                         <p className="text-[10px] text-saas-muted font-bold mt-1">
                           {selectedPasien.subInfo} | {selectedPasien.tipe === "Balita" ? `Ibu: ${selectedPasien.detail1}` : selectedPasien.detail1}
                         </p>
