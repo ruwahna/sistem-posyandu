@@ -50,9 +50,10 @@ import {
 
 interface RiwayatModuleProps {
   posyanduId: string;
+  activePeriode?: PeriodePelayanan | null;
 }
 
-export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
+export default function RiwayatModule({ posyanduId, activePeriode }: RiwayatModuleProps) {
   const [logs, setLogs] = useState<ItemRiwayat[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -60,6 +61,12 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"semua" | "Balita" | "Lansia">("semua");
   const [statusFilter, setStatusFilter] = useState<"semua" | "success" | "warning">("semua");
+  const [selectedBulan, setSelectedBulan] = useState<number | "semua">(
+    activePeriode ? activePeriode.bulan : "semua"
+  );
+  const [selectedTahun, setSelectedTahun] = useState<number | "semua">(
+    activePeriode ? activePeriode.tahun : "semua"
+  );
 
   // Tab mode: "tabel" vs "grafik"
   const [viewMode, setViewMode] = useState<"tabel" | "grafik">("tabel");
@@ -252,6 +259,8 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
         tipe: typeFilter,
         search: query,
         status: statusFilter,
+        bulan: selectedBulan === "semua" ? undefined : selectedBulan,
+        tahun: selectedTahun === "semua" ? undefined : selectedTahun,
       });
       if (res.success) {
         setLogs(res.data);
@@ -265,7 +274,7 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
 
   useEffect(() => {
     fetchRiwayat();
-  }, [posyanduId, typeFilter, statusFilter]);
+  }, [posyanduId, typeFilter, statusFilter, selectedBulan, selectedTahun]);
 
   // Debounced search submit
   useEffect(() => {
@@ -292,6 +301,8 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
         tipe: typeFilter,
         search: query,
         status: statusFilter,
+        bulan: selectedBulan === "semua" ? undefined : selectedBulan,
+        tahun: selectedTahun === "semua" ? undefined : selectedTahun,
       });
     } catch (err) {
       console.error("Gagal export excel:", err);
@@ -308,6 +319,8 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
         tipe: typeFilter,
         search: query,
         status: statusFilter,
+        bulan: selectedBulan === "semua" ? undefined : selectedBulan,
+        tahun: selectedTahun === "semua" ? undefined : selectedTahun,
       });
     } catch (err) {
       console.error("Gagal export PDF:", err);
@@ -440,6 +453,37 @@ export default function RiwayatModule({ posyanduId }: RiwayatModuleProps) {
           </div>
 
           <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-4">
+            {/* Filter Periode Bulan & Tahun */}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs font-bold text-saas-muted shrink-0 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" /> Periode:
+              </span>
+              <select
+                value={selectedBulan}
+                onChange={(e) => setSelectedBulan(e.target.value === "semua" ? "semua" : Number(e.target.value))}
+                className="text-xs px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg font-bold text-saas-dark focus:outline-none focus:border-saas-primary"
+              >
+                <option value="semua">Semua Bulan</option>
+                {[
+                  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+                ].map((m, idx) => (
+                  <option key={m} value={idx + 1}>{m}</option>
+                ))}
+              </select>
+
+              <select
+                value={selectedTahun}
+                onChange={(e) => setSelectedTahun(e.target.value === "semua" ? "semua" : Number(e.target.value))}
+                className="text-xs px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg font-bold text-saas-dark focus:outline-none focus:border-saas-primary"
+              >
+                <option value="semua">Semua Tahun</option>
+                {[2024, 2025, 2026, 2027].map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Tipe filter */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               <span className="text-xs font-bold text-saas-muted shrink-0">Kategori:</span>

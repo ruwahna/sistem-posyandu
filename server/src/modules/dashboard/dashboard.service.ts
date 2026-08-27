@@ -373,7 +373,14 @@ export const dashboardService = {
       detailPemeriksaan?: string | null;
     }> = [];
 
+    const activePeriode = await prisma.periodePelayanan.findFirst({
+      where: { posyanduId, status: 'AKTIF' },
+      orderBy: { tanggal: 'desc' },
+    });
+
     const now = new Date();
+    const targetMonth = activePeriode ? activePeriode.bulan : (now.getMonth() + 1);
+    const targetYear = activePeriode ? activePeriode.tahun : now.getFullYear();
 
     balitas.forEach((b) => {
       const birthDate = new Date(b.tanggalLahir);
@@ -381,7 +388,12 @@ export const dashboardService = {
       const latestExam = b.pemeriksaans[0];
       const detailInfo = `Usia ${ageMonths} Bln • Ibu: ${b.namaIbu}`;
 
-      if (latestExam) {
+      const examDate = latestExam ? new Date(latestExam.tanggalPeriksa) : null;
+      const isExamInCurrentPeriod = examDate && 
+        (examDate.getMonth() + 1) === targetMonth && 
+        examDate.getFullYear() === targetYear;
+
+      if (latestExam && isExamInCurrentPeriod) {
         balitaSelesaiList.push({
           id: b.id,
           nama: b.nama,
@@ -399,7 +411,7 @@ export const dashboardService = {
           detailInfo,
           statusPeriksa: 'Belum Mengisi Data',
           tanggalPeriksa: null,
-          detailPemeriksaan: 'Belum ada data pemeriksaan',
+          detailPemeriksaan: 'Belum ada data pemeriksaan periode ini',
         });
       }
     });
@@ -410,7 +422,12 @@ export const dashboardService = {
       const latestExam = l.pemeriksaans[0];
       const detailInfo = `Usia ${ageYears} Thn • ${l.rtRw || 'RT/RW -'}`;
 
-      if (latestExam) {
+      const examDate = latestExam ? new Date(latestExam.tanggalPeriksa) : null;
+      const isExamInCurrentPeriod = examDate && 
+        (examDate.getMonth() + 1) === targetMonth && 
+        examDate.getFullYear() === targetYear;
+
+      if (latestExam && isExamInCurrentPeriod) {
         lansiaSelesaiList.push({
           id: l.id,
           nama: l.nama,

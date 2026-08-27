@@ -66,9 +66,9 @@ export default function PeriodeModal({
       fetchPeriodes();
       setErrorMsg("");
       setSuccessMsg("");
-      setShowAddForm(false);
+      setShowAddForm(!activePeriode);
     }
-  }, [isOpen, posyanduId]);
+  }, [isOpen, posyanduId, activePeriode]);
 
   // Update automatic nama when month/year changes
   const handleBulanYearChange = (newBulan: number, newTahun: number) => {
@@ -167,9 +167,13 @@ export default function PeriodeModal({
               <h4 className="font-extrabold text-sm text-saas-dark">
                 {activePeriode ? activePeriode.nama : "Belum Ada Periode Aktif"}
               </h4>
-              {activePeriode && (
+              {activePeriode ? (
                 <p className="text-[11px] text-saas-muted font-medium mt-0.5">
                   Pelaksanaan: {new Date(activePeriode.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                </p>
+              ) : (
+                <p className="text-[11px] text-amber-600 font-semibold mt-0.5">
+                  ⚠️ Belum ada periode aktif untuk bulan ini. Mohon buat periode baru di bawah ini.
                 </p>
               )}
             </div>
@@ -189,7 +193,7 @@ export default function PeriodeModal({
               </>
             ) : (
               <>
-                <Plus className="w-4 h-4" /> + Buka Periode Baru
+                <Plus className="w-4 h-4" /> Buka Periode Baru
               </>
             )}
           </button>

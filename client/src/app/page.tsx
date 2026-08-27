@@ -108,6 +108,9 @@ export default function Home() {
       const res = await periodeApi.getActive(posyanduId);
       if (res.success) {
         setActivePeriode(res.data);
+        if (!res.data) {
+          setIsPeriodeModalOpen(true);
+        }
       }
     } catch (err) {
       console.error("Gagal memuat periode pelayanan aktif:", err);
@@ -440,7 +443,7 @@ export default function Home() {
           />
         );
       case "Riwayat":
-        return <RiwayatModule posyanduId={posyanduId} />;
+        return <RiwayatModule posyanduId={posyanduId} activePeriode={activePeriode} />;
       case "Laporan":
         return <LaporanModule posyanduId={posyanduId} />;
       case "Manajemen Akun":
