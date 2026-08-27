@@ -628,14 +628,14 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all duration-200 select-none ${
                 activeTab === "Balita"
-                  ? "bg-white text-saas-primary shadow-sm scale-[1.02]"
+                  ? "bg-saas-primary text-white shadow-sm shadow-teal-500/20 scale-[1.02]"
                   : "text-saas-muted hover:text-saas-dark"
               }`}
             >
               <BalitaIcon className="w-4 h-4" />
               <span>Balita</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                activeTab === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-gray-200/70 text-saas-muted"
+                activeTab === "Balita" ? "bg-white/20 text-white" : "bg-gray-200/70 text-saas-muted"
               }`}>
                 {pasiens.filter((p) => p.tipe === "Balita").length}
               </span>
@@ -653,14 +653,14 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all duration-200 select-none ${
                 activeTab === "Lansia"
-                  ? "bg-white text-indigo-600 shadow-sm scale-[1.02]"
+                  ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/20 scale-[1.02]"
                   : "text-saas-muted hover:text-saas-dark"
               }`}
             >
               <LansiaIcon className="w-4 h-4" />
               <span>Lansia</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                activeTab === "Lansia" ? "bg-indigo-50 text-indigo-600" : "bg-gray-200/70 text-saas-muted"
+                activeTab === "Lansia" ? "bg-white/20 text-white" : "bg-gray-200/70 text-saas-muted"
               }`}>
                 {pasiens.filter((p) => p.tipe === "Lansia").length}
               </span>
@@ -670,6 +670,7 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
           {/* Action Button sesuai halaman aktif */}
           {activeTab === "Balita" ? (
             <button
+              type="button"
               onClick={() => setShowAddBalitaModal(true)}
               className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-input shadow-md shadow-teal-500/10 transition-all shrink-0"
             >
@@ -677,6 +678,7 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
             </button>
           ) : (
             <button
+              type="button"
               onClick={() => setShowAddLansiaModal(true)}
               className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-input shadow-md shadow-indigo-500/10 transition-all shrink-0"
             >
@@ -720,6 +722,7 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
             {filteredPasiens.length > 0 ? (
               filteredPasiens.map((p) => {
                 const isSelected = selectedPasien?.id === p.id;
+                const isFemale = p.jenisKelamin === "P" || p.jenisKelamin === "Perempuan";
                 return (
                   <button
                     key={p.id}
@@ -737,25 +740,29 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-colors ${
                         isSelected 
-                          ? p.tipe === "Balita" ? "bg-saas-primary text-white" : "bg-indigo-600 text-white"
-                          : p.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-indigo-50 text-indigo-600"
+                          ? isFemale ? "bg-pink-200/80 border-pink-300" : "bg-blue-200/80 border-blue-300"
+                          : isFemale ? "bg-pink-50 border-pink-100" : "bg-blue-50 border-blue-100"
                       }`}>
-                        {p.tipe === "Balita" ? <BalitaIcon className="w-4 h-4" /> : <LansiaIcon className="w-4 h-4" />}
+                        {p.tipe === "Balita" ? <BalitaIcon className="w-4 h-4" gender={p.jenisKelamin} /> : <LansiaIcon className="w-4 h-4" gender={p.jenisKelamin} />}
                       </div>
                       <div>
                         <p className={`font-bold transition-colors ${
                           isSelected 
-                            ? p.tipe === "Balita" ? "text-saas-primary" : "text-indigo-600" 
+                            ? p.tipe === "Balita" ? "text-teal-900" : "text-indigo-950" 
                             : "text-saas-dark group-hover:text-saas-primary"
                         }`}>{p.nama}</p>
-                        <p className="text-[10px] text-saas-muted font-semibold mt-0.5">{p.subInfo}</p>
+                        <p className={`text-[10px] font-semibold mt-0.5 ${
+                          isSelected
+                            ? p.tipe === "Balita" ? "text-teal-700" : "text-indigo-800"
+                            : "text-saas-muted"
+                        }`}>{p.subInfo}</p>
                       </div>
                     </div>
                     <ChevronRight className={`w-4 h-4 transition-transform ${
                       isSelected 
-                        ? p.tipe === "Balita" ? "text-saas-primary translate-x-1" : "text-indigo-600 translate-x-1" 
+                        ? p.tipe === "Balita" ? "text-teal-700 translate-x-1" : "text-indigo-700 translate-x-1" 
                         : "text-saas-muted group-hover:translate-x-1"
                     }`} />
                   </button>
@@ -825,7 +832,7 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                         selectedPasien.tipe === "Balita" ? "bg-teal-100 text-saas-primary" : "bg-indigo-100 text-indigo-600"
                       }`}>
-                        {selectedPasien.tipe === "Balita" ? <BalitaIcon className="w-4 h-4" /> : <LansiaIcon className="w-4 h-4" />}
+                        {selectedPasien.tipe === "Balita" ? <BalitaIcon className="w-4 h-4" gender={selectedPasien.jenisKelamin} /> : <LansiaIcon className="w-4 h-4" gender={selectedPasien.jenisKelamin} />}
                       </div>
                       <div>
                         <p className="font-extrabold text-saas-dark text-sm leading-none">{selectedPasien.nama}</p>

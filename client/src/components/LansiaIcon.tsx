@@ -6,6 +6,7 @@ interface LansiaIconProps extends React.SVGProps<SVGSVGElement> {
   weight?: string;
   alt?: string;
   strokeWidth?: number;
+  gender?: "L" | "P" | "Laki-laki" | "Perempuan" | string;
 }
 
 export default function LansiaIcon({
@@ -13,18 +14,34 @@ export default function LansiaIcon({
   size,
   weight,
   strokeWidth = 18,
-  fill = "currentColor",
-  stroke = "currentColor",
+  fill,
+  stroke,
+  gender,
   ...props
 }: LansiaIconProps) {
+  const isFemale = gender === "P" || gender === "Perempuan";
+  const iconPath = isFemale ? "/old-woman.svg" : "/old-man.svg";
+
+  if (gender) {
+    return (
+      <img
+        src={iconPath}
+        alt={isFemale ? "Lansia Perempuan" : "Lansia Laki-laki"}
+        style={{ width: size || undefined, height: size || undefined }}
+        className={`shrink-0 inline-block object-contain ${className}`}
+        {...props}
+      />
+    );
+  }
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 512 512"
       width={size || undefined}
       height={size || undefined}
-      fill={fill}
-      stroke={stroke}
+      fill={fill || "currentColor"}
+      stroke={stroke || "currentColor"}
       strokeWidth={strokeWidth}
       strokeLinejoin="round"
       strokeLinecap="round"

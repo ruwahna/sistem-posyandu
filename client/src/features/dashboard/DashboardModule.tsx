@@ -1075,7 +1075,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                             p.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-red-50 text-red-500"
                           }`}>
-                            {p.tipe === "Balita" ? <BalitaIcon className="w-4 h-4" /> : <LansiaIcon className="w-4 h-4" />}
+                            {p.tipe === "Balita" ? <BalitaIcon className="w-4 h-4" gender={p.jenisKelamin} /> : <LansiaIcon className="w-4 h-4" gender={p.jenisKelamin} />}
                           </div>
                           <div>
                             <p className="font-bold text-saas-dark group-hover:text-saas-primary transition-colors">{p.nama}</p>
@@ -1756,7 +1756,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                           className="w-9 h-9 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 font-bold shrink-0 hover:bg-amber-100 transition-colors cursor-pointer"
                           title={`Lihat Profil ${item.tipe}`}
                         >
-                          {item.tipe === "Balita" ? <BalitaIcon className="w-5 h-5" /> : <LansiaIcon className="w-5 h-5" />}
+                          {item.tipe === "Balita" ? <BalitaIcon className="w-5 h-5" gender={item.jenisKelamin} /> : <LansiaIcon className="w-5 h-5" gender={item.jenisKelamin} />}
                         </button>
                         <div>
                           <div className="flex items-center gap-2">
