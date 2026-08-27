@@ -911,7 +911,7 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center text-saas-primary">
-                    <BalitaIcon className="w-6 h-6" />
+                    <BalitaIcon className="w-6 h-6" gender={activeBalita.jenisKelamin} />
                   </div>
                   <div className="flex items-center gap-2">
                     <button

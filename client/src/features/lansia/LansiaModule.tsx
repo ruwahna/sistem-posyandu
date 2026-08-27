@@ -860,7 +860,7 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId 
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                    <LansiaIcon className="w-6 h-6" />
+                    <LansiaIcon className="w-6 h-6" gender={activeLansia.jenisKelamin} />
                   </div>
                   <div className="flex items-center gap-2">
                     <button
