@@ -416,6 +416,7 @@ export default function Home() {
             searchQuery={searchQuery}
             onNavigate={handleDashboardNavigate}
             posyanduId={posyanduId}
+            activePeriode={activePeriode}
           />
         );
       case "Pelayanan":

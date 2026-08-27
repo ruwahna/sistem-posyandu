@@ -30,7 +30,6 @@ export const lansiaService = {
           include: {
             pemeriksaans: {
               orderBy: { tanggalPeriksa: 'desc' },
-              take: 1,
             },
           },
         }),
@@ -52,7 +51,6 @@ export const lansiaService = {
         include: {
           pemeriksaans: {
             orderBy: { tanggalPeriksa: 'desc' },
-            take: 1,
           },
         },
       });

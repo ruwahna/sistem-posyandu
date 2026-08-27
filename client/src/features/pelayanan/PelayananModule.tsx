@@ -35,6 +35,8 @@ interface Pasien {
   detail2: string; // Address
   tanggalLahir?: string;
   jenisKelamin?: "L" | "P";
+  isCheckedInCurrentPeriod?: boolean;
+  currentPeriodExam?: any;
 }
 
 
@@ -118,31 +120,54 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
 
   const fetchPatients = () => {
     setIsLoading(true);
+    const targetMonth = activePeriode ? activePeriode.bulan : (new Date().getMonth() + 1);
+    const targetYear = activePeriode ? activePeriode.tahun : new Date().getFullYear();
+
     Promise.all([
       balitaApi.getAll(posyanduId),
       lansiaApi.getAll(posyanduId)
     ])
       .then(([balitaRes, lansiaRes]) => {
-        const balitas: Pasien[] = (balitaRes.data || []).map((b: Balita) => ({
-          id: b.id,
-          nama: b.nama,
-          tipe: "Balita",
-          subInfo: `Usia ${b.usiaBulan || calculateAgeInMonths(b.tanggalLahir, "2026-07-28")} Bulan`,
-          detail1: b.namaIbu,
-          detail2: b.alamat,
-          tanggalLahir: b.tanggalLahir,
-          jenisKelamin: b.jenisKelamin,
-        }));
-        const lansias: Pasien[] = (lansiaRes.data || []).map((l: Lansia) => ({
-          id: l.id,
-          nama: l.nama,
-          tipe: "Lansia",
-          subInfo: `Usia ${l.usiaTahun || calculateAgeInYears(l.tanggalLahir, "2026-07-28")} Tahun`,
-          detail1: `BPJS: ${l.noBpjs || "Tidak Ada"}`,
-          detail2: l.alamat,
-          tanggalLahir: l.tanggalLahir,
-          jenisKelamin: l.jenisKelamin,
-        }));
+        const balitas: Pasien[] = (balitaRes.data || []).map((b: Balita) => {
+          const currentExam = (b.pemeriksaans || []).find((exam) => {
+            const d = new Date(exam.tanggalPeriksa);
+            return (d.getMonth() + 1) === targetMonth && d.getFullYear() === targetYear;
+          });
+
+          return {
+            id: b.id,
+            nama: b.nama,
+            tipe: "Balita",
+            subInfo: `Usia ${b.usiaBulan || calculateAgeInMonths(b.tanggalLahir, "2026-07-28")} Bulan`,
+            detail1: b.namaIbu,
+            detail2: b.alamat,
+            tanggalLahir: b.tanggalLahir,
+            jenisKelamin: b.jenisKelamin,
+            isCheckedInCurrentPeriod: Boolean(currentExam),
+            currentPeriodExam: currentExam,
+          };
+        });
+
+        const lansias: Pasien[] = (lansiaRes.data || []).map((l: Lansia) => {
+          const currentExam = (l.pemeriksaans || []).find((exam) => {
+            const d = new Date(exam.tanggalPeriksa);
+            return (d.getMonth() + 1) === targetMonth && d.getFullYear() === targetYear;
+          });
+
+          return {
+            id: l.id,
+            nama: l.nama,
+            tipe: "Lansia",
+            subInfo: `Usia ${l.usiaTahun || calculateAgeInYears(l.tanggalLahir, "2026-07-28")} Tahun`,
+            detail1: `BPJS: ${l.noBpjs || "Tidak Ada"}`,
+            detail2: l.alamat,
+            tanggalLahir: l.tanggalLahir,
+            jenisKelamin: l.jenisKelamin,
+            isCheckedInCurrentPeriod: Boolean(currentExam),
+            currentPeriodExam: currentExam,
+          };
+        });
+
         setPasiens([...balitas, ...lansias]);
       })
       .catch(console.error)
@@ -153,7 +178,7 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
 
   useEffect(() => {
     fetchPatients();
-  }, [posyanduId]);
+  }, [posyanduId, activePeriode]);
 
   // Form Fields - Common (Checkup)
   const initialDate = activePeriode?.tanggal 
@@ -192,6 +217,74 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
   const [examKeluhan, setExamKeluhan] = useState("");
   const [examTindakan, setExamTindakan] = useState("");
 
+  // Pre-fill form jika pasien sudah memiliki data pemeriksaan di periode ini
+  useEffect(() => {
+    if (!selectedPasien) {
+      setExamBB("");
+      setExamTB("");
+      setExamLK("");
+      setExamLiLA("");
+      setExamVitA(false);
+      setExamAsi(false);
+      setExamCacing(false);
+      setExamImunisasi("");
+      setExamSistol("");
+      setExamDiastol("");
+      setExamGds("");
+      setExamLp("");
+      setExamCholesterol("");
+      setExamUricAcid("");
+      setExamKeluhan("");
+      setExamTindakan("");
+      return;
+    }
+
+    const exam = selectedPasien.currentPeriodExam;
+    if (exam) {
+      if (exam.tanggalPeriksa) {
+        setExamDate(new Date(exam.tanggalPeriksa).toISOString().slice(0, 10));
+      }
+      setExamBB(exam.beratBadan ? String(exam.beratBadan) : "");
+      setExamTB(exam.tinggiBadan ? String(exam.tinggiBadan) : "");
+
+      if (selectedPasien.tipe === "Balita") {
+        setExamLK(exam.lingkarKepala ? String(exam.lingkarKepala) : "");
+        setExamLiLA(exam.lingkarLengan ? String(exam.lingkarLengan) : "");
+        setExamKms(exam.statusKms || "N");
+        setExamVitA(Boolean(exam.vitaminA));
+        setExamAsi(Boolean(exam.asiEksklusif));
+        setExamCacing(Boolean(exam.obatCacing));
+        setExamImunisasi(exam.statusImunisasi || "");
+      } else {
+        setExamSistol(exam.tekananDarahSistol ? String(exam.tekananDarahSistol) : "");
+        setExamDiastol(exam.tekananDarahDiastol ? String(exam.tekananDarahDiastol) : "");
+        setExamGds(exam.gulaDarahSewaktu ? String(exam.gulaDarahSewaktu) : "");
+        setExamLp(exam.lingkarPerut ? String(exam.lingkarPerut) : "");
+        setExamCholesterol(exam.kolesterol ? String(exam.kolesterol) : "");
+        setExamUricAcid(exam.asamUrat ? String(exam.asamUrat) : "");
+        setExamKeluhan(exam.keluhan || "");
+        setExamTindakan(exam.tindakan || "");
+      }
+    } else {
+      setExamBB("");
+      setExamTB("");
+      setExamLK("");
+      setExamLiLA("");
+      setExamVitA(false);
+      setExamAsi(false);
+      setExamCacing(false);
+      setExamImunisasi("");
+      setExamSistol("");
+      setExamDiastol("");
+      setExamGds("");
+      setExamLp("");
+      setExamCholesterol("");
+      setExamUricAcid("");
+      setExamKeluhan("");
+      setExamTindakan("");
+    }
+  }, [selectedPasien]);
+
   // Otomatisasi Status Gizi Balita (Z-Score)
   useEffect(() => {
     if (!selectedPasien || selectedPasien.tipe !== "Balita" || !selectedPasien.tanggalLahir) return;
@@ -215,8 +308,9 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
   const [formWarning, setFormWarning] = useState("");
   const [successToast, setSuccessToast] = useState("");
 
-  // Filter Patients based on active page/tab & search query
+  // Filter Patients based on active page/tab, status periksa & search query
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"semua" | "selesai" | "belum">("semua");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -228,7 +322,13 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
   const filteredPasiens = pasiens.filter((p) => {
     const matchesSearch = p.nama.toLowerCase().includes(debouncedQuery.toLowerCase());
     const matchesType = p.tipe === activeTab;
-    return matchesSearch && matchesType;
+    const matchesStatus =
+      statusFilter === "semua"
+        ? true
+        : statusFilter === "selesai"
+        ? p.isCheckedInCurrentPeriod
+        : !p.isCheckedInCurrentPeriod;
+    return matchesSearch && matchesType && matchesStatus;
   });
 
   // Warning Check (Checkup)
@@ -366,6 +466,7 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
 
       setSessionLogs([newLog, ...sessionLogs]);
       setSuccessToast(`Pemeriksaan bulanan untuk ${selectedPasien.nama} berhasil disimpan ke database.`);
+      fetchPatients();
 
       setExamBB("");
       setExamTB("");
@@ -703,7 +804,7 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* KOLOM KIRI: Cari & Pilih Warga Sesuai Halaman Aktif */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 flex flex-col h-[600px] space-y-4">
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-sm text-saas-dark">
                 {activeTab === "Balita" ? "Pilih Balita" : "Pilih Lansia"}
@@ -712,11 +813,43 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
                 {filteredPasiens.length} Orang
               </span>
             </div>
-            <p className="text-[11px] text-saas-muted leading-normal">
-              {activeTab === "Balita"
-                ? "Cari nama balita yang akan dicatat penimbangannya."
-                : "Cari nama lansia yang akan dicatat skriningnya."}
-            </p>
+
+            {/* Tab Status Periksa */}
+            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={() => setStatusFilter("semua")}
+                className={`flex-1 py-1 text-center rounded-md transition-all ${
+                  statusFilter === "semua"
+                    ? "bg-white text-saas-dark shadow-sm"
+                    : "text-saas-muted hover:text-saas-dark"
+                }`}
+              >
+                Semua ({pasiens.filter((p) => p.tipe === activeTab).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("selesai")}
+                className={`flex-1 py-1 text-center rounded-md transition-all ${
+                  statusFilter === "selesai"
+                    ? "bg-white text-teal-700 shadow-sm"
+                    : "text-saas-muted hover:text-saas-dark"
+                }`}
+              >
+                Selesai ({pasiens.filter((p) => p.tipe === activeTab && p.isCheckedInCurrentPeriod).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("belum")}
+                className={`flex-1 py-1 text-center rounded-md transition-all ${
+                  statusFilter === "belum"
+                    ? "bg-white text-amber-700 shadow-sm"
+                    : "text-saas-muted hover:text-saas-dark"
+                }`}
+              >
+                Belum ({pasiens.filter((p) => p.tipe === activeTab && !p.isCheckedInCurrentPeriod).length})
+              </button>
+            </div>
           </div>
 
           <div className="relative">
@@ -751,7 +884,7 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
                         : "border-gray-100 hover:border-saas-primary/30 hover:bg-gray-50/50"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-colors ${
                         isSelected 
                           ? isFemale ? "bg-pink-200/80 border-pink-300" : "bg-blue-200/80 border-blue-300"
@@ -759,12 +892,23 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
                       }`}>
                         {p.tipe === "Balita" ? <BalitaIcon className="w-4 h-4" gender={p.jenisKelamin} /> : <LansiaIcon className="w-4 h-4" gender={p.jenisKelamin} />}
                       </div>
-                      <div>
-                        <p className={`font-bold transition-colors ${
-                          isSelected 
-                            ? p.tipe === "Balita" ? "text-teal-900" : "text-indigo-950" 
-                            : "text-saas-dark group-hover:text-saas-primary"
-                        }`}>{p.nama}</p>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className={`font-bold truncate transition-colors ${
+                            isSelected 
+                              ? p.tipe === "Balita" ? "text-teal-900" : "text-indigo-950" 
+                              : "text-saas-dark group-hover:text-saas-primary"
+                          }`}>{p.nama}</p>
+                          {p.isCheckedInCurrentPeriod ? (
+                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-teal-100 text-teal-700 border border-teal-200 shrink-0">
+                              Selesai
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-amber-50 text-amber-600 border border-amber-200/60 shrink-0">
+                              Belum
+                            </span>
+                          )}
+                        </div>
                         <p className={`text-[10px] font-semibold mt-0.5 ${
                           isSelected
                             ? p.tipe === "Balita" ? "text-teal-700" : "text-indigo-800"

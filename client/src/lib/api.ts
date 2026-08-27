@@ -276,6 +276,7 @@ export interface ItemAktivitasKunjungan {
   id: string;
   nama: string;
   tipe: 'Balita' | 'Lansia';
+  jenisKelamin?: 'L' | 'P' | string;
   detailInfo: string;
   statusPeriksa: 'Selesai Periksa' | 'Belum Mengisi Data';
   tanggalPeriksa?: string | null;

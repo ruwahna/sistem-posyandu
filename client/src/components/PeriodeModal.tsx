@@ -228,9 +228,15 @@ export default function PeriodeModal({
                   onChange={(e) => handleBulanYearChange(Number(e.target.value), tahun)}
                   className="w-full px-3 py-2 bg-white border border-gray-200 rounded-input text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary"
                 >
-                  {NAMA_BULAN.map((m, idx) => (
-                    <option key={m} value={idx + 1}>{m}</option>
-                  ))}
+                  {NAMA_BULAN.map((m, idx) => {
+                    const monthNum = idx + 1;
+                    const isFuture = tahun > currentYearNum || (tahun === currentYearNum && monthNum > (currentMonthIdx + 1));
+                    return (
+                      <option key={m} value={monthNum} disabled={isFuture}>
+                        {m} {isFuture ? "(Belum Dapat Dibuat)" : ""}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -238,11 +244,17 @@ export default function PeriodeModal({
                 <label className="block text-[11px] font-bold text-saas-dark mb-1">Tahun</label>
                 <select
                   value={tahun}
-                  onChange={(e) => handleBulanYearChange(bulan, Number(e.target.value))}
+                  onChange={(e) => {
+                    const newYear = Number(e.target.value);
+                    const newBulan = newYear === currentYearNum && bulan > (currentMonthIdx + 1) ? (currentMonthIdx + 1) : bulan;
+                    handleBulanYearChange(newBulan, newYear);
+                  }}
                   className="w-full px-3 py-2 bg-white border border-gray-200 rounded-input text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary"
                 >
                   {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
-                    <option key={y} value={y}>{y}</option>
+                    <option key={y} value={y} disabled={y > currentYearNum}>
+                      {y} {y > currentYearNum ? "(Masa Mendatang)" : ""}
+                    </option>
                   ))}
                 </select>
               </div>
