@@ -14,18 +14,30 @@ export const periodeService = {
   },
 
   async getActiveByPosyandu(posyanduId: string) {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentYear = now.getFullYear();
+
     const active = await prisma.periodePelayanan.findFirst({
       where: { posyanduId, status: 'AKTIF' },
       orderBy: { tanggal: 'desc' },
     });
 
-    if (active) return active;
+    if (active) {
+      // Check if the active period matches current month and year
+      if (active.bulan === currentMonth && active.tahun === currentYear) {
+        return active;
+      }
 
-    // Fallback: return the latest period if no active status
-    return prisma.periodePelayanan.findFirst({
-      where: { posyanduId },
-      orderBy: { tanggal: 'desc' },
-    });
+      // If active period is from a past month/year, auto-close it
+      await prisma.periodePelayanan.update({
+        where: { id: active.id },
+        data: { status: 'SELESAI' },
+      });
+    }
+
+    // Return null if no active period exists for the current month
+    return null;
   },
 
   async create(posyanduId: string, input: CreatePeriodeInput) {

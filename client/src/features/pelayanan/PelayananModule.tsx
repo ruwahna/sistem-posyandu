@@ -554,7 +554,11 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
       )}
 
       {/* Banner Periode Pelayanan Aktif */}
-      <div className="bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 text-white rounded-card shadow-md p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className={`rounded-card shadow-md p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+        activePeriode 
+          ? "bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 text-white"
+          : "bg-gradient-to-r from-amber-600 via-amber-700 to-orange-700 text-white"
+      }`}>
         <div className="flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/20">
             <Calendar className="w-6 h-6 text-white" />
@@ -562,21 +566,29 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-extrabold tracking-wider uppercase bg-white/20 text-white px-2 py-0.5 rounded-full border border-white/20">
-                Periode Pelayanan Aktif
+                Periode Pelayanan
               </span>
-              {activePeriode?.status === "AKTIF" && (
+              {activePeriode?.status === "AKTIF" ? (
                 <span className="text-[10px] font-bold bg-emerald-400/30 text-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300/30">
                   AKTIF
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold bg-amber-400/30 text-amber-100 px-2 py-0.5 rounded-full border border-amber-300/30">
+                  BELUM ADA PERIODE AKTIF
                 </span>
               )}
             </div>
             <h3 className="text-lg font-extrabold tracking-tight mt-1 text-white">
-              {activePeriode ? activePeriode.nama : "Belum Ada Periode Aktif"}
+              {activePeriode ? activePeriode.nama : "Periode Pelayanan Bulan Ini Belum Dibuat"}
             </h3>
-            {activePeriode && (
+            {activePeriode ? (
               <p className="text-xs text-teal-100 font-medium mt-0.5">
                 Tanggal Pelaksanaan: <span className="font-bold text-white">{new Date(activePeriode.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</span>
                 {activePeriode.catatan ? ` • ${activePeriode.catatan}` : ""}
+              </p>
+            ) : (
+              <p className="text-xs text-amber-100 font-medium mt-0.5">
+                Harap buat atau pilih periode baru bulan ini untuk memulai pencatatan pelayanan.
               </p>
             )}
           </div>
