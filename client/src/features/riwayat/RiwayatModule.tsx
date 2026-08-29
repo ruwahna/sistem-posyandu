@@ -68,6 +68,14 @@ export default function RiwayatModule({ posyanduId, activePeriode }: RiwayatModu
     activePeriode ? activePeriode.tahun : "semua"
   );
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, typeFilter, statusFilter, selectedBulan, selectedTahun]);
+
   // Tab mode: "tabel" vs "grafik"
   const [viewMode, setViewMode] = useState<"tabel" | "grafik">("tabel");
 
@@ -617,90 +625,173 @@ export default function RiwayatModule({ posyanduId, activePeriode }: RiwayatModu
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.length > 0 ? (
-                    logs.map((log) => (
-                      <tr
-                        key={log.id}
-                        className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm"
-                      >
-                        <td className="py-4 px-3 font-bold text-saas-dark whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-3.5 h-3.5 text-saas-muted shrink-0" />
-                            {formatTanggalIndonesia(log.tanggal)}
-                          </div>
-                        </td>
-                        <td className="py-4 px-3 whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={() => openDetailModal(log)}
-                            className="font-extrabold text-saas-dark hover:text-saas-primary text-left transition-colors cursor-pointer hover:underline"
-                          >
-                            {log.nama}
-                          </button>
-                        </td>
-                        <td className="py-4 px-3 font-semibold text-saas-muted whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            {log.tipe === "Balita" ? (
-                              <BalitaIcon className="w-3.5 h-3.5 text-saas-primary shrink-0" />
-                            ) : (
-                              <LansiaIcon className="w-3.5 h-3.5 shrink-0" />
-                            )}
-                            {log.tipe}
-                          </div>
-                        </td>
-                        <td className="py-4 px-3 text-xs font-semibold text-saas-dark/95 leading-normal max-w-xs truncate whitespace-nowrap">
-                          {log.parameter}
-                        </td>
-                        <td className="py-4 px-3 whitespace-nowrap">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
-                              log.statusType === "success"
-                                ? "bg-trend-successBg text-trend-successText"
-                                : log.statusType === "warning"
-                                ? "bg-trend-dangerBg text-trend-dangerText"
-                                : "bg-blue-50 text-saas-primary"
-                            }`}
-                          >
-                            {log.statusType === "success" && <CheckCircle2 className="w-3 h-3 shrink-0" />}
-                            {log.statusType === "warning" && <AlertCircle className="w-3 h-3 shrink-0" />}
-                            {log.statusType === "info" && <Clock className="w-3 h-3 shrink-0" />}
-                            {log.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-3 text-xs text-saas-muted font-bold whitespace-nowrap">{log.petugas}</td>
-                        <td className="py-4 px-3 text-right whitespace-nowrap">
-                          <ActionMenu
-                            items={[
-                              {
-                                label: "Lihat Detail",
-                                icon: <Eye className="w-4 h-4" />,
-                                onClick: () => openDetailModal(log)
-                              },
-                              {
-                                label: "Edit Record",
-                                icon: <Edit2 className="w-4 h-4" />,
-                                onClick: () => openEditModal(log)
-                              },
-                              {
-                                label: "Hapus Record",
-                                icon: <Trash2 className="w-4 h-4" />,
-                                variant: "danger",
-                                onClick: () => openDeleteModal(log)
-                              }
-                            ]}
-                          />
+                  {(() => {
+                    const filteredLogs = logs.filter((log) => {
+                      if (!query) return true;
+                      const q = query.toLowerCase();
+                      return (
+                        log.nama.toLowerCase().includes(q) ||
+                        log.parameter.toLowerCase().includes(q) ||
+                        log.status.toLowerCase().includes(q) ||
+                        log.petugas.toLowerCase().includes(q)
+                      );
+                    });
+
+                    const totalPages = Math.ceil(filteredLogs.length / itemsPerPage) || 1;
+                    const paginatedLogs = filteredLogs.slice(
+                      (currentPage - 1) * itemsPerPage,
+                      currentPage * itemsPerPage
+                    );
+
+                    return paginatedLogs.length > 0 ? (
+                      paginatedLogs.map((log) => (
+                        <tr
+                          key={log.id}
+                          className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm"
+                        >
+                          <td className="py-4 px-3 font-bold text-saas-dark whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3.5 h-3.5 text-saas-muted shrink-0" />
+                              {formatTanggalIndonesia(log.tanggal)}
+                            </div>
+                          </td>
+                          <td className="py-4 px-3 whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => openDetailModal(log)}
+                              className="font-extrabold text-saas-dark hover:text-saas-primary text-left transition-colors cursor-pointer hover:underline"
+                            >
+                              {log.nama}
+                            </button>
+                          </td>
+                          <td className="py-4 px-3 font-semibold text-saas-muted whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              {log.tipe === "Balita" ? (
+                                <BalitaIcon className="w-3.5 h-3.5 text-saas-primary shrink-0" />
+                              ) : (
+                                <LansiaIcon className="w-3.5 h-3.5 shrink-0" />
+                              )}
+                              {log.tipe}
+                            </div>
+                          </td>
+                          <td className="py-4 px-3 text-xs font-semibold text-saas-dark/95 leading-normal max-w-xs truncate whitespace-nowrap">
+                            {log.parameter}
+                          </td>
+                          <td className="py-4 px-3 whitespace-nowrap">
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
+                                log.statusType === "success"
+                                  ? "bg-trend-successBg text-trend-successText"
+                                  : log.statusType === "warning"
+                                  ? "bg-trend-dangerBg text-trend-dangerText"
+                                  : "bg-blue-50 text-saas-primary"
+                              }`}
+                            >
+                              {log.statusType === "success" && <CheckCircle2 className="w-3 h-3 shrink-0" />}
+                              {log.statusType === "warning" && <AlertCircle className="w-3 h-3 shrink-0" />}
+                              {log.statusType === "info" && <Clock className="w-3 h-3 shrink-0" />}
+                              {log.status}
+                            </span>
+                          </td>
+                          <td className="py-4 px-3 text-xs text-saas-muted font-bold whitespace-nowrap">{log.petugas}</td>
+                          <td className="py-4 px-3 text-right whitespace-nowrap">
+                            <ActionMenu
+                              items={[
+                                {
+                                  label: "Lihat Detail",
+                                  icon: <Eye className="w-4 h-4" />,
+                                  onClick: () => openDetailModal(log)
+                                },
+                                {
+                                  label: "Edit Record",
+                                  icon: <Edit2 className="w-4 h-4" />,
+                                  onClick: () => openEditModal(log)
+                                },
+                                {
+                                  label: "Hapus Record",
+                                  icon: <Trash2 className="w-4 h-4" />,
+                                  variant: "danger",
+                                  onClick: () => openDeleteModal(log)
+                                }
+                              ]}
+                            />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-xs text-saas-muted font-medium whitespace-nowrap">
+                          Tidak ada catatan riwayat pemeriksaan yang cocok.
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="py-12 text-center text-xs text-saas-muted font-medium whitespace-nowrap">
-                        Tidak ada catatan riwayat pemeriksaan yang cocok.
-                      </td>
-                    </tr>
-                  )}
+                    );
+                  })()}
                 </tbody>
               </table>
+
+              {/* Pagination Controls */}
+              {(() => {
+                const filteredLogs = logs.filter((log) => {
+                  if (!query) return true;
+                  const q = query.toLowerCase();
+                  return (
+                    log.nama.toLowerCase().includes(q) ||
+                    log.parameter.toLowerCase().includes(q) ||
+                    log.status.toLowerCase().includes(q) ||
+                    log.petugas.toLowerCase().includes(q)
+                  );
+                });
+                const totalPages = Math.ceil(filteredLogs.length / itemsPerPage) || 1;
+
+                return filteredLogs.length > 0 ? (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100 text-xs">
+                    <span className="text-saas-muted font-medium">
+                      Menampilkan{" "}
+                      <span className="text-saas-dark font-bold">
+                        {Math.min((currentPage - 1) * itemsPerPage + 1, filteredLogs.length)}
+                      </span>{" "}
+                      s/d{" "}
+                      <span className="text-saas-dark font-bold">
+                        {Math.min(currentPage * itemsPerPage, filteredLogs.length)}
+                      </span>{" "}
+                      dari{" "}
+                      <span className="text-saas-dark font-bold">{filteredLogs.length}</span> data
+                    </span>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1.5 rounded-lg border border-gray-200 text-saas-dark font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      >
+                        &larr; Prev
+                      </button>
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
+                            currentPage === p
+                              ? "bg-saas-primary text-white shadow-xs"
+                              : "text-saas-muted hover:bg-gray-100"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1.5 rounded-lg border border-gray-200 text-saas-dark font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      >
+                        Next &rarr;
+                      </button>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           )}
         </div>

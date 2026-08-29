@@ -122,6 +122,13 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
 
   // Session Log State
   const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
+  const [sessionPage, setSessionPage] = useState(1);
+  const sessionItemsPerPage = 5;
+
+  useEffect(() => {
+    setSessionPage(1);
+  }, [activeTab, activePeriode]);
+
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchPatients = () => {
@@ -1427,74 +1434,113 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
       <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
-            <h3 className="font-bold text-base text-saas-dark">Pencatatan Sesi Pelayanan Periode Ini</h3>
-            <p className="text-xs text-saas-muted mt-0.5">Daftar warga yang sudah selesai dimasukkan datanya dalam sesi pelayanan periode ini.</p>
-          </div>
-          <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100/70">
-            {(["Semua", "Balita", "Lansia"] as const).map((t) => {
-              const count = t === "Semua" ? sessionLogs.length : sessionLogs.filter((s) => s.tipe === t).length;
-              return (
-                <button
-                  key={t}
-                  onClick={() => setSessionLogFilter(t)}
-                  className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${
-                    sessionLogFilter === t
-                      ? "bg-white text-saas-dark shadow-xs"
-                      : "text-saas-muted hover:text-saas-dark"
-                  }`}
-                >
-                  {t} ({count})
-                </button>
-              );
-            })}
+            <h3 className="font-bold text-base text-saas-dark">Pencatatan Sesi Pelayanan Periode Ini ({activeTab})</h3>
+            <p className="text-xs text-saas-muted mt-0.5">Daftar {activeTab.toLowerCase()} yang sudah selesai dimasukkan datanya dalam sesi pelayanan periode ini.</p>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          {sessionLogs.filter((log) => sessionLogFilter === "Semua" || log.tipe === sessionLogFilter).length > 0 ? (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
-                  <th className="pb-3">Nama</th>
-                  <th className="pb-3">Kategori</th>
-                  <th className="pb-3">Hasil Pengukuran</th>
-                  <th className="pb-3">Status</th>
-                  <th className="pb-3 text-right">Jam Input</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sessionLogs
-                  .filter((log) => sessionLogFilter === "Semua" || log.tipe === sessionLogFilter)
-                  .map((log) => (
-                    <tr key={log.id} className="border-b border-gray-50 last:border-b-0 text-xs text-saas-dark">
-                      <td className="py-3.5 font-bold">{log.nama}</td>
-                      <td className="py-3.5 text-saas-muted font-semibold">
-                        <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
-                          log.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-indigo-50 text-indigo-600"
-                        }`}>
-                          {log.tipe}
-                        </span>
-                      </td>
-                      <td className="py-3.5 text-saas-muted font-semibold">{log.summary}</td>
-                      <td className="py-3.5">
-                        <span className={`px-2 py-0.5 rounded-full font-bold ${
-                          log.status.includes("Normal") 
-                            ? "bg-trend-successBg text-trend-successText" 
-                            : "bg-trend-dangerBg text-trend-dangerText"
-                        }`}>
-                          {log.status}
-                        </span>
-                      </td>
-                      <td className="py-3.5 text-right font-bold text-saas-muted">{log.waktu}</td>
+          {(() => {
+            const filteredSessionLogs = sessionLogs.filter((log) => log.tipe === activeTab);
+            const totalSessionPages = Math.ceil(filteredSessionLogs.length / sessionItemsPerPage) || 1;
+            const paginatedSessionLogs = filteredSessionLogs.slice(
+              (sessionPage - 1) * sessionItemsPerPage,
+              sessionPage * sessionItemsPerPage
+            );
+
+            return filteredSessionLogs.length > 0 ? (
+              <>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
+                      <th className="pb-3">Nama</th>
+                      <th className="pb-3">Kategori</th>
+                      <th className="pb-3">Hasil Pengukuran</th>
+                      <th className="pb-3">Status</th>
+                      <th className="pb-3 text-right">Jam Input</th>
                     </tr>
-                  ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="text-center text-xs text-saas-muted py-8 font-medium">
-              Belum ada pemeriksaan yang dicatat dalam sesi ini.
-            </p>
-          )}
+                  </thead>
+                  <tbody>
+                    {paginatedSessionLogs.map((log) => (
+                      <tr key={log.id} className="border-b border-gray-50 last:border-b-0 text-xs text-saas-dark">
+                        <td className="py-3.5 font-bold">{log.nama}</td>
+                        <td className="py-3.5 text-saas-muted font-semibold">
+                          <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
+                            log.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-indigo-50 text-indigo-600"
+                          }`}>
+                            {log.tipe}
+                          </span>
+                        </td>
+                        <td className="py-3.5 text-saas-muted font-semibold">{log.summary}</td>
+                        <td className="py-3.5">
+                          <span className={`px-2 py-0.5 rounded-full font-bold ${
+                            log.status.includes("Normal") 
+                              ? "bg-trend-successBg text-trend-successText" 
+                              : "bg-trend-dangerBg text-trend-dangerText"
+                          }`}>
+                            {log.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 text-right font-bold text-saas-muted">{log.waktu}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Pagination Controls */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100 text-xs">
+                  <span className="text-saas-muted font-medium">
+                    Menampilkan{" "}
+                    <span className="text-saas-dark font-bold">
+                      {Math.min((sessionPage - 1) * sessionItemsPerPage + 1, filteredSessionLogs.length)}
+                    </span>{" "}
+                    s/d{" "}
+                    <span className="text-saas-dark font-bold">
+                      {Math.min(sessionPage * sessionItemsPerPage, filteredSessionLogs.length)}
+                    </span>{" "}
+                    dari{" "}
+                    <span className="text-saas-dark font-bold">{filteredSessionLogs.length}</span> data
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setSessionPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={sessionPage === 1}
+                      className="px-3 py-1.5 rounded-lg border border-gray-200 text-saas-dark font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      &larr; Prev
+                    </button>
+                    
+                    {Array.from({ length: totalSessionPages }, (_, i) => i + 1).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setSessionPage(p)}
+                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
+                          sessionPage === p
+                            ? "bg-saas-primary text-white shadow-xs"
+                            : "text-saas-muted hover:bg-gray-100"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => setSessionPage((prev) => Math.min(prev + 1, totalSessionPages))}
+                      disabled={sessionPage === totalSessionPages}
+                      className="px-3 py-1.5 rounded-lg border border-gray-200 text-saas-dark font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      Next &rarr;
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-center text-xs text-saas-muted py-8 font-medium">
+                Belum ada pemeriksaan yang dicatat dalam sesi periode ini.
+              </p>
+            );
+          })()}
         </div>
       </div>
 
