@@ -100,20 +100,6 @@ export const riwayatService = {
 
     const results: ItemRiwayat[] = [];
 
-    // Construct Timezone-Safe Filter Date Range
-    let dateFilter: { gte?: Date; lte?: Date } | undefined = undefined;
-    const targetTahun = tahun || (bulan ? new Date().getFullYear() : undefined);
-
-    if (targetTahun) {
-      const startBulanIndex = bulan ? bulan - 1 : 0;
-      const endBulanNumber = bulan ? bulan : 12;
-
-      // Filter menggunakan Date.UTC agar cocok 100% dengan tipe @db.Date di PostgreSQL
-      const startDate = new Date(Date.UTC(targetTahun, startBulanIndex, 1, 0, 0, 0, 0));
-      const endDate = new Date(Date.UTC(targetTahun, endBulanNumber, 0, 23, 59, 59, 999));
-      dateFilter = { gte: startDate, lte: endDate };
-    }
-
     if (tipe === 'semua' || tipe === 'Balita') {
       const meBalita = await prisma.pemeriksaanBalita.findMany({
         where: {
@@ -121,7 +107,6 @@ export const riwayatService = {
             posyanduId,
             ...(search && { nama: { contains: search, mode: 'insensitive' } }),
           },
-          ...(dateFilter && { tanggalPeriksa: dateFilter }),
         },
         include: {
           balita: {
@@ -133,6 +118,15 @@ export const riwayatService = {
 
       for (const item of meBalita) {
         if (!item.balita) continue;
+
+        // Pengecekan Filter Bulan & Tahun Presisi (Timezone UTC Safe)
+        const itemDate = new Date(item.tanggalPeriksa);
+        const itemBulan = itemDate.getUTCMonth() + 1; // 1 - 12
+        const itemTahun = itemDate.getUTCFullYear();
+
+        if (bulan && itemBulan !== bulan) continue;
+        if (tahun && itemTahun !== tahun) continue;
+
         const isWarning = item.statusBbU === 'SK' || item.statusBbU === 'K' || item.statusTbU === 'SP' || item.statusTbU === 'P' || item.statusBbTb === 'SK' || item.statusBbTb === 'K' || item.statusBbTb === 'G';
         const statusType: 'success' | 'warning' = isWarning ? 'warning' : 'success';
 
@@ -180,7 +174,6 @@ export const riwayatService = {
             posyanduId,
             ...(search && { nama: { contains: search, mode: 'insensitive' } }),
           },
-          ...(dateFilter && { tanggalPeriksa: dateFilter }),
         },
         include: {
           lansia: {
@@ -192,6 +185,15 @@ export const riwayatService = {
 
       for (const item of meLansia) {
         if (!item.lansia) continue;
+
+        // Pengecekan Filter Bulan & Tahun Presisi (Timezone UTC Safe)
+        const itemDate = new Date(item.tanggalPeriksa);
+        const itemBulan = itemDate.getUTCMonth() + 1; // 1 - 12
+        const itemTahun = itemDate.getUTCFullYear();
+
+        if (bulan && itemBulan !== bulan) continue;
+        if (tahun && itemTahun !== tahun) continue;
+
         const isHipertensi = item.tekananDarahSistol >= 140 || item.tekananDarahDiastol >= 90;
         const isGdsTinggi = Number(item.gulaDarahSewaktu) >= 200;
         const isWarning = isHipertensi || isGdsTinggi;
@@ -252,7 +254,7 @@ export const riwayatService = {
     workbook.creator = 'Sistem Informasi Posyandu';
     workbook.created = new Date();
 
-    // Penentuan Subtitle Filter untuk Excel Header
+    // Subtitle Filter untuk Excel Header
     const filterInfoArr = [];
     if (filter.tipe && filter.tipe !== 'semua') filterInfoArr.push(`Kategori: ${filter.tipe}`);
     if (filter.bulan) filterInfoArr.push(`Bulan: ${NAMA_BULAN[filter.bulan - 1]}`);

@@ -915,28 +915,40 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId, a
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Kunjungan Terakhir Table */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 lg:col-span-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div>
-              <h3 className="font-bold text-base text-saas-dark">Riwayat Antrean & Kunjungan Hari Ini</h3>
-              <p className="text-xs text-saas-muted mt-0.5">Daftar pemeriksaan pelayanan posyandu terkini</p>
-            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
+              <div>
+                <h3 className="font-bold text-base text-saas-dark flex items-center gap-2">
+                  Riwayat Antrean & Kunjungan Terkini
+                </h3>
+                <p className="text-xs text-saas-muted mt-0.5">Umpan aktivitas pemeriksaan pelayanan posyandu terbaru</p>
+              </div>
 
-            <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-1 border border-gray-100/50">
-              {(["Semua", "Balita", "Lansia"] as const).map((tab) => (
+              <div className="flex items-center gap-3">
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`text-xs px-3.5 py-1.5 rounded-md font-bold transition-all ${
-                    activeTab === tab 
-                      ? "bg-white text-saas-primary shadow-sm" 
-                      : "text-saas-muted hover:text-saas-dark"
-                  }`}
+                  onClick={() => onNavigate("Riwayat")}
+                  className="text-xs font-bold text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100/70 border border-teal-200/60 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shrink-0"
+                  title="Buka Halaman Riwayat Lengkap"
                 >
-                  {tab}
+                  Lihat Semua di Riwayat &rarr;
                 </button>
-              ))}
+
+                <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-1 border border-gray-100/50">
+                  {(["Semua", "Balita", "Lansia"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`text-xs px-3.5 py-1.5 rounded-md font-bold transition-all ${
+                        activeTab === tab 
+                          ? "bg-white text-saas-primary shadow-sm" 
+                          : "text-saas-muted hover:text-saas-dark"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[600px]">
