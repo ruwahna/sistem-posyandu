@@ -88,9 +88,11 @@ interface LansiaModuleProps {
   posyanduId: string;
   searchQuery?: string;
   selectedId?: string;
+  onBack?: () => void;
+  backLabel?: string;
 }
 
-export default function LansiaModule({ posyanduId, searchQuery = "", selectedId }: LansiaModuleProps) {
+export default function LansiaModule({ posyanduId, searchQuery = "", selectedId, onBack, backLabel }: LansiaModuleProps) {
   const { user } = useAuth();
   const [lansias, setLansias] = useState<Lansia[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -888,10 +890,16 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId 
         <div className="space-y-8">
           {/* Back Button */}
           <button
-            onClick={() => setView("list")}
-            className="flex items-center gap-2 text-xs font-bold text-saas-muted hover:text-saas-dark transition-colors"
+            onClick={() => {
+              if (onBack) {
+                onBack();
+              } else {
+                setView("list");
+              }
+            }}
+            className="flex items-center gap-2 text-xs font-bold text-saas-muted hover:text-saas-dark transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Lansia
+            <ArrowLeft className="w-4 h-4" /> {backLabel || "Kembali ke Daftar Lansia"}
           </button>
 
           {/* Profile & Form Grid */}

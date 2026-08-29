@@ -138,9 +138,11 @@ interface BalitaModuleProps {
   onNavigateToPelayanan?: (id: string) => void;
   searchQuery?: string;
   selectedId?: string;
+  onBack?: () => void;
+  backLabel?: string;
 }
 
-export default function BalitaModule({ posyanduId, onNavigateToPelayanan, selectedId, searchQuery }: BalitaModuleProps) {
+export default function BalitaModule({ posyanduId, onNavigateToPelayanan, selectedId, searchQuery, onBack, backLabel }: BalitaModuleProps) {
   const { user } = useAuth();
   const [balitas, setBalitas] = useState<Balita[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -950,10 +952,16 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
         <div className="space-y-8">
           {/* Back Action Header */}
           <button
-            onClick={() => setView("list")}
-            className="flex items-center gap-2 text-xs font-bold text-saas-muted hover:text-saas-dark transition-colors"
+            onClick={() => {
+              if (onBack) {
+                onBack();
+              } else {
+                setView("list");
+              }
+            }}
+            className="flex items-center gap-2 text-xs font-bold text-saas-muted hover:text-saas-dark transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Balita
+            <ArrowLeft className="w-4 h-4" /> {backLabel || "Kembali ke Daftar Balita"}
           </button>
 
           {/* Profile Card & Input Pemeriksaan Grid */}

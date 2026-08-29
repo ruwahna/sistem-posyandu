@@ -71,6 +71,7 @@ export default function Home() {
   const [selectedLansiaId, setSelectedLansiaId] = useState<string | undefined>(undefined);
   const [showNotification, setShowNotification] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Overview");
+  const [navigationOrigin, setNavigationOrigin] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -398,14 +399,40 @@ export default function Home() {
   const handleDashboardNavigate = (menu: string, patientId?: string) => {
     const target = menu.toLowerCase();
     if (target === "balita") {
-      if (patientId) setSelectedBalitaId(patientId);
+      if (patientId) {
+        setSelectedBalitaId(patientId);
+        if (activeMenu !== "Balita") {
+          setNavigationOrigin(activeMenu);
+        }
+      }
       setActiveMenu("Balita");
     } else if (target === "lansia") {
-      if (patientId) setSelectedLansiaId(patientId);
+      if (patientId) {
+        setSelectedLansiaId(patientId);
+        if (activeMenu !== "Lansia") {
+          setNavigationOrigin(activeMenu);
+        }
+      }
       setActiveMenu("Lansia");
     } else {
       setActiveMenu(menu);
     }
+  };
+
+  const handleBackFromProfile = () => {
+    if (navigationOrigin) {
+      setActiveMenu(navigationOrigin);
+      setNavigationOrigin(null);
+    }
+  };
+
+  const getBackLabel = (defaultLabel: string) => {
+    if (!navigationOrigin) return defaultLabel;
+    if (navigationOrigin === "Overview") return "Kembali ke Dashboard";
+    if (navigationOrigin === "Laporan") return "Kembali ke Laporan Rekapan";
+    if (navigationOrigin === "Riwayat") return "Kembali ke Riwayat";
+    if (navigationOrigin === "Pelayanan") return "Kembali ke Pelayanan";
+    return `Kembali ke ${navigationOrigin}`;
   };
 
   const renderActiveView = () => {
@@ -434,6 +461,8 @@ export default function Home() {
             posyanduId={posyanduId}
             searchQuery={searchQuery}
             selectedId={selectedBalitaId}
+            onBack={handleBackFromProfile}
+            backLabel={getBackLabel("Kembali ke Daftar Balita")}
           />
         );
       case "Lansia":
@@ -442,6 +471,8 @@ export default function Home() {
             posyanduId={posyanduId}
             searchQuery={searchQuery}
             selectedId={selectedLansiaId}
+            onBack={handleBackFromProfile}
+            backLabel={getBackLabel("Kembali ke Daftar Lansia")}
           />
         );
       case "Riwayat":
@@ -474,6 +505,7 @@ export default function Home() {
     .toUpperCase();
 
   const handleMenuSelect = (menuName: string) => {
+    setNavigationOrigin(null);
     setActiveMenu(menuName);
     setIsMobileMenuOpen(false);
     setShowNotification(false);
