@@ -44,18 +44,73 @@ export interface ItemRiwayat {
   tindakan?: string;
 }
 
+const NAMA_BULAN = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+function getUsiaText(tanggalLahir?: string, tanggalPeriksa?: string, tipe?: string): string {
+  if (!tanggalLahir || !tanggalPeriksa) return '-';
+  const tLahir = new Date(tanggalLahir);
+  const tPeriksa = new Date(tanggalPeriksa);
+  let months = (tPeriksa.getFullYear() - tLahir.getFullYear()) * 12 + (tPeriksa.getMonth() - tLahir.getMonth());
+  if (tPeriksa.getDate() < tLahir.getDate()) months--;
+  if (months < 0) months = 0;
+  if (tipe === 'Balita') return `${months} bln`;
+  const years = Math.floor(months / 12);
+  return `${years} thn`;
+}
+
+function getStatusBbUText(code?: string): string {
+  if (!code) return '-';
+  switch (code) {
+    case 'SK': return 'Sangat Kurang';
+    case 'K': return 'Kurang';
+    case 'N': return 'Normal';
+    case 'L': return 'Lebih';
+    default: return code;
+  }
+}
+
+function getStatusTbUText(code?: string): string {
+  if (!code) return '-';
+  switch (code) {
+    case 'SP': return 'Sangat Pendek';
+    case 'P': return 'Pendek';
+    case 'N': return 'Normal';
+    case 'T': return 'Tinggi';
+    default: return code;
+  }
+}
+
+function getStatusBbTbText(code?: string): string {
+  if (!code) return '-';
+  switch (code) {
+    case 'SK': return 'Sangat Kurus';
+    case 'K': return 'Kurus';
+    case 'N': return 'Normal';
+    case 'G': return 'Gemuk';
+    default: return code;
+  }
+}
+
 export const riwayatService = {
   async getRiwayat(posyanduId: string, filter: FilterRiwayat): Promise<ItemRiwayat[]> {
     const { tipe = 'semua', search, status = 'semua', bulan, tahun } = filter;
 
     const results: ItemRiwayat[] = [];
 
+    // Construct Timezone-Safe Filter Date Range
     let dateFilter: { gte?: Date; lte?: Date } | undefined = undefined;
-    if (tahun) {
-      const startBulan = bulan ? bulan - 1 : 0;
-      const endBulan = bulan ? bulan : 12;
-      const startDate = new Date(tahun, startBulan, 1);
-      const endDate = new Date(tahun, endBulan, 0, 23, 59, 59);
+    const targetTahun = tahun || (bulan ? new Date().getFullYear() : undefined);
+
+    if (targetTahun) {
+      const startBulanIndex = bulan ? bulan - 1 : 0;
+      const endBulanNumber = bulan ? bulan : 12;
+
+      // Filter menggunakan Date.UTC agar cocok 100% dengan tipe @db.Date di PostgreSQL
+      const startDate = new Date(Date.UTC(targetTahun, startBulanIndex, 1, 0, 0, 0, 0));
+      const endDate = new Date(Date.UTC(targetTahun, endBulanNumber, 0, 23, 59, 59, 999));
       dateFilter = { gte: startDate, lte: endDate };
     }
 
@@ -81,12 +136,12 @@ export const riwayatService = {
         const isWarning = item.statusBbU === 'SK' || item.statusBbU === 'K' || item.statusTbU === 'SP' || item.statusTbU === 'P' || item.statusBbTb === 'SK' || item.statusBbTb === 'K' || item.statusBbTb === 'G';
         const statusType: 'success' | 'warning' = isWarning ? 'warning' : 'success';
 
-        let statusDesc = `Normal (BB/U: ${item.statusBbU})`;
+        let statusDesc = `Normal (BB/U: ${getStatusBbUText(item.statusBbU)})`;
         if (item.statusBbU === 'K') statusDesc = 'BB Kurang';
         else if (item.statusBbU === 'SK') statusDesc = 'BB Sangat Kurang';
         else if (item.statusTbU === 'P') statusDesc = 'Stunting (Pendek)';
         else if (item.statusTbU === 'SP') statusDesc = 'Sangat Pendek';
-        else if (item.statusBbTb === 'G') statusDesc = 'Gizi Buruk / Obesitas';
+        else if (item.statusBbTb === 'G') statusDesc = 'Gizi Lebih / Obesitas';
 
         const paramStr = `BB: ${item.beratBadan}kg, TB: ${item.tinggiBadan}cm${item.lingkarKepala ? `, LK: ${item.lingkarKepala}cm` : ''}${item.vitaminA ? ', Vit A' : ''}`;
 
@@ -177,7 +232,7 @@ export const riwayatService = {
 
     results.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
 
-    if (status !== 'semua') {
+    if (status && status !== 'semua') {
       return results.filter((r) => r.statusType === status);
     }
 
@@ -190,82 +245,166 @@ export const riwayatService = {
       throw new Error('Posyandu tidak ditemukan');
     }
 
+    // Ambil data yang sudah terfilter secara tepat
     const data = await this.getRiwayat(posyanduId, filter);
 
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Sistem Posyandu';
+    workbook.creator = 'Sistem Informasi Posyandu';
     workbook.created = new Date();
 
-    const worksheet = workbook.addWorksheet('Riwayat Pemeriksaan');
+    // Penentuan Subtitle Filter untuk Excel Header
+    const filterInfoArr = [];
+    if (filter.tipe && filter.tipe !== 'semua') filterInfoArr.push(`Kategori: ${filter.tipe}`);
+    if (filter.bulan) filterInfoArr.push(`Bulan: ${NAMA_BULAN[filter.bulan - 1]}`);
+    if (filter.tahun) filterInfoArr.push(`Tahun: ${filter.tahun}`);
+    if (filter.status && filter.status !== 'semua') filterInfoArr.push(`Status: ${filter.status === 'warning' ? 'Perlu Perhatian' : 'Normal'}`);
+    if (filter.search) filterInfoArr.push(`Pencarian: "${filter.search}"`);
+    
+    const filterInfoStr = filterInfoArr.length > 0 ? ` [Filter: ${filterInfoArr.join(' | ')}]` : '';
 
-    worksheet.mergeCells('A1:G1');
-    worksheet.getCell('A1').value = `LAPORAN RIWAYAT PEMERIKSAAN BULANAN POSYANDU`;
-    worksheet.getCell('A1').font = { name: 'Arial', size: 14, bold: true };
-    worksheet.getCell('A1').alignment = { horizontal: 'center' };
+    // Helper untuk membuat worksheet dengan format Landscape & Kolom Mandiri
+    const createLandscapeWorksheet = (sheetName: string, items: ItemRiwayat[]) => {
+      const sheet = workbook.addWorksheet(sheetName, {
+        pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
+      });
 
-    worksheet.mergeCells('A2:G2');
-    worksheet.getCell('A2').value = `Posyandu: ${posyandu?.nama || '-'}, Desa: ${posyandu?.desa || '-'}, Kecamatan: ${posyandu?.kecamatan || '-'}`;
-    worksheet.getCell('A2').font = { name: 'Arial', size: 10, italic: true };
-    worksheet.getCell('A2').alignment = { horizontal: 'center' };
+      // Header Judul Laporan
+      sheet.mergeCells('A1:U1');
+      sheet.getCell('A1').value = `LAPORAN PEMERIKSAAN POSYANDU - ${sheetName.toUpperCase()}${filterInfoStr}`;
+      sheet.getCell('A1').font = { name: 'Arial', size: 14, bold: true };
+      sheet.getCell('A1').alignment = { horizontal: 'center' };
 
-    worksheet.addRow([]);
+      sheet.mergeCells('A2:U2');
+      sheet.getCell('A2').value = `Posyandu: ${posyandu?.nama || '-'} | Desa: ${posyandu?.desa || '-'} | Kecamatan: ${posyandu?.kecamatan || '-'}`;
+      sheet.getCell('A2').font = { name: 'Arial', size: 10, italic: true };
+      sheet.getCell('A2').alignment = { horizontal: 'center' };
 
-    const headerRow = worksheet.addRow([
-      'No',
-      'Tanggal Periksa',
-      'Nama Warga',
-      'Kategori',
-      'Parameter Fisik & Medis',
-      'Kondisi Status / Diagnosa',
-      'Petugas Pemeriksa',
-    ]);
+      sheet.addRow([]);
 
-    headerRow.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: '0D9488' },
-      };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    });
-
-    data.forEach((item, index) => {
-      const row = worksheet.addRow([
-        index + 1,
-        item.tanggal,
-        item.nama,
-        item.tipe,
-        item.parameter,
-        item.status,
-        item.petugas || 'Kader Posyandu',
+      // Tabel Kolom Mandiri (Terpisah Sesuai Parameter Fisik & Medis)
+      const headerRow = sheet.addRow([
+        'No',
+        'Tanggal Periksa',
+        'Nama Peserta',
+        'Jenis Kelamin',
+        'Kategori',
+        'Usia',
+        'BB (kg)',
+        'TB (cm)',
+        'LK (cm)',
+        'LiLA (cm)',
+        'Status BB/U',
+        'Status TB/U',
+        'Status BB/TB',
+        'Vit A / Intervensi',
+        'Tekanan Darah (mmHg)',
+        'GDS (mg/dL)',
+        'Kolesterol (mg/dL)',
+        'Asam Urat (mg/dL)',
+        'Lingkar Perut (cm)',
+        'Kondisi Hasil / Diagnosa',
+        'Petugas Pemeriksa'
       ]);
 
-      row.getCell(1).alignment = { horizontal: 'center' };
-      row.getCell(2).alignment = { horizontal: 'center' };
-      row.getCell(4).alignment = { horizontal: 'center' };
-      row.getCell(7).alignment = { horizontal: 'center' };
-      
-      if (item.statusType === 'warning') {
-        row.getCell(6).font = { color: { argb: 'DC2626' }, bold: true };
-      } else {
-        row.getCell(6).font = { color: { argb: '166534' } };
-      }
-    });
-
-    if (worksheet.columns) {
-      (worksheet.columns as Array<Partial<ExcelJS.Column>>).forEach((column) => {
-        let maxLength = 0;
-        if (column && typeof column.eachCell === 'function') {
-          column.eachCell({ includeEmpty: true }, (cell: ExcelJS.Cell) => {
-            const columnLength = cell.value ? cell.value.toString().length : 10;
-            if (columnLength > maxLength) {
-              maxLength = columnLength;
-            }
-          });
-        }
-        column.width = Math.max(maxLength + 3, 12);
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFF' }, size: 10 };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: '0D9488' },
+        };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       });
+
+      items.forEach((item, index) => {
+        const usiaText = getUsiaText(item.tanggalLahir, item.tanggal, item.tipe);
+        const intervensiArr = [];
+        if (item.vitaminA) intervensiArr.push('Vit A');
+        if (item.asiEksklusif) intervensiArr.push('ASI Eks');
+        if (item.obatCacing) intervensiArr.push('Obat Cacing');
+        if (item.statusImunisasi) intervensiArr.push(`Imunisasi (${item.statusImunisasi})`);
+
+        const row = sheet.addRow([
+          index + 1,
+          item.tanggal,
+          item.nama,
+          item.jenisKelamin || '-',
+          item.tipe,
+          usiaText,
+          item.beratBadan ?? '-',
+          item.tinggiBadan ?? '-',
+          item.lingkarKepala ?? '-',
+          item.lingkarLengan ?? '-',
+          getStatusBbUText(item.statusBbU),
+          getStatusTbUText(item.statusTbU),
+          getStatusBbTbText(item.statusBbTb),
+          intervensiArr.length > 0 ? intervensiArr.join(', ') : '-',
+          item.tekananDarahSistol ? `${item.tekananDarahSistol}/${item.tekananDarahDiastol}` : '-',
+          item.gulaDarahSewaktu ?? '-',
+          item.kolesterol ?? '-',
+          item.asamUrat ?? '-',
+          item.lingkarPerut ?? '-',
+          item.status,
+          item.petugas || 'Kader Posyandu'
+        ]);
+
+        // Alignment formatting
+        row.getCell(1).alignment = { horizontal: 'center' };
+        row.getCell(2).alignment = { horizontal: 'center' };
+        row.getCell(4).alignment = { horizontal: 'center' };
+        row.getCell(5).alignment = { horizontal: 'center' };
+        row.getCell(6).alignment = { horizontal: 'center' };
+        row.getCell(7).alignment = { horizontal: 'right' };
+        row.getCell(8).alignment = { horizontal: 'right' };
+        row.getCell(9).alignment = { horizontal: 'right' };
+        row.getCell(10).alignment = { horizontal: 'right' };
+        row.getCell(11).alignment = { horizontal: 'center' };
+        row.getCell(12).alignment = { horizontal: 'center' };
+        row.getCell(13).alignment = { horizontal: 'center' };
+        row.getCell(15).alignment = { horizontal: 'center' };
+        row.getCell(16).alignment = { horizontal: 'right' };
+        row.getCell(17).alignment = { horizontal: 'right' };
+        row.getCell(18).alignment = { horizontal: 'right' };
+        row.getCell(19).alignment = { horizontal: 'right' };
+        row.getCell(21).alignment = { horizontal: 'left' };
+
+        if (item.statusType === 'warning') {
+          row.getCell(20).font = { color: { argb: 'DC2626' }, bold: true };
+        } else {
+          row.getCell(20).font = { color: { argb: '166534' } };
+        }
+      });
+
+      if (sheet.columns) {
+        (sheet.columns as Array<Partial<ExcelJS.Column>>).forEach((column) => {
+          let maxLength = 0;
+          if (column && typeof column.eachCell === 'function') {
+            column.eachCell({ includeEmpty: true }, (cell: ExcelJS.Cell) => {
+              const columnLength = cell.value ? cell.value.toString().length : 10;
+              if (columnLength > maxLength) {
+                maxLength = columnLength;
+              }
+            });
+          }
+          column.width = Math.max(maxLength + 3, 10);
+        });
+      }
+    };
+
+    if (filter.tipe === 'Balita') {
+      createLandscapeWorksheet('Data Balita', data);
+    } else if (filter.tipe === 'Lansia') {
+      createLandscapeWorksheet('Data Lansia', data);
+    } else {
+      createLandscapeWorksheet('Rekap Semua', data);
+      const balitaData = data.filter((d) => d.tipe === 'Balita');
+      if (balitaData.length > 0) {
+        createLandscapeWorksheet('Data Balita', balitaData);
+      }
+      const lansiaData = data.filter((d) => d.tipe === 'Lansia');
+      if (lansiaData.length > 0) {
+        createLandscapeWorksheet('Data Lansia', lansiaData);
+      }
     }
 
     return workbook;
@@ -277,29 +416,51 @@ export const riwayatService = {
       throw new Error('Posyandu tidak ditemukan');
     }
 
+    // Ambil data yang sudah terfilter secara tepat
     const data = await this.getRiwayat(posyanduId, filter);
-    const doc = new PDFDocument({ margin: 50, bufferPages: true });
+
+    // Document setup: LANDSCAPE A4 (Width: 841.89, Height: 595.28)
+    const doc = new PDFDocument({
+      layout: 'landscape',
+      size: 'A4',
+      margin: 35,
+      bufferPages: true
+    });
+
+    const startX = 35;
+    const pageWidth = doc.page.width;
+    const printableWidth = pageWidth - startX * 2; // ~771 pt
+    const endX = startX + printableWidth;
 
     // Header Kop Resmi
-    doc.fontSize(16).font('Helvetica-Bold').text('SISTEM INFORMASI POSYANDU', { align: 'center' });
-    doc.fontSize(14).font('Helvetica-Bold').text(`POSYANDU ${posyandu.nama.toUpperCase()}`, { align: 'center' });
-    doc.fontSize(10).font('Helvetica').text(`Desa/Kelurahan: ${posyandu.desa || '-'}, Kecamatan: ${posyandu.kecamatan || '-'}`, { align: 'center' });
-    doc.fontSize(9).font('Helvetica').text(`Alamat: ${posyandu.alamat || '-'}`, { align: 'center' });
+    doc.fontSize(15).font('Helvetica-Bold').text('SISTEM INFORMASI POSYANDU', { align: 'center' });
+    doc.fontSize(13).font('Helvetica-Bold').text(`POSYANDU ${posyandu.nama.toUpperCase()}`, { align: 'center' });
+    doc.fontSize(9.5).font('Helvetica').text(`Desa/Kelurahan: ${posyandu.desa || '-'}, Kecamatan: ${posyandu.kecamatan || '-'}, Alamat: ${posyandu.alamat || '-'}`, { align: 'center' });
 
-    // Draw Kop Line Separator
-    doc.moveDown(0.5);
-    const startX = 50;
-    const endX = doc.page.width - 50;
+    // Kop Separator Line
+    doc.moveDown(0.4);
     const currentY = doc.y;
-    doc.lineWidth(2).moveTo(startX, currentY).lineTo(endX, currentY).stroke();
-    doc.lineWidth(0.5).moveTo(startX, currentY + 3).lineTo(endX, currentY + 3).stroke();
-    doc.moveDown(0.8);
+    doc.lineWidth(1.5).moveTo(startX, currentY).lineTo(endX, currentY).stroke();
+    doc.lineWidth(0.5).moveTo(startX, currentY + 2.5).lineTo(endX, currentY + 2.5).stroke();
+    doc.moveDown(0.6);
 
-    // Title Laporan
-    doc.fontSize(12).font('Helvetica-Bold').text('LAPORAN REKAPITULASI PEMERIKSAAN BULANAN', { align: 'center' });
+    // Title & Filter Header Subtitle
+    const titleCategory = filter.tipe && filter.tipe !== 'semua' ? filter.tipe.toUpperCase() : 'BULANAN';
+    doc.fontSize(11).font('Helvetica-Bold').text(`LAPORAN REKAPITULASI PEMERIKSAAN ${titleCategory} (LANDSCAPE)`, { align: 'center' });
+
+    const filterInfoArr = [];
+    if (filter.bulan) filterInfoArr.push(`Bulan: ${NAMA_BULAN[filter.bulan - 1]}`);
+    if (filter.tahun) filterInfoArr.push(`Tahun: ${filter.tahun}`);
+    if (filter.status && filter.status !== 'semua') filterInfoArr.push(`Status: ${filter.status === 'warning' ? 'Perlu Perhatian' : 'Normal'}`);
+    if (filter.search) filterInfoArr.push(`Pencarian: "${filter.search}"`);
+
     const todayFormatted = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    doc.fontSize(9).font('Helvetica-Oblique').text(`Tanggal Cetak: ${todayFormatted}`, { align: 'center' });
-    doc.moveDown(0.8);
+    const subTitleStr = filterInfoArr.length > 0
+      ? `Filter Aktif: ${filterInfoArr.join(' | ')}  —  Dicetak: ${todayFormatted}`
+      : `Tanggal Cetak: ${todayFormatted}`;
+
+    doc.fontSize(8.5).font('Helvetica-Oblique').text(subTitleStr, { align: 'center' });
+    doc.moveDown(0.6);
 
     // Rekapitulasi Stats Box
     const totalBalita = data.filter((d) => d.tipe === 'Balita').length;
@@ -307,58 +468,89 @@ export const riwayatService = {
     const totalWarning = data.filter((d) => d.statusType === 'warning').length;
 
     const statsY = doc.y;
-    doc.rect(startX, statsY, endX - startX, 32).fillAndStroke('#f8fafc', '#cbd5e1');
-    doc.fillColor('#0f172a').fontSize(9).font('Helvetica-Bold');
-    doc.text(`Total Data: ${data.length} Orang`, startX + 15, statsY + 11);
-    doc.text(`Balita: ${totalBalita} Anak`, startX + 140, statsY + 11);
-    doc.text(`Lansia: ${totalLansia} Orang`, startX + 250, statsY + 11);
-    doc.fillColor('#dc2626').text(`Perlu Perhatian: ${totalWarning} Kasus`, startX + 360, statsY + 11);
+    doc.rect(startX, statsY, printableWidth, 26).fillAndStroke('#f8fafc', '#cbd5e1');
+    doc.fillColor('#0f172a').fontSize(8.5).font('Helvetica-Bold');
+    doc.text(`Total Data: ${data.length} Orang`, startX + 15, statsY + 8);
+    doc.text(`Balita: ${totalBalita} Anak`, startX + 180, statsY + 8);
+    doc.text(`Lansia: ${totalLansia} Orang`, startX + 340, statsY + 8);
+    doc.fillColor('#dc2626').text(`Perlu Perhatian: ${totalWarning} Kasus`, startX + 520, statsY + 8);
     doc.fillColor('#000000');
 
-    doc.y = statsY + 42;
+    doc.y = statsY + 34;
 
-    // Table Setup
-    const colNo = 50;
-    const colTgl = 80;
-    const colNama = 150;
-    const colTipe = 250;
-    const colParam = 310;
-    const colStatus = 440;
-    const tableWidth = 512;
+    // Column Layout untuk Landscape (Total ~771 pt)
+    const cNo = startX;              // 35  (w: 25)
+    const cTgl = startX + 25;        // 60  (w: 60)
+    const cNama = startX + 85;       // 120 (w: 105)
+    const cTipe = startX + 190;      // 225 (w: 45)
+    const cJK = startX + 235;        // 270 (w: 25)
+    const cUsia = startX + 260;      // 295 (w: 40)
+    const cFisik = startX + 300;     // 335 (w: 75)
+    const cDetail = startX + 375;    // 410 (w: 135)
+    const cStatus = startX + 510;    // 545 (w: 155)
+    const cPetugas = startX + 665;   // 700 (w: 106)
 
     const drawTableHeader = (y: number) => {
-      doc.rect(colNo, y, tableWidth, 22).fillAndStroke('#0f766e', '#0f766e');
-      doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold');
-      doc.text('No', colNo + 5, y + 6);
-      doc.text('Tanggal', colTgl + 2, y + 6);
-      doc.text('Nama Peserta', colNama + 2, y + 6);
-      doc.text('Kategori', colTipe + 2, y + 6);
-      doc.text('Parameter Fisik & Medis', colParam + 2, y + 6);
-      doc.text('Kondisi Hasil', colStatus + 2, y + 6);
+      doc.rect(startX, y, printableWidth, 20).fillAndStroke('#0f766e', '#0f766e');
+      doc.fillColor('#ffffff').fontSize(8).font('Helvetica-Bold');
+      doc.text('No', cNo + 4, y + 5);
+      doc.text('Tanggal', cTgl + 2, y + 5);
+      doc.text('Nama Peserta', cNama + 2, y + 5);
+      doc.text('Tipe', cTipe + 2, y + 5);
+      doc.text('JK', cJK + 2, y + 5);
+      doc.text('Usia', cUsia + 2, y + 5);
+      doc.text('BB / TB', cFisik + 2, y + 5);
+      doc.text('Detail Medis (LK/LiLA/TD/GDS)', cDetail + 2, y + 5);
+      doc.text('Status Gizi / Hasil Diagnosa', cStatus + 2, y + 5);
+      doc.text('Petugas', cPetugas + 2, y + 5);
       doc.fillColor('#000000');
     };
 
     let yPosition = doc.y;
     drawTableHeader(yPosition);
-    yPosition += 22;
+    yPosition += 20;
 
-    const rowHeight = 22;
+    const rowHeight = 20;
 
     data.forEach((item, index) => {
-      if (yPosition > doc.page.height - 140) {
+      if (yPosition > doc.page.height - 85) {
         doc.addPage();
-        yPosition = 50;
+        yPosition = 35;
         drawTableHeader(yPosition);
-        yPosition += 22;
+        yPosition += 20;
       }
 
       if (index % 2 === 0) {
-        doc.rect(colNo, yPosition, tableWidth, rowHeight).fillAndStroke('#f8fafc', '#e2e8f0');
+        doc.rect(startX, yPosition, printableWidth, rowHeight).fillAndStroke('#f8fafc', '#e2e8f0');
       } else {
-        doc.rect(colNo, yPosition, tableWidth, rowHeight).fillAndStroke('#ffffff', '#e2e8f0');
+        doc.rect(startX, yPosition, printableWidth, rowHeight).fillAndStroke('#ffffff', '#e2e8f0');
       }
 
-      doc.font('Helvetica').fontSize(8.5);
+      doc.font('Helvetica').fontSize(8);
+
+      const usiaText = getUsiaText(item.tanggalLahir, item.tanggal, item.tipe);
+      const bbTbStr = `${item.beratBadan ?? '-'} kg / ${item.tinggiBadan ?? '-'} cm`;
+
+      let detailMedisStr = '-';
+      if (item.tipe === 'Balita') {
+        const details = [];
+        if (item.lingkarKepala) details.push(`LK: ${item.lingkarKepala}cm`);
+        if (item.lingkarLengan) details.push(`LiLA: ${item.lingkarLengan}cm`);
+        if (item.vitaminA) details.push('Vit A');
+        detailMedisStr = details.length > 0 ? details.join(', ') : 'Pemeriksaan Rutin';
+      } else {
+        const details = [];
+        if (item.tekananDarahSistol) details.push(`TD: ${item.tekananDarahSistol}/${item.tekananDarahDiastol}`);
+        if (item.gulaDarahSewaktu) details.push(`GDS: ${item.gulaDarahSewaktu}`);
+        if (item.kolesterol) details.push(`Kol: ${item.kolesterol}`);
+        if (item.asamUrat) details.push(`AU: ${item.asamUrat}`);
+        detailMedisStr = details.length > 0 ? details.join(', ') : 'Pemeriksaan Rutin';
+      }
+
+      let statusDisplayStr = item.status;
+      if (item.tipe === 'Balita' && (item.statusBbU || item.statusTbU || item.statusBbTb)) {
+        statusDisplayStr = `BB/U:${getStatusBbUText(item.statusBbU)} | TB/U:${getStatusTbUText(item.statusTbU)}`;
+      }
 
       if (item.statusType === 'warning') {
         doc.fillColor('#b91c1c');
@@ -366,41 +558,45 @@ export const riwayatService = {
         doc.fillColor('#1e293b');
       }
 
-      doc.text(String(index + 1), colNo + 5, yPosition + 6);
-      doc.text(item.tanggal, colTgl + 2, yPosition + 6);
-      doc.font('Helvetica-Bold').text(item.nama.substring(0, 18), colNama + 2, yPosition + 6);
-      doc.font('Helvetica').text(item.tipe, colTipe + 2, yPosition + 6);
-      doc.text(item.parameter.substring(0, 24), colParam + 2, yPosition + 6);
-      doc.text(item.status.substring(0, 18), colStatus + 2, yPosition + 6);
+      doc.text(String(index + 1), cNo + 4, yPosition + 5);
+      doc.text(item.tanggal, cTgl + 2, yPosition + 5);
+      doc.font('Helvetica-Bold').text(item.nama.substring(0, 18), cNama + 2, yPosition + 5);
+      doc.font('Helvetica').text(item.tipe, cTipe + 2, yPosition + 5);
+      doc.text(item.jenisKelamin || '-', cJK + 2, yPosition + 5);
+      doc.text(usiaText, cUsia + 2, yPosition + 5);
+      doc.text(bbTbStr, cFisik + 2, yPosition + 5);
+      doc.text(detailMedisStr.substring(0, 26), cDetail + 2, yPosition + 5);
+      doc.font('Helvetica-Bold').text(statusDisplayStr.substring(0, 30), cStatus + 2, yPosition + 5);
+      doc.font('Helvetica').text((item.petugas || 'Kader').substring(0, 16), cPetugas + 2, yPosition + 5);
 
       doc.fillColor('#000000');
       yPosition += rowHeight;
     });
 
-    // Signature Block
-    if (yPosition > doc.page.height - 140) {
+    // Signature Block di bagian kanan bawah
+    if (yPosition > doc.page.height - 110) {
       doc.addPage();
-      yPosition = 50;
+      yPosition = 35;
     }
 
-    yPosition += 20;
-    const signX = 350;
+    yPosition += 15;
+    const signX = endX - 200;
 
-    doc.fontSize(9).font('Helvetica').text(`${posyandu.desa || 'Desa'}, ${todayFormatted}`, signX, yPosition, { align: 'center' });
-    doc.text('Mengetahui,', signX, yPosition + 12, { align: 'center' });
-    doc.font('Helvetica-Bold').text('Ketua / Kader Posyandu', signX, yPosition + 24, { align: 'center' });
+    doc.fontSize(8.5).font('Helvetica').text(`${posyandu.desa || 'Desa'}, ${todayFormatted}`, signX, yPosition, { align: 'center', width: 200 });
+    doc.text('Mengetahui,', signX, yPosition + 11, { align: 'center', width: 200 });
+    doc.font('Helvetica-Bold').text('Ketua / Kader Posyandu', signX, yPosition + 22, { align: 'center', width: 200 });
 
-    doc.font('Helvetica-Bold').text('( ............................................ )', signX, yPosition + 75, { align: 'center' });
+    doc.font('Helvetica-Bold').text('( ............................................ )', signX, yPosition + 65, { align: 'center', width: 200 });
 
-    // Page Numbers
+    // Page Numbers Footer
     const pages = doc.bufferedPageRange().count;
     for (let i = 0; i < pages; i++) {
       doc.switchToPage(i);
       doc.fontSize(8).font('Helvetica-Oblique').fillColor('#64748b').text(
-        `Halaman ${i + 1} dari ${pages} — Sistem Informasi Posyandu`,
-        50,
-        doc.page.height - 30,
-        { align: 'center' }
+        `Halaman ${i + 1} dari ${pages} — Sistem Informasi Posyandu (Format Landscape)`,
+        startX,
+        doc.page.height - 25,
+        { align: 'center', width: printableWidth }
       );
     }
 
