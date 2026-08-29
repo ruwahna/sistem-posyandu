@@ -6,7 +6,7 @@ import Modal from "../../components/Modal";
 import LansiaIcon from "../../components/LansiaIcon";
 import BalitaIcon from "../../components/BalitaIcon";
 import { RiwayatTableSkeleton } from "../../components/Skeleton";
-import { riwayatApi, ItemRiwayat, balitaApi, lansiaApi } from "@/lib/api";
+import { riwayatApi, ItemRiwayat, balitaApi, lansiaApi, PeriodePelayanan } from "@/lib/api";
 import {
   hitungStatusBbU,
   hitungStatusTbU,
@@ -259,8 +259,8 @@ export default function RiwayatModule({ posyanduId, activePeriode }: RiwayatModu
         tipe: typeFilter,
         search: query,
         status: statusFilter,
-        bulan: selectedBulan === "semua" ? undefined : selectedBulan,
-        tahun: selectedTahun === "semua" ? undefined : selectedTahun,
+        bulan: selectedBulan === "semua" ? undefined : String(selectedBulan),
+        tahun: selectedTahun === "semua" ? undefined : String(selectedTahun),
       });
       if (res.success) {
         setLogs(res.data);
@@ -301,8 +301,8 @@ export default function RiwayatModule({ posyanduId, activePeriode }: RiwayatModu
         tipe: typeFilter,
         search: query,
         status: statusFilter,
-        bulan: selectedBulan === "semua" ? undefined : selectedBulan,
-        tahun: selectedTahun === "semua" ? undefined : selectedTahun,
+        bulan: selectedBulan === "semua" ? undefined : String(selectedBulan),
+        tahun: selectedTahun === "semua" ? undefined : String(selectedTahun),
       });
     } catch (err) {
       console.error("Gagal export excel:", err);
@@ -319,8 +319,8 @@ export default function RiwayatModule({ posyanduId, activePeriode }: RiwayatModu
         tipe: typeFilter,
         search: query,
         status: statusFilter,
-        bulan: selectedBulan === "semua" ? undefined : selectedBulan,
-        tahun: selectedTahun === "semua" ? undefined : selectedTahun,
+        bulan: selectedBulan === "semua" ? undefined : String(selectedBulan),
+        tahun: selectedTahun === "semua" ? undefined : String(selectedTahun),
       });
     } catch (err) {
       console.error("Gagal export PDF:", err);
