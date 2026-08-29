@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 
 export interface ActionMenuItem {
   label: string;
@@ -73,7 +73,7 @@ export default function ActionMenu({ items, triggerClassName, alignDirection }: 
           "p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-all"
         }
       >
-        <MoreVertical className="w-5 h-5" />
+        <MoreHorizontal className="w-5 h-5" />
       </button>
 
       {/* Dropdown Menu */}

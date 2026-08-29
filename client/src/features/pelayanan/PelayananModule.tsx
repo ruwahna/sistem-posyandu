@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
 import {
   Heart,
   Search,
@@ -44,11 +45,15 @@ interface Pasien {
 // Session Log (Today's entered checkups)
 interface SessionLog {
   id: string;
+  pasienId?: string;
   nama: string;
   tipe: "Balita" | "Lansia";
   waktu: string;
   summary: string;
+  parameter?: string;
   status: string;
+  statusType?: "success" | "warning" | "info";
+  petugas?: string;
 }
 
 // Helper Hitung Usia (Bulan)
@@ -169,7 +174,53 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
           };
         });
 
-        setPasiens([...balitas, ...lansias]);
+        const allPasiens = [...balitas, ...lansias];
+        setPasiens(allPasiens);
+
+        // Populate sessionLogs untuk menampilkan seluruh pemeriksaan pada Periode Pelayanan Aktif
+        const periodLogs: SessionLog[] = [];
+        allPasiens.forEach((p) => {
+          if (p.isCheckedInCurrentPeriod && p.currentPeriodExam) {
+            const exam = p.currentPeriodExam;
+            const isWarning = p.tipe === "Balita"
+              ? (exam.statusBbU === 'SK' || exam.statusBbU === 'K' || exam.statusTbU === 'SP' || exam.statusTbU === 'P' || exam.statusBbTb === 'SK' || exam.statusBbTb === 'K' || exam.statusBbTb === 'G')
+              : ((exam.tekananDarahSistol >= 140 || exam.tekananDarahDiastol >= 90) || (Number(exam.gulaDarahSewaktu) >= 200));
+
+            let statusDesc = p.tipe === "Balita" ? `Normal (BB/U: ${exam.statusBbU || 'Normal'})` : "Sehat & Normal";
+            if (p.tipe === "Balita") {
+              if (exam.statusBbU === 'K') statusDesc = "BB Kurang";
+              else if (exam.statusBbU === 'SK') statusDesc = "BB Sangat Kurang";
+              else if (exam.statusTbU === 'P') statusDesc = "Stunting (Pendek)";
+              else if (exam.statusTbU === 'SP') statusDesc = "Sangat Pendek";
+              else if (exam.statusBbTb === 'G') statusDesc = "Gizi Lebih / Obesitas";
+            } else {
+              const isHipertensi = exam.tekananDarahSistol >= 140 || exam.tekananDarahDiastol >= 90;
+              const isGdsTinggi = Number(exam.gulaDarahSewaktu) >= 200;
+              if (isHipertensi && isGdsTinggi) statusDesc = "Hipertensi & GDS Tinggi";
+              else if (isHipertensi) statusDesc = "Hipertensi";
+              else if (isGdsTinggi) statusDesc = "GDS Tinggi";
+            }
+
+            const paramStr = p.tipe === "Balita"
+              ? `BB: ${exam.beratBadan}kg, TB: ${exam.tinggiBadan}cm${exam.lingkarKepala ? `, LK: ${exam.lingkarKepala}cm` : ''}`
+              : `BB: ${exam.beratBadan}kg, TB: ${exam.tinggiBadan}cm, TD: ${exam.tekananDarahSistol}/${exam.tekananDarahDiastol} mmHg, GDS: ${exam.gulaDarahSewaktu || '-'}`;
+
+            periodLogs.push({
+              id: exam.id,
+              pasienId: p.id,
+              nama: p.nama,
+              tipe: p.tipe as "Balita" | "Lansia",
+              waktu: formatTanggalIndonesia(exam.tanggalPeriksa),
+              petugas: exam.petugas || "Kader Posyandu",
+              summary: paramStr,
+              parameter: paramStr,
+              status: statusDesc,
+              statusType: isWarning ? "warning" : "success",
+            });
+          }
+        });
+
+        setSessionLogs(periodLogs);
       })
       .catch(console.error)
       .finally(() => {
@@ -1376,8 +1427,8 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
       <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
-            <h3 className="font-bold text-base text-saas-dark">Pencatatan Sesi Pelayanan Hari Ini</h3>
-            <p className="text-xs text-saas-muted mt-0.5">Daftar warga yang sudah selesai dimasukkan datanya dalam sesi pelayanan ini.</p>
+            <h3 className="font-bold text-base text-saas-dark">Pencatatan Sesi Pelayanan Periode Ini</h3>
+            <p className="text-xs text-saas-muted mt-0.5">Daftar warga yang sudah selesai dimasukkan datanya dalam sesi pelayanan periode ini.</p>
           </div>
           <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100/70">
             {(["Semua", "Balita", "Lansia"] as const).map((t) => {
