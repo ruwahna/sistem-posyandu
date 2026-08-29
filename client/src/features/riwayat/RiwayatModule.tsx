@@ -70,7 +70,7 @@ export default function RiwayatModule({ posyanduId, activePeriode }: RiwayatModu
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -744,49 +744,45 @@ export default function RiwayatModule({ posyanduId, activePeriode }: RiwayatModu
                 const totalPages = Math.ceil(filteredLogs.length / itemsPerPage) || 1;
 
                 return filteredLogs.length > 0 ? (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100 text-xs">
-                    <span className="text-saas-muted font-medium">
-                      Menampilkan{" "}
-                      <span className="text-saas-dark font-bold">
-                        {Math.min((currentPage - 1) * itemsPerPage + 1, filteredLogs.length)}
-                      </span>{" "}
-                      s/d{" "}
-                      <span className="text-saas-dark font-bold">
-                        {Math.min(currentPage * itemsPerPage, filteredLogs.length)}
-                      </span>{" "}
-                      dari{" "}
-                      <span className="text-saas-dark font-bold">{filteredLogs.length}</span> data
-                    </span>
+                  <div className="pt-4 mt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-saas-muted font-medium">
+                    <div className="flex items-center gap-2">
+                      <span>Tampilkan</span>
+                      <select
+                        value={itemsPerPage}
+                        onChange={(e) => {
+                          setItemsPerPage(Number(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                        className="px-2 py-1 bg-gray-50 border border-gray-200 rounded-md font-bold text-saas-dark focus:outline-none focus:border-saas-primary"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                      </select>
+                      <span>data per halaman</span>
+                      <span className="ml-2 font-medium">
+                        (Menampilkan {filteredLogs.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredLogs.length)} dari {filteredLogs.length} data)
+                      </span>
+                    </div>
 
                     <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                         disabled={currentPage === 1}
-                        className="px-3 py-1.5 rounded-lg border border-gray-200 text-saas-dark font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        className="px-3 py-1.5 rounded-md border border-gray-200 font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                       >
-                        &larr; Prev
+                        Sebelumnya
                       </button>
-
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                        <button
-                          key={p}
-                          onClick={() => setCurrentPage(p)}
-                          className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
-                            currentPage === p
-                              ? "bg-saas-primary text-white shadow-xs"
-                              : "text-saas-muted hover:bg-gray-100"
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      ))}
-
+                      <span className="px-3 py-1.5 font-bold text-saas-dark">
+                        Halaman {currentPage} dari {totalPages || 1}
+                      </span>
                       <button
-                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-1.5 rounded-lg border border-gray-200 text-saas-dark font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                        disabled={currentPage >= totalPages}
+                        className="px-3 py-1.5 rounded-md border border-gray-200 font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                       >
-                        Next &rarr;
+                        Selanjutnya
                       </button>
                     </div>
                   </div>

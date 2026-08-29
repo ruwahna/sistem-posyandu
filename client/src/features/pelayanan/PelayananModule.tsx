@@ -123,7 +123,7 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
   // Session Log State
   const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
   const [sessionPage, setSessionPage] = useState(1);
-  const sessionItemsPerPage = 5;
+  const [sessionLimit, setSessionLimit] = useState(5);
 
   useEffect(() => {
     setSessionPage(1);
@@ -1442,10 +1442,10 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
         <div className="overflow-x-auto">
           {(() => {
             const filteredSessionLogs = sessionLogs.filter((log) => log.tipe === activeTab);
-            const totalSessionPages = Math.ceil(filteredSessionLogs.length / sessionItemsPerPage) || 1;
+            const totalSessionPages = Math.ceil(filteredSessionLogs.length / sessionLimit) || 1;
             const paginatedSessionLogs = filteredSessionLogs.slice(
-              (sessionPage - 1) * sessionItemsPerPage,
-              sessionPage * sessionItemsPerPage
+              (sessionPage - 1) * sessionLimit,
+              sessionPage * sessionLimit
             );
 
             return filteredSessionLogs.length > 0 ? (
@@ -1487,50 +1487,46 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
                   </tbody>
                 </table>
 
-                {/* Pagination Controls */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100 text-xs">
-                  <span className="text-saas-muted font-medium">
-                    Menampilkan{" "}
-                    <span className="text-saas-dark font-bold">
-                      {Math.min((sessionPage - 1) * sessionItemsPerPage + 1, filteredSessionLogs.length)}
-                    </span>{" "}
-                    s/d{" "}
-                    <span className="text-saas-dark font-bold">
-                      {Math.min(sessionPage * sessionItemsPerPage, filteredSessionLogs.length)}
-                    </span>{" "}
-                    dari{" "}
-                    <span className="text-saas-dark font-bold">{filteredSessionLogs.length}</span> data
-                  </span>
+                {/* Pagination Controls - Style Sama Dengan Balita/Lansia */}
+                <div className="pt-4 mt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-saas-muted font-medium">
+                  <div className="flex items-center gap-2">
+                    <span>Tampilkan</span>
+                    <select
+                      value={sessionLimit}
+                      onChange={(e) => {
+                        setSessionLimit(Number(e.target.value));
+                        setSessionPage(1);
+                      }}
+                      className="px-2 py-1 bg-gray-50 border border-gray-200 rounded-md font-bold text-saas-dark focus:outline-none focus:border-saas-primary"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                    <span>data per halaman</span>
+                    <span className="ml-2 font-medium">
+                      (Menampilkan {filteredSessionLogs.length === 0 ? 0 : (sessionPage - 1) * sessionLimit + 1} - {Math.min(sessionPage * sessionLimit, filteredSessionLogs.length)} dari {filteredSessionLogs.length} data)
+                    </span>
+                  </div>
 
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => setSessionPage((prev) => Math.max(prev - 1, 1))}
+                      onClick={() => setSessionPage((p) => Math.max(p - 1, 1))}
                       disabled={sessionPage === 1}
-                      className="px-3 py-1.5 rounded-lg border border-gray-200 text-saas-dark font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      className="px-3 py-1.5 rounded-md border border-gray-200 font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                     >
-                      &larr; Prev
+                      Sebelumnya
                     </button>
-                    
-                    {Array.from({ length: totalSessionPages }, (_, i) => i + 1).map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => setSessionPage(p)}
-                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
-                          sessionPage === p
-                            ? "bg-saas-primary text-white shadow-xs"
-                            : "text-saas-muted hover:bg-gray-100"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    ))}
-
+                    <span className="px-3 py-1.5 font-bold text-saas-dark">
+                      Halaman {sessionPage} dari {totalSessionPages || 1}
+                    </span>
                     <button
-                      onClick={() => setSessionPage((prev) => Math.min(prev + 1, totalSessionPages))}
-                      disabled={sessionPage === totalSessionPages}
-                      className="px-3 py-1.5 rounded-lg border border-gray-200 text-saas-dark font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      onClick={() => setSessionPage((p) => Math.min(p + 1, totalSessionPages))}
+                      disabled={sessionPage >= totalSessionPages}
+                      className="px-3 py-1.5 rounded-md border border-gray-200 font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                     >
-                      Next &rarr;
+                      Selanjutnya
                     </button>
                   </div>
                 </div>
