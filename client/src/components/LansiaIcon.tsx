@@ -17,6 +17,8 @@ export default function LansiaIcon({
   fill,
   stroke,
   gender,
+  alt,
+  style,
   ...props
 }: LansiaIconProps) {
   const isFemale = gender === "P" || gender === "Perempuan";
@@ -26,10 +28,9 @@ export default function LansiaIcon({
     return (
       <img
         src={iconPath}
-        alt={isFemale ? "Lansia Perempuan" : "Lansia Laki-laki"}
-        style={{ width: size || undefined, height: size || undefined }}
+        alt={alt || (isFemale ? "Lansia Perempuan" : "Lansia Laki-laki")}
+        style={{ width: size || undefined, height: size || undefined, ...style }}
         className={`shrink-0 inline-block object-contain ${className}`}
-        {...props}
       />
     );
   }
@@ -46,6 +47,7 @@ export default function LansiaIcon({
       strokeLinejoin="round"
       strokeLinecap="round"
       className={`shrink-0 inline-block object-contain ${className}`}
+      style={style}
       {...props}
     >
       <path
