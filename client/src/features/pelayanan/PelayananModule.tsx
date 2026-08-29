@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatTanggalIndonesia, formatTanggalInput } from "../../lib/dateUtils";
 import {
   Heart,
   Search,
@@ -44,11 +45,15 @@ interface Pasien {
 // Session Log (Today's entered checkups)
 interface SessionLog {
   id: string;
+  pasienId?: string;
   nama: string;
   tipe: "Balita" | "Lansia";
   waktu: string;
   summary: string;
+  parameter?: string;
   status: string;
+  statusType?: "success" | "warning" | "info";
+  petugas?: string;
 }
 
 // Helper Hitung Usia (Bulan)
@@ -117,6 +122,13 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
 
   // Session Log State
   const [sessionLogs, setSessionLogs] = useState<SessionLog[]>([]);
+  const [sessionPage, setSessionPage] = useState(1);
+  const [sessionLimit, setSessionLimit] = useState(5);
+
+  useEffect(() => {
+    setSessionPage(1);
+  }, [activeTab, activePeriode]);
+
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchPatients = () => {
@@ -169,7 +181,53 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
           };
         });
 
-        setPasiens([...balitas, ...lansias]);
+        const allPasiens = [...balitas, ...lansias];
+        setPasiens(allPasiens);
+
+        // Populate sessionLogs untuk menampilkan seluruh pemeriksaan pada Periode Pelayanan Aktif
+        const periodLogs: SessionLog[] = [];
+        allPasiens.forEach((p) => {
+          if (p.isCheckedInCurrentPeriod && p.currentPeriodExam) {
+            const exam = p.currentPeriodExam;
+            const isWarning = p.tipe === "Balita"
+              ? (exam.statusBbU === 'SK' || exam.statusBbU === 'K' || exam.statusTbU === 'SP' || exam.statusTbU === 'P' || exam.statusBbTb === 'SK' || exam.statusBbTb === 'K' || exam.statusBbTb === 'G')
+              : ((exam.tekananDarahSistol >= 140 || exam.tekananDarahDiastol >= 90) || (Number(exam.gulaDarahSewaktu) >= 200));
+
+            let statusDesc = p.tipe === "Balita" ? `Normal (BB/U: ${exam.statusBbU || 'Normal'})` : "Sehat & Normal";
+            if (p.tipe === "Balita") {
+              if (exam.statusBbU === 'K') statusDesc = "BB Kurang";
+              else if (exam.statusBbU === 'SK') statusDesc = "BB Sangat Kurang";
+              else if (exam.statusTbU === 'P') statusDesc = "Stunting (Pendek)";
+              else if (exam.statusTbU === 'SP') statusDesc = "Sangat Pendek";
+              else if (exam.statusBbTb === 'G') statusDesc = "Gizi Lebih / Obesitas";
+            } else {
+              const isHipertensi = exam.tekananDarahSistol >= 140 || exam.tekananDarahDiastol >= 90;
+              const isGdsTinggi = Number(exam.gulaDarahSewaktu) >= 200;
+              if (isHipertensi && isGdsTinggi) statusDesc = "Hipertensi & GDS Tinggi";
+              else if (isHipertensi) statusDesc = "Hipertensi";
+              else if (isGdsTinggi) statusDesc = "GDS Tinggi";
+            }
+
+            const paramStr = p.tipe === "Balita"
+              ? `BB: ${exam.beratBadan}kg, TB: ${exam.tinggiBadan}cm${exam.lingkarKepala ? `, LK: ${exam.lingkarKepala}cm` : ''}`
+              : `BB: ${exam.beratBadan}kg, TB: ${exam.tinggiBadan}cm, TD: ${exam.tekananDarahSistol}/${exam.tekananDarahDiastol} mmHg, GDS: ${exam.gulaDarahSewaktu || '-'}`;
+
+            periodLogs.push({
+              id: exam.id,
+              pasienId: p.id,
+              nama: p.nama,
+              tipe: p.tipe as "Balita" | "Lansia",
+              waktu: formatTanggalIndonesia(exam.tanggalPeriksa),
+              petugas: exam.petugas || "Kader Posyandu",
+              summary: paramStr,
+              parameter: paramStr,
+              status: statusDesc,
+              statusType: isWarning ? "warning" : "success",
+            });
+          }
+        });
+
+        setSessionLogs(periodLogs);
       })
       .catch(console.error)
       .finally(() => {
@@ -1376,74 +1434,109 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
       <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
-            <h3 className="font-bold text-base text-saas-dark">Pencatatan Sesi Pelayanan Hari Ini</h3>
-            <p className="text-xs text-saas-muted mt-0.5">Daftar warga yang sudah selesai dimasukkan datanya dalam sesi pelayanan ini.</p>
-          </div>
-          <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100/70">
-            {(["Semua", "Balita", "Lansia"] as const).map((t) => {
-              const count = t === "Semua" ? sessionLogs.length : sessionLogs.filter((s) => s.tipe === t).length;
-              return (
-                <button
-                  key={t}
-                  onClick={() => setSessionLogFilter(t)}
-                  className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${
-                    sessionLogFilter === t
-                      ? "bg-white text-saas-dark shadow-xs"
-                      : "text-saas-muted hover:text-saas-dark"
-                  }`}
-                >
-                  {t} ({count})
-                </button>
-              );
-            })}
+            <h3 className="font-bold text-base text-saas-dark">Pencatatan Sesi Pelayanan Periode Ini ({activeTab})</h3>
+            <p className="text-xs text-saas-muted mt-0.5">Daftar {activeTab.toLowerCase()} yang sudah selesai dimasukkan datanya dalam sesi pelayanan periode ini.</p>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          {sessionLogs.filter((log) => sessionLogFilter === "Semua" || log.tipe === sessionLogFilter).length > 0 ? (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
-                  <th className="pb-3">Nama</th>
-                  <th className="pb-3">Kategori</th>
-                  <th className="pb-3">Hasil Pengukuran</th>
-                  <th className="pb-3">Status</th>
-                  <th className="pb-3 text-right">Jam Input</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sessionLogs
-                  .filter((log) => sessionLogFilter === "Semua" || log.tipe === sessionLogFilter)
-                  .map((log) => (
-                    <tr key={log.id} className="border-b border-gray-50 last:border-b-0 text-xs text-saas-dark">
-                      <td className="py-3.5 font-bold">{log.nama}</td>
-                      <td className="py-3.5 text-saas-muted font-semibold">
-                        <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
-                          log.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-indigo-50 text-indigo-600"
-                        }`}>
-                          {log.tipe}
-                        </span>
-                      </td>
-                      <td className="py-3.5 text-saas-muted font-semibold">{log.summary}</td>
-                      <td className="py-3.5">
-                        <span className={`px-2 py-0.5 rounded-full font-bold ${
-                          log.status.includes("Normal") 
-                            ? "bg-trend-successBg text-trend-successText" 
-                            : "bg-trend-dangerBg text-trend-dangerText"
-                        }`}>
-                          {log.status}
-                        </span>
-                      </td>
-                      <td className="py-3.5 text-right font-bold text-saas-muted">{log.waktu}</td>
+          {(() => {
+            const filteredSessionLogs = sessionLogs.filter((log) => log.tipe === activeTab);
+            const totalSessionPages = Math.ceil(filteredSessionLogs.length / sessionLimit) || 1;
+            const paginatedSessionLogs = filteredSessionLogs.slice(
+              (sessionPage - 1) * sessionLimit,
+              sessionPage * sessionLimit
+            );
+
+            return filteredSessionLogs.length > 0 ? (
+              <>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
+                      <th className="pb-3">Nama</th>
+                      <th className="pb-3">Kategori</th>
+                      <th className="pb-3">Hasil Pengukuran</th>
+                      <th className="pb-3">Status</th>
+                      <th className="pb-3 text-right">Jam Input</th>
                     </tr>
-                  ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="text-center text-xs text-saas-muted py-8 font-medium">
-              Belum ada pemeriksaan yang dicatat dalam sesi ini.
-            </p>
-          )}
+                  </thead>
+                  <tbody>
+                    {paginatedSessionLogs.map((log) => (
+                      <tr key={log.id} className="border-b border-gray-50 last:border-b-0 text-xs text-saas-dark">
+                        <td className="py-3.5 font-bold">{log.nama}</td>
+                        <td className="py-3.5 text-saas-muted font-semibold">
+                          <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
+                            log.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-indigo-50 text-indigo-600"
+                          }`}>
+                            {log.tipe}
+                          </span>
+                        </td>
+                        <td className="py-3.5 text-saas-muted font-semibold">{log.summary}</td>
+                        <td className="py-3.5">
+                          <span className={`px-2 py-0.5 rounded-full font-bold ${
+                            log.status.includes("Normal") 
+                              ? "bg-trend-successBg text-trend-successText" 
+                              : "bg-trend-dangerBg text-trend-dangerText"
+                          }`}>
+                            {log.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 text-right font-bold text-saas-muted">{log.waktu}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Pagination Controls - Style Sama Dengan Balita/Lansia */}
+                <div className="pt-4 mt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-saas-muted font-medium">
+                  <div className="flex items-center gap-2">
+                    <span>Tampilkan</span>
+                    <select
+                      value={sessionLimit}
+                      onChange={(e) => {
+                        setSessionLimit(Number(e.target.value));
+                        setSessionPage(1);
+                      }}
+                      className="px-2 py-1 bg-gray-50 border border-gray-200 rounded-md font-bold text-saas-dark focus:outline-none focus:border-saas-primary"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                    <span>data per halaman</span>
+                    <span className="ml-2 font-medium">
+                      (Menampilkan {filteredSessionLogs.length === 0 ? 0 : (sessionPage - 1) * sessionLimit + 1} - {Math.min(sessionPage * sessionLimit, filteredSessionLogs.length)} dari {filteredSessionLogs.length} data)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setSessionPage((p) => Math.max(p - 1, 1))}
+                      disabled={sessionPage === 1}
+                      className="px-3 py-1.5 rounded-md border border-gray-200 font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      Sebelumnya
+                    </button>
+                    <span className="px-3 py-1.5 font-bold text-saas-dark">
+                      Halaman {sessionPage} dari {totalSessionPages || 1}
+                    </span>
+                    <button
+                      onClick={() => setSessionPage((p) => Math.min(p + 1, totalSessionPages))}
+                      disabled={sessionPage >= totalSessionPages}
+                      className="px-3 py-1.5 rounded-md border border-gray-200 font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      Selanjutnya
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-center text-xs text-saas-muted py-8 font-medium">
+                Belum ada pemeriksaan yang dicatat dalam sesi periode ini.
+              </p>
+            );
+          })()}
         </div>
       </div>
 

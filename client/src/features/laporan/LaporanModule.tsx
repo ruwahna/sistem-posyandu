@@ -8,9 +8,11 @@ import {
   RotateCcw,
 } from "lucide-react";
 import PageHelmet from "@/components/PageHelmet";
+import { LaporanSkeleton } from "@/components/Skeleton";
 
 interface LaporanModuleProps {
   posyanduId: string;
+  onNavigate?: (module: string, itemId?: string) => void;
 }
 
 interface RekapanBalita {
@@ -39,7 +41,7 @@ interface RekapanLansia {
   rataRataGds: number;
 }
 
-export default function LaporanModule({ posyanduId }: LaporanModuleProps) {
+export default function LaporanModule({ posyanduId, onNavigate }: LaporanModuleProps) {
   const [logs, setLogs] = useState<ItemRiwayat[]>([]);
   const [filterMonth, setFilterMonth] = useState<string>("");
   const [filterYear, setFilterYear] = useState<string>("");
@@ -259,6 +261,24 @@ export default function LaporanModule({ posyanduId }: LaporanModuleProps) {
 
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
+
+  if (rekapanLoading && logs.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 space-y-6">
+        <PageHelmet
+          title="Laporan Rekapan"
+          description="Laporan rekapitulasi pemeriksaan bulanan untuk Balita dan Lansia dengan filter periode."
+        />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Laporan Rekapan</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Laporan rekapitulasi data pemeriksaan Balita &amp; Lansia berdasarkan periode waktu dan kegiatan posyandu.
+          </p>
+        </div>
+        <LaporanSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 space-y-6">
@@ -835,7 +855,20 @@ export default function LaporanModule({ posyanduId }: LaporanModuleProps) {
                             <td className="px-3 py-2.5 text-gray-900 font-medium">
                               {(pageBalita - 1) * pageSizeBalita + idx + 1}
                             </td>
-                            <td className="px-3 py-2.5 text-gray-900 font-bold">{log.nama || "-"}</td>
+                            <td className="px-3 py-2.5 text-gray-900 font-bold">
+                              {onNavigate && log.pasienId ? (
+                                <button
+                                  type="button"
+                                  onClick={() => onNavigate("Balita", log.pasienId)}
+                                  className="text-gray-900 font-bold hover:text-teal-600 hover:underline text-left transition-colors cursor-pointer"
+                                  title={`Lihat Profil ${log.nama}`}
+                                >
+                                  {log.nama || "-"}
+                                </button>
+                              ) : (
+                                <span>{log.nama || "-"}</span>
+                              )}
+                            </td>
                             <td className="px-3 py-2.5 text-gray-600">{log.tanggal || "-"}</td>
                             <td className="px-3 py-2.5 text-gray-600">{usiaStr}</td>
                             <td className="px-3 py-2.5 text-gray-600 font-semibold">{log.jenisKelamin || "-"}</td>
@@ -1315,7 +1348,20 @@ export default function LaporanModule({ posyanduId }: LaporanModuleProps) {
                             <td className="px-3 py-2.5 text-gray-900 font-medium">
                               {(pageLansia - 1) * pageSizeLansia + idx + 1}
                             </td>
-                            <td className="px-3 py-2.5 text-gray-900 font-bold">{log.nama || "-"}</td>
+                            <td className="px-3 py-2.5 text-gray-900 font-bold">
+                              {onNavigate && log.pasienId ? (
+                                <button
+                                  type="button"
+                                  onClick={() => onNavigate("Lansia", log.pasienId)}
+                                  className="text-gray-900 font-bold hover:text-indigo-600 hover:underline text-left transition-colors cursor-pointer"
+                                  title={`Lihat Profil ${log.nama}`}
+                                >
+                                  {log.nama || "-"}
+                                </button>
+                              ) : (
+                                <span>{log.nama || "-"}</span>
+                              )}
+                            </td>
                             <td className="px-3 py-2.5 text-gray-600">{log.tanggal || "-"}</td>
                             <td className="px-3 py-2.5 text-gray-600">{usiaTahun !== "-" ? `${usiaTahun} th` : "-"}</td>
                             <td className="px-3 py-2.5 text-gray-600 font-semibold">{log.jenisKelamin || "-"}</td>

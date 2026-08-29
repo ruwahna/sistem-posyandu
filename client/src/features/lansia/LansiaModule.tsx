@@ -88,9 +88,11 @@ interface LansiaModuleProps {
   posyanduId: string;
   searchQuery?: string;
   selectedId?: string;
+  onBack?: () => void;
+  backLabel?: string;
 }
 
-export default function LansiaModule({ posyanduId, searchQuery = "", selectedId }: LansiaModuleProps) {
+export default function LansiaModule({ posyanduId, searchQuery = "", selectedId, onBack, backLabel }: LansiaModuleProps) {
   const { user } = useAuth();
   const [lansias, setLansias] = useState<Lansia[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -121,6 +123,9 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId 
     if (selectedId) {
       setSelectedLansiaId(selectedId);
       setView("detail");
+    } else {
+      setSelectedLansiaId(null);
+      setView("list");
     }
   }, [selectedId]);
   const [ageFilter, setAgeFilter] = useState<"semua" | "45-59" | "60-69" | "70+">("semua");
@@ -751,7 +756,17 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId 
                         return (
                           <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
                             <td className="py-4">
-                              <p className="font-bold text-saas-dark">{item.nama}</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedLansiaId(item.id);
+                                  setView("detail");
+                                }}
+                                className="font-bold text-saas-dark hover:text-saas-primary hover:underline text-left transition-colors cursor-pointer"
+                                title={`Lihat Profil ${item.nama}`}
+                              >
+                                {item.nama}
+                              </button>
                               <p className="text-[11px] text-saas-muted font-medium mt-0.5">NIK: {item.nik}</p>
                             </td>
                             <td className="py-4">
@@ -878,10 +893,16 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId 
         <div className="space-y-8">
           {/* Back Button */}
           <button
-            onClick={() => setView("list")}
-            className="flex items-center gap-2 text-xs font-bold text-saas-muted hover:text-saas-dark transition-colors"
+            onClick={() => {
+              if (onBack) {
+                onBack();
+              } else {
+                setView("list");
+              }
+            }}
+            className="flex items-center gap-2 text-xs font-bold text-saas-muted hover:text-saas-dark transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Lansia
+            <ArrowLeft className="w-4 h-4" /> {backLabel || "Kembali ke Daftar Lansia"}
           </button>
 
           {/* Profile & Form Grid */}

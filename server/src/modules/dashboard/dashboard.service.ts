@@ -362,6 +362,7 @@ export const dashboardService = {
       id: string;
       nama: string;
       tipe: 'Balita' | 'Lansia';
+      jenisKelamin?: string;
       detailInfo: string;
       statusPeriksa: 'Selesai Periksa' | 'Belum Mengisi Data';
       tanggalPeriksa?: string | null;
@@ -372,6 +373,7 @@ export const dashboardService = {
       id: string;
       nama: string;
       tipe: 'Balita' | 'Lansia';
+      jenisKelamin?: string;
       detailInfo: string;
       statusPeriksa: 'Selesai Periksa' | 'Belum Mengisi Data';
       tanggalPeriksa?: string | null;
@@ -382,6 +384,7 @@ export const dashboardService = {
       id: string;
       nama: string;
       tipe: 'Balita' | 'Lansia';
+      jenisKelamin?: string;
       detailInfo: string;
       statusPeriksa: 'Selesai Periksa' | 'Belum Mengisi Data';
       tanggalPeriksa?: string | null;

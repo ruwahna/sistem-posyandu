@@ -82,6 +82,7 @@ export interface DashboardSummary {
     balita: Array<{
       id: string;
       tanggalPeriksa: string;
+      createdAt?: string;
       beratBadan: number;
       tinggiBadan: number;
       statusBbU: string;
@@ -90,6 +91,7 @@ export interface DashboardSummary {
     lansia: Array<{
       id: string;
       tanggalPeriksa: string;
+      createdAt?: string;
       beratBadan: number;
       tekananDarahSistol: number;
       tekananDarahDiastol: number;

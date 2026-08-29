@@ -552,4 +552,39 @@ export function AkunTableSkeleton({ rows = 4 }: { rows?: number }) {
   );
 }
 
+// ── Laporan Rekapan Skeleton ──
+export function LaporanSkeleton() {
+  return (
+    <div className="space-y-8 animate-in fade-in duration-300">
+      {/* Header Skeleton */}
+      <div className="bg-white rounded-card shadow-soft-card border border-hairline/60 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton variant="rounded" className="h-4 w-32 rounded-pill" />
+          <Skeleton variant="rounded" className="h-7 w-72" />
+          <Skeleton variant="rounded" className="h-3.5 w-96 max-w-full" />
+        </div>
+        <div className="flex items-center gap-3">
+          <Skeleton variant="rounded" className="h-10 w-28 rounded-input" />
+          <Skeleton variant="rounded" className="h-10 w-28 rounded-input" />
+          <Skeleton variant="rounded" className="h-10 w-36 rounded-input" />
+        </div>
+      </div>
+
+      {/* Rekapan KPI Cards */}
+      <div className="space-y-4">
+        <Skeleton variant="rounded" className="h-6 w-48" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+
+      {/* Table Skeleton */}
+      <TableSkeleton rows={5} columns={7} />
+    </div>
+  );
+}
+
 

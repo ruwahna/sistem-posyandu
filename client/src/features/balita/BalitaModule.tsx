@@ -138,9 +138,11 @@ interface BalitaModuleProps {
   onNavigateToPelayanan?: (id: string) => void;
   searchQuery?: string;
   selectedId?: string;
+  onBack?: () => void;
+  backLabel?: string;
 }
 
-export default function BalitaModule({ posyanduId, onNavigateToPelayanan, selectedId, searchQuery }: BalitaModuleProps) {
+export default function BalitaModule({ posyanduId, onNavigateToPelayanan, selectedId, searchQuery, onBack, backLabel }: BalitaModuleProps) {
   const { user } = useAuth();
   const [balitas, setBalitas] = useState<Balita[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -171,6 +173,9 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
     if (selectedId) {
       setSelectedBalitaId(selectedId);
       setView("detail");
+    } else {
+      setSelectedBalitaId(null);
+      setView("list");
     }
   }, [selectedId]);
 
@@ -816,7 +821,17 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
                       return (
                         <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
                           <td className="py-4">
-                            <p className="font-bold text-saas-dark">{item.nama}</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedBalitaId(item.id);
+                                setView("detail");
+                              }}
+                              className="font-bold text-saas-dark hover:text-saas-primary hover:underline text-left transition-colors cursor-pointer"
+                              title={`Lihat Profil ${item.nama}`}
+                            >
+                              {item.nama}
+                            </button>
                             <p className="text-[11px] text-saas-muted font-medium mt-0.5">NIK: {item.nik || "-"}</p>
                           </td>
                           <td className="py-4">
@@ -940,10 +955,16 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
         <div className="space-y-8">
           {/* Back Action Header */}
           <button
-            onClick={() => setView("list")}
-            className="flex items-center gap-2 text-xs font-bold text-saas-muted hover:text-saas-dark transition-colors"
+            onClick={() => {
+              if (onBack) {
+                onBack();
+              } else {
+                setView("list");
+              }
+            }}
+            className="flex items-center gap-2 text-xs font-bold text-saas-muted hover:text-saas-dark transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Balita
+            <ArrowLeft className="w-4 h-4" /> {backLabel || "Kembali ke Daftar Balita"}
           </button>
 
           {/* Profile Card & Input Pemeriksaan Grid */}
