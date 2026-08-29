@@ -8,6 +8,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import PageHelmet from "@/components/PageHelmet";
+import { LaporanSkeleton } from "@/components/Skeleton";
 
 interface LaporanModuleProps {
   posyanduId: string;
@@ -260,6 +261,24 @@ export default function LaporanModule({ posyanduId, onNavigate }: LaporanModuleP
 
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
+
+  if (rekapanLoading && logs.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 space-y-6">
+        <PageHelmet
+          title="Laporan Rekapan"
+          description="Laporan rekapitulasi pemeriksaan bulanan untuk Balita dan Lansia dengan filter periode."
+        />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Laporan Rekapan</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Laporan rekapitulasi data pemeriksaan Balita &amp; Lansia berdasarkan periode waktu dan kegiatan posyandu.
+          </p>
+        </div>
+        <LaporanSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 space-y-6">
