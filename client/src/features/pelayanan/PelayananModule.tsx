@@ -868,7 +868,7 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
             {filteredPasiens.length > 0 ? (
               filteredPasiens.map((p) => {
                 const isSelected = selectedPasien?.id === p.id;
-                const isFemale = p.jenisKelamin === "P" || p.jenisKelamin === "Perempuan";
+                const isFemale = p.jenisKelamin === "P" || (p.jenisKelamin as string) === "Perempuan";
                 return (
                   <button
                     key={p.id}
