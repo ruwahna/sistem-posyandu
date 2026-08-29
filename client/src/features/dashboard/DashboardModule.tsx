@@ -229,14 +229,16 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId, a
     return (d.getUTCMonth() + 1) === targetMonth && d.getUTCFullYear() === targetYear;
   };
 
-  const formatJamPeriksa = (tanggalStr?: string, createdAtStr?: string) => {
+  const formatJamDanTanggal = (tanggalStr?: string, createdAtStr?: string) => {
     const raw = createdAtStr || tanggalStr;
     if (!raw) return "-";
     const d = new Date(raw);
     if (isNaN(d.getTime())) return "-";
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes} WIB`;
+    const jamStr = `${hours}:${minutes} WIB`;
+    const tglStr = formatTanggalIndonesia(tanggalStr || raw);
+    return `${jamStr} • ${tglStr}`;
   };
 
   const filteredBalitaTerbaru = (summary?.pemeriksaanTerbaru.balita ?? []).filter((p) => isMatchingPeriod(p.tanggalPeriksa));
@@ -251,7 +253,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId, a
       detail: p.statusBbU ? `BB/U: ${p.statusBbU}` : "-",
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: formatJamPeriksa(p.tanggalPeriksa, p.createdAt),
+      waktu: formatJamDanTanggal(p.tanggalPeriksa, p.createdAt),
     })),
     ...filteredLansiaTerbaru.map((p, i) => ({
       id: `l-${p.id ?? i}`,
@@ -260,7 +262,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId, a
       detail: `${p.tekananDarahSistol}/${p.tekananDarahDiastol} mmHg`,
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: formatJamPeriksa(p.tanggalPeriksa, p.createdAt),
+      waktu: formatJamDanTanggal(p.tanggalPeriksa, p.createdAt),
     })),
   ];
 
@@ -979,8 +981,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId, a
                   <th className="px-4 pb-3 text-left whitespace-nowrap">Nama</th>
                   <th className="px-4 pb-3 text-left whitespace-nowrap">Kategori</th>
                   <th className="px-4 pb-3 text-left whitespace-nowrap">Keterangan</th>
-                  <th className="px-4 pb-3 text-center whitespace-nowrap">Status</th>
-                  <th className="px-4 pb-3 text-right whitespace-nowrap">Jam Periksa</th>
+                  <th className="px-4 pb-3 text-right whitespace-nowrap">Jam &amp; Tanggal</th>
                 </tr>
               </thead>
               <tbody>
@@ -1001,28 +1002,12 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId, a
                       </td>
                       <td className="px-4 py-3.5 text-saas-muted font-medium whitespace-nowrap">{item.tipe}</td>
                       <td className="px-4 py-3.5 text-saas-muted font-medium whitespace-nowrap">{item.detail}</td>
-                      <td className="px-4 py-3.5 text-center whitespace-nowrap">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1.5 ${
-                            item.statusType === "success"
-                              ? "bg-trend-successBg text-trend-successText"
-                              : item.statusType === "warning"
-                              ? "bg-trend-dangerBg text-trend-dangerText"
-                              : "bg-blue-50 text-saas-primary"
-                          }`}
-                        >
-                          {item.statusType === "success" && <CheckCircle2 className="w-3 h-3" />}
-                          {item.statusType === "warning" && <AlertCircle className="w-3 h-3" />}
-                          {item.statusType === "info" && <Clock className="w-3 h-3" />}
-                          {item.status}
-                        </span>
-                      </td>
                       <td className="px-4 py-3.5 text-right text-saas-muted font-semibold whitespace-nowrap">{item.waktu}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-xs text-saas-muted font-medium">
+                    <td colSpan={4} className="py-8 text-center text-xs text-saas-muted font-medium">
                       Tidak menemukan data kunjungan yang cocok
                     </td>
                   </tr>
