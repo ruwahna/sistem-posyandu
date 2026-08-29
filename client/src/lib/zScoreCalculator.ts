@@ -1,118 +1,65 @@
-interface Milestone {
-  x: number; // age in months or height in cm
-  median: number;
-  sd: number;
+import { BBU_DATA, TBU_DATA, BBTB_DATA, SDArray } from './antropometriData';
+
+function getBBUsds(usiaBulan: number, jenisKelamin: 'L' | 'P'): SDArray {
+  const ageKey = Math.min(60, Math.max(0, Math.round(usiaBulan)));
+  const data = BBU_DATA[jenisKelamin] || BBU_DATA['L'];
+  return data[ageKey] || data[0];
 }
 
-const BBU_BOYS: Milestone[] = [
-  { x: 0, median: 3.3, sd: 0.5 },
-  { x: 6, median: 7.9, sd: 0.8 },
-  { x: 12, median: 9.6, sd: 1.0 },
-  { x: 24, median: 12.2, sd: 1.2 },
-  { x: 36, median: 14.3, sd: 1.5 },
-  { x: 48, median: 16.3, sd: 1.8 },
-  { x: 60, median: 18.3, sd: 2.0 }
-];
+function getTBUsds(usiaBulan: number, jenisKelamin: 'L' | 'P'): SDArray {
+  const ageKey = Math.min(60, Math.max(0, Math.round(usiaBulan)));
+  const data = TBU_DATA[jenisKelamin] || TBU_DATA['L'];
+  return data[ageKey] || data[0];
+}
 
-const BBU_GIRLS: Milestone[] = [
-  { x: 0, median: 3.2, sd: 0.5 },
-  { x: 6, median: 7.3, sd: 0.8 },
-  { x: 12, median: 8.9, sd: 1.0 },
-  { x: 24, median: 11.5, sd: 1.2 },
-  { x: 36, median: 13.9, sd: 1.5 },
-  { x: 48, median: 16.1, sd: 1.8 },
-  { x: 60, median: 18.2, sd: 2.0 }
-];
+function getBBTBSDs(tinggiBadan: number, jenisKelamin: 'L' | 'P'): SDArray {
+  const list = BBTB_DATA[jenisKelamin] || BBTB_DATA['L'];
+  if (tinggiBadan <= list[0].tb) return list[0].sds;
+  if (tinggiBadan >= list[list.length - 1].tb) return list[list.length - 1].sds;
 
-const TBU_BOYS: Milestone[] = [
-  { x: 0, median: 49.9, sd: 2.0 },
-  { x: 6, median: 67.6, sd: 2.5 },
-  { x: 12, median: 75.7, sd: 3.0 },
-  { x: 24, median: 87.8, sd: 3.5 },
-  { x: 36, median: 96.1, sd: 4.0 },
-  { x: 48, median: 103.3, sd: 4.5 },
-  { x: 60, median: 110.0, sd: 5.0 }
-];
-
-const TBU_GIRLS: Milestone[] = [
-  { x: 0, median: 49.1, sd: 2.0 },
-  { x: 6, median: 65.7, sd: 2.5 },
-  { x: 12, median: 74.0, sd: 3.0 },
-  { x: 24, median: 86.4, sd: 3.5 },
-  { x: 36, median: 95.1, sd: 4.0 },
-  { x: 48, median: 102.7, sd: 4.5 },
-  { x: 60, median: 109.4, sd: 5.0 }
-];
-
-const BBTB_BOYS: Milestone[] = [
-  { x: 45, median: 2.4, sd: 0.4 },
-  { x: 55, median: 4.3, sd: 0.5 },
-  { x: 65, median: 7.3, sd: 0.7 },
-  { x: 75, median: 9.5, sd: 0.9 },
-  { x: 85, median: 11.5, sd: 1.1 },
-  { x: 95, median: 14.0, sd: 1.3 },
-  { x: 105, median: 17.0, sd: 1.6 },
-  { x: 115, median: 20.5, sd: 2.0 },
-  { x: 120, median: 22.0, sd: 2.1 }
-];
-
-const BBTB_GIRLS: Milestone[] = [
-  { x: 45, median: 2.5, sd: 0.4 },
-  { x: 55, median: 4.2, sd: 0.5 },
-  { x: 65, median: 6.8, sd: 0.7 },
-  { x: 75, median: 9.0, sd: 0.9 },
-  { x: 85, median: 11.0, sd: 1.1 },
-  { x: 95, median: 13.5, sd: 1.3 },
-  { x: 105, median: 16.5, sd: 1.6 },
-  { x: 115, median: 20.0, sd: 2.0 },
-  { x: 120, median: 21.5, sd: 2.1 }
-];
-
-function interpolate(x: number, milestones: Milestone[]): { median: number; sd: number } {
-  if (x <= milestones[0].x) {
-    return { median: milestones[0].median, sd: milestones[0].sd };
-  }
-  if (x >= milestones[milestones.length - 1].x) {
-    return { median: milestones[milestones.length - 1].median, sd: milestones[milestones.length - 1].sd };
-  }
-
-  for (let i = 0; i < milestones.length - 1; i++) {
-    const m1 = milestones[i];
-    const m2 = milestones[i + 1];
-    if (x >= m1.x && x <= m2.x) {
-      const ratio = (x - m1.x) / (m2.x - m1.x);
-      const median = m1.median + ratio * (m2.median - m1.median);
-      const sd = m1.sd + ratio * (m2.sd - m1.sd);
-      return { median, sd };
+  for (let i = 0; i < list.length - 1; i++) {
+    const item1 = list[i];
+    const item2 = list[i + 1];
+    if (tinggiBadan >= item1.tb && tinggiBadan <= item2.tb) {
+      const ratio = (tinggiBadan - item1.tb) / (item2.tb - item1.tb);
+      const interpolatedSds: SDArray = [0, 0, 0, 0, 0, 0, 0];
+      for (let j = 0; j < 7; j++) {
+        interpolatedSds[j] = item1.sds[j] + ratio * (item2.sds[j] - item1.sds[j]);
+      }
+      return interpolatedSds;
     }
   }
-
-  return { median: milestones[0].median, sd: milestones[0].sd };
+  return list[0].sds;
 }
 
-export function hitungZScore(
-  val: number,
-  x: number,
-  milestones: Milestone[]
-): number {
-  const { median, sd } = interpolate(x, milestones);
-  if (sd === 0) return 0;
-  return (val - median) / sd;
+export function hitungZScoreFromSD(val: number, sds: SDArray): number {
+  const [sdM3, sdM2, sdM1, median, sdP1, sdP2, sdP3] = sds;
+  if (val === median) return 0;
+
+  if (val > median) {
+    const sdUnit = sdP1 - median;
+    if (sdUnit === 0) return 0;
+    return (val - median) / sdUnit;
+  } else {
+    const sdUnit = median - sdM1;
+    if (sdUnit === 0) return 0;
+    return (val - median) / sdUnit;
+  }
 }
 
 export function hitungZScoreBBU(beratBadan: number, usiaBulan: number, jenisKelamin: 'L' | 'P'): number {
-  const milestones = jenisKelamin === 'L' ? BBU_BOYS : BBU_GIRLS;
-  return Number(hitungZScore(beratBadan, usiaBulan, milestones).toFixed(2));
+  const sds = getBBUsds(usiaBulan, jenisKelamin);
+  return Number(hitungZScoreFromSD(beratBadan, sds).toFixed(2));
 }
 
 export function hitungZScoreTBU(tinggiBadan: number, usiaBulan: number, jenisKelamin: 'L' | 'P'): number {
-  const milestones = jenisKelamin === 'L' ? TBU_BOYS : TBU_GIRLS;
-  return Number(hitungZScore(tinggiBadan, usiaBulan, milestones).toFixed(2));
+  const sds = getTBUsds(usiaBulan, jenisKelamin);
+  return Number(hitungZScoreFromSD(tinggiBadan, sds).toFixed(2));
 }
 
 export function hitungZScoreBBTB(beratBadan: number, tinggiBadan: number, jenisKelamin: 'L' | 'P'): number {
-  const milestones = jenisKelamin === 'L' ? BBTB_BOYS : BBTB_GIRLS;
-  return Number(hitungZScore(beratBadan, tinggiBadan, milestones).toFixed(2));
+  const sds = getBBTBSDs(tinggiBadan, jenisKelamin);
+  return Number(hitungZScoreFromSD(beratBadan, sds).toFixed(2));
 }
 
 export function hitungStatusBbU(
@@ -137,7 +84,7 @@ export function hitungStatusTbU(
 
   if (zScore < -3) return 'Sangat Pendek';
   if (zScore < -2) return 'Pendek';
-  if (zScore <= 3) return 'Normal';
+  if (zScore <= 2) return 'Normal'; // Sesuai Permenkes No. 2 Th 2020: Normal (-2 SD s.d. +2 SD)
   return 'Tinggi';
 }
 

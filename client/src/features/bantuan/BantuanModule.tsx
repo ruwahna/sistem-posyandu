@@ -2,27 +2,27 @@
 
 import { useState } from "react";
 import {
+  User,
   HelpCircle,
   Search,
   BookOpen,
   ShieldAlert,
-  UserCheck2,
   Users,
   PhoneCall,
-  ChevronDown,
-  ChevronUp,
-  Heart,
   FileText,
   ArrowLeft,
-  CheckCircle,
   HelpCircle as InfoIcon,
-  AlertTriangle,
-  UserX,
-  ListTodo
+  ListTodo,
+  Table as TableIcon,
+  Scale,
+  Ruler,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import PageHelmet from "../../components/PageHelmet";
 import LansiaIcon from "../../components/LansiaIcon";
 import BalitaIcon from "../../components/BalitaIcon";
+import { BBU_DATA, TBU_DATA, BBTB_DATA, SDArray } from "../../lib/antropometriData";
 
 interface Guide {
   id: string;
@@ -41,10 +41,16 @@ export default function BantuanModule() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
 
+  // State untuk Tabel Standar Antropometri (Permenkes 2/2020)
+  const [tableTab, setTableTab] = useState<"bbu" | "tbu" | "bbtb">("bbu");
+  const [tableJk, setTableJk] = useState<"L" | "P">("L");
+  const [tableSearch, setTableSearch] = useState("");
+
   // Kamus Istilah Sederhana (Glossary)
   const glossary = [
-    { istilah: "Stunting (Kerdil)", arti: "Kondisi anak yang terlalu pendek dibanding anak seusianya karena kurang gizi dalam waktu yang sangat lama." },
-    { istilah: "Wasting (Kurus)", arti: "Kondisi anak yang berat badannya terlalu kurus dibanding tinggi badannya karena kurang gizi mendadak/sakit." },
+    { istilah: "Stunting (Kerdil)", arti: "Kondisi anak yang terlalu pendek dibanding anak seusianya karena kurang gizi dalam waktu yang sangat lama (PB/U atau TB/U < -2 SD)." },
+    { istilah: "Wasting (Kurus)", arti: "Kondisi anak yang berat badannya terlalu kurus dibanding tinggi badannya (BB/PB atau BB/TB < -2 SD)." },
+    { istilah: "Underweight (BB Kurang)", arti: "Kondisi anak yang berat badannya kurang dibanding usianya (BB/U < -2 SD)." },
     { istilah: "Hipertensi", arti: "Tekanan darah tinggi (sistol di atas 140 atau diastol di atas 90)." },
     { istilah: "Diabetes (Penyakit Gula)", arti: "Kondisi di mana kadar gula dalam darah terlalu tinggi (kencing manis)." },
     { istilah: "Sistol & Diastol", arti: "Angka tensi darah. Sistol adalah angka atas (saat jantung memompa), diastol adalah angka bawah (saat jantung istirahat)." },
@@ -127,11 +133,39 @@ export default function BantuanModule() {
 
   const selectedGuide = guides.find((g) => g.id === activeGuideId);
 
+  // Helper untuk filter data tabel antropometri
+  const getTableRows = () => {
+    if (tableTab === "bbu") {
+      const data = BBU_DATA[tableJk];
+      return Object.entries(data).map(([umur, sds]) => ({
+        label: `${umur} Bulan`,
+        valNum: parseInt(umur, 10),
+        sds
+      })).filter(row => !tableSearch || row.label.toLowerCase().includes(tableSearch.toLowerCase()) || row.valNum.toString().includes(tableSearch));
+    } else if (tableTab === "tbu") {
+      const data = TBU_DATA[tableJk];
+      return Object.entries(data).map(([umur, sds]) => ({
+        label: parseInt(umur, 10) <= 24 ? `${umur} Bulan (PB)` : `${umur} Bulan (TB)`,
+        valNum: parseInt(umur, 10),
+        sds
+      })).filter(row => !tableSearch || row.label.toLowerCase().includes(tableSearch.toLowerCase()) || row.valNum.toString().includes(tableSearch));
+    } else {
+      const data = BBTB_DATA[tableJk];
+      return data.map(item => ({
+        label: `${item.tb} cm`,
+        valNum: item.tb,
+        sds: item.sds
+      })).filter(row => !tableSearch || row.label.toLowerCase().includes(tableSearch.toLowerCase()) || row.valNum.toString().includes(tableSearch));
+    }
+  };
+
+  const tableRows = getTableRows();
+
   return (
     <div className="space-y-8 pb-10">
       <PageHelmet
         title="Pusat Bantuan & Dokumen"
-        description="Panduan penggunaan sistem posyandu, FAQ, dan kontak dukungan teknis."
+        description="Panduan penggunaan sistem posyandu, FAQ, tabel standar Permenkes 2/2020, dan kontak dukungan teknis."
       />
       {/* View Detail Panduan */}
       {selectedGuide ? (
@@ -240,6 +274,171 @@ export default function BantuanModule() {
                 );
               })}
             </div>
+          </div>
+
+          {/* TABEL STANDAR ANTROPOMETRI ANAK (PERMENKES NO. 2 TAHUN 2020) */}
+          <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-teal-50 text-saas-primary flex items-center justify-center">
+                  <TableIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-saas-dark flex items-center gap-2">
+                    Tabel Standar Antropometri Anak
+                    <span className="px-2 py-0.5 text-[10px] font-bold bg-teal-100 text-teal-800 rounded-full">
+                      Permenkes No. 2 Th 2020
+                    </span>
+                  </h3>
+                  <p className="text-xs text-saas-muted mt-0.5">
+                    Standar Rujukan Resmi Kementerian Kesehatan RI untuk penilaian Z-Score pertumbuhan balita.
+                  </p>
+                </div>
+              </div>
+
+              {/* Selector Jenis Kelamin */}
+              <div className="flex items-center bg-gray-100/90 p-1 rounded-xl shrink-0 gap-1 border border-gray-200/50">
+                <button
+                  onClick={() => setTableJk("L")}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center gap-2 ${
+                    tableJk === "L"
+                      ? "bg-blue-600 text-white shadow-sm shadow-blue-500/25"
+                      : "text-saas-muted hover:text-saas-dark hover:bg-gray-200/50"
+                  }`}
+                >
+                  <div className="w-5.5 h-5.5 rounded-md bg-white p-1 flex items-center justify-center shadow-xs shrink-0">
+                    <img src="/baby.svg" alt="Laki-laki" className="w-4 h-4 object-contain" />
+                  </div>
+                  Laki-laki
+                </button>
+                <button
+                  onClick={() => setTableJk("P")}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center gap-2 ${
+                    tableJk === "P"
+                      ? "bg-pink-600 text-white shadow-sm shadow-pink-500/25"
+                      : "text-saas-muted hover:text-saas-dark hover:bg-gray-200/50"
+                  }`}
+                >
+                  <div className="w-5.5 h-5.5 rounded-md bg-white p-1 flex items-center justify-center shadow-xs shrink-0">
+                    <img src="/girl.svg" alt="Perempuan" className="w-4 h-4 object-contain" />
+                  </div>
+                  Perempuan
+                </button>
+              </div>
+            </div>
+
+            {/* Tab Indeks Standard & Search */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                <button
+                  onClick={() => setTableTab("bbu")}
+                  className={`px-4 py-2 rounded-input text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                    tableTab === "bbu"
+                      ? "bg-teal-50 border border-teal-200 text-saas-primary font-black"
+                      : "bg-gray-50 border border-gray-100 text-saas-muted hover:bg-gray-100"
+                  }`}
+                >
+                  <Scale className="w-3.5 h-3.5" /> BB / U (Berat Badan / Umur)
+                </button>
+                <button
+                  onClick={() => setTableTab("tbu")}
+                  className={`px-4 py-2 rounded-input text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                    tableTab === "tbu"
+                      ? "bg-teal-50 border border-teal-200 text-saas-primary font-black"
+                      : "bg-gray-50 border border-gray-100 text-saas-muted hover:bg-gray-100"
+                  }`}
+                >
+                  <Ruler className="w-3.5 h-3.5" /> PB / U & TB / U (Panjang-Tinggi / Umur)
+                </button>
+                <button
+                  onClick={() => setTableTab("bbtb")}
+                  className={`px-4 py-2 rounded-input text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                    tableTab === "bbtb"
+                      ? "bg-teal-50 border border-teal-200 text-saas-primary font-black"
+                      : "bg-gray-50 border border-gray-100 text-saas-muted hover:bg-gray-100"
+                  }`}
+                >
+                  <TableIcon className="w-3.5 h-3.5" /> BB / PB & BB / TB (Berat / Tinggi)
+                </button>
+              </div>
+
+              <div className="relative w-full sm:w-48">
+                <input
+                  type="text"
+                  placeholder={tableTab === "bbtb" ? "Cari tinggi (cm)..." : "Cari umur (bulan)..."}
+                  value={tableSearch}
+                  onChange={(e) => setTableSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary"
+                />
+                <Search className="absolute left-2.5 top-2 text-saas-muted w-3.5 h-3.5" />
+              </div>
+            </div>
+
+            {/* Keterangan Kategori Kemenkes */}
+            <div className="p-3.5 bg-blue-50/60 border border-blue-100 rounded-xl text-xs space-y-1.5">
+              <p className="font-extrabold text-blue-900 flex items-center gap-1.5">
+                <InfoIcon className="w-4 h-4 text-blue-600 shrink-0" />
+                Penjelasan Kategori Permenkes No. 2 Tahun 2020 untuk {tableTab.toUpperCase()}:
+              </p>
+              {tableTab === "bbu" && (
+                <p className="text-blue-800 text-[11px] font-semibold leading-relaxed pl-5">
+                  • <strong>&lt; -3 SD</strong>: Berat Badan Sangat Kurang | <strong>-3 SD s.d. &lt; -2 SD</strong>: Berat Badan Kurang | <strong>-2 SD s.d. +1 SD</strong>: Berat Badan Normal | <strong>&gt; +1 SD</strong>: Risiko Berat Badan Lebih
+                </p>
+              )}
+              {tableTab === "tbu" && (
+                <p className="text-blue-800 text-[11px] font-semibold leading-relaxed pl-5">
+                  • <strong>&lt; -3 SD</strong>: Sangat Pendek (Severely Stunted) | <strong>-3 SD s.d. &lt; -2 SD</strong>: Pendek (Stunted) | <strong>-2 SD s.d. +2 SD</strong>: Normal | <strong>&gt; +2 SD</strong>: Tinggi
+                </p>
+              )}
+              {tableTab === "bbtb" && (
+                <p className="text-blue-800 text-[11px] font-semibold leading-relaxed pl-5">
+                  • <strong>&lt; -3 SD</strong>: Gizi Buruk (Sangat Kurus) | <strong>-3 SD s.d. &lt; -2 SD</strong>: Gizi Kurang (Kurus) | <strong>-2 SD s.d. +1 SD</strong>: Gizi Baik (Normal) | <strong>&gt; +1 SD</strong>: Gizi Lebih / Obesitas
+                </p>
+              )}
+            </div>
+
+            {/* Tabel Data Standar Antropometri */}
+            <div className="overflow-x-auto border border-gray-200 rounded-xl max-h-96">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-gray-100 text-saas-dark font-extrabold sticky top-0 border-b border-gray-200 z-10">
+                  <tr>
+                    <th className="py-2.5 px-4 bg-gray-100">{tableTab === "bbtb" ? "Panjang / Tinggi" : "Umur Balita"}</th>
+                    <th className="py-2.5 px-3 text-red-700 bg-red-50/50">-3 SD</th>
+                    <th className="py-2.5 px-3 text-orange-700 bg-orange-50/50">-2 SD</th>
+                    <th className="py-2.5 px-3 text-yellow-700 bg-yellow-50/50">-1 SD</th>
+                    <th className="py-2.5 px-3 text-teal-800 bg-teal-100/60 font-black">Median (0)</th>
+                    <th className="py-2.5 px-3 text-emerald-700 bg-emerald-50/50">+1 SD</th>
+                    <th className="py-2.5 px-3 text-blue-700 bg-blue-50/50">+2 SD</th>
+                    <th className="py-2.5 px-3 text-purple-700 bg-purple-50/50">+3 SD</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 font-semibold text-saas-dark">
+                  {tableRows.length > 0 ? (
+                    tableRows.map((row, idx) => (
+                      <tr key={idx} className="hover:bg-teal-50/30 transition-colors">
+                        <td className="py-2 px-4 font-bold bg-gray-50/50">{row.label}</td>
+                        <td className="py-2 px-3 text-red-600 bg-red-50/20">{row.sds[0]}</td>
+                        <td className="py-2 px-3 text-orange-600 bg-orange-50/20">{row.sds[1]}</td>
+                        <td className="py-2 px-3 text-yellow-700 bg-yellow-50/20">{row.sds[2]}</td>
+                        <td className="py-2 px-3 font-extrabold text-teal-900 bg-teal-50/60">{row.sds[3]}</td>
+                        <td className="py-2 px-3 text-emerald-700 bg-emerald-50/20">{row.sds[4]}</td>
+                        <td className="py-2 px-3 text-blue-700 bg-blue-50/20">{row.sds[5]}</td>
+                        <td className="py-2 px-3 text-purple-700 bg-purple-50/20">{row.sds[6]}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="py-8 text-center text-saas-muted font-medium">
+                        Tidak ada data yang cocok dengan pencarian "{tableSearch}"
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-[11px] text-saas-muted text-right italic font-medium">
+              * Satuan BB dalam Kilogram (kg), PB/TB dalam Sentimeter (cm). Sumber: Lampiran Permenkes RI No. 2 Tahun 2020.
+            </p>
           </div>
 
           {/* Alur Kerja Hari-H Pelayanan Posyandu */}
