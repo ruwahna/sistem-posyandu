@@ -659,8 +659,15 @@ export default function RiwayatModule({ posyanduId, activePeriode, onNavigate }:
                           <td className="py-4 px-3 whitespace-nowrap">
                             <button
                               type="button"
-                              onClick={() => openDetailModal(log)}
+                              onClick={() => {
+                                if (onNavigate && log.pasienId) {
+                                  onNavigate(log.tipe, log.pasienId);
+                                } else {
+                                  openDetailModal(log);
+                                }
+                              }}
                               className="font-extrabold text-saas-dark hover:text-saas-primary text-left transition-colors cursor-pointer hover:underline"
+                              title={`Lihat Profil ${log.nama}`}
                             >
                               {log.nama}
                             </button>
@@ -698,8 +705,13 @@ export default function RiwayatModule({ posyanduId, activePeriode, onNavigate }:
                           <td className="py-4 px-3 text-right whitespace-nowrap">
                             <ActionMenu
                               items={[
+                                ...(onNavigate && log.pasienId ? [{
+                                  label: `Lihat Profil ${log.tipe}`,
+                                  icon: <User className="w-4 h-4" />,
+                                  onClick: () => onNavigate(log.tipe, log.pasienId)
+                                }] : []),
                                 {
-                                  label: "Lihat Detail",
+                                  label: "Grafik & Detail",
                                   icon: <Eye className="w-4 h-4" />,
                                   onClick: () => openDetailModal(log)
                                 },
