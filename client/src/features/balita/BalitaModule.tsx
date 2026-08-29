@@ -173,6 +173,9 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
     if (selectedId) {
       setSelectedBalitaId(selectedId);
       setView("detail");
+    } else {
+      setSelectedBalitaId(null);
+      setView("list");
     }
   }, [selectedId]);
 

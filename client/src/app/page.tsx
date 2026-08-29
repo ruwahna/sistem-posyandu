@@ -506,6 +506,11 @@ export default function Home() {
 
   const handleMenuSelect = (menuName: string) => {
     setNavigationOrigin(null);
+    if (menuName === "Balita") {
+      setSelectedBalitaId(undefined);
+    } else if (menuName === "Lansia") {
+      setSelectedLansiaId(undefined);
+    }
     setActiveMenu(menuName);
     setIsMobileMenuOpen(false);
     setShowNotification(false);

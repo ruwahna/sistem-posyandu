@@ -123,6 +123,9 @@ export default function LansiaModule({ posyanduId, searchQuery = "", selectedId,
     if (selectedId) {
       setSelectedLansiaId(selectedId);
       setView("detail");
+    } else {
+      setSelectedLansiaId(null);
+      setView("list");
     }
   }, [selectedId]);
   const [ageFilter, setAgeFilter] = useState<"semua" | "45-59" | "60-69" | "70+">("semua");
