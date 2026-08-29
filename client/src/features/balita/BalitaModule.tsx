@@ -816,7 +816,17 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
                       return (
                         <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
                           <td className="py-4">
-                            <p className="font-bold text-saas-dark">{item.nama}</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedBalitaId(item.id);
+                                setView("detail");
+                              }}
+                              className="font-bold text-saas-dark hover:text-saas-primary hover:underline text-left transition-colors cursor-pointer"
+                              title={`Lihat Profil ${item.nama}`}
+                            >
+                              {item.nama}
+                            </button>
                             <p className="text-[11px] text-saas-muted font-medium mt-0.5">NIK: {item.nik || "-"}</p>
                           </td>
                           <td className="py-4">

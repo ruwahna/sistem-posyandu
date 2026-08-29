@@ -51,9 +51,10 @@ import {
 interface RiwayatModuleProps {
   posyanduId: string;
   activePeriode?: PeriodePelayanan | null;
+  onNavigate?: (module: string, itemId?: string) => void;
 }
 
-export default function RiwayatModule({ posyanduId, activePeriode }: RiwayatModuleProps) {
+export default function RiwayatModule({ posyanduId, activePeriode, onNavigate }: RiwayatModuleProps) {
   const [logs, setLogs] = useState<ItemRiwayat[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -812,7 +813,22 @@ export default function RiwayatModule({ posyanduId, activePeriode }: RiwayatModu
                   {selectedDetailLog.tipe === "Balita" ? <BalitaIcon className="w-6 h-6" gender={selectedDetailLog.jenisKelamin} /> : <LansiaIcon className="w-6 h-6" gender={selectedDetailLog.jenisKelamin} />}
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-saas-dark">{selectedDetailLog.nama}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-extrabold text-saas-dark">{selectedDetailLog.nama}</h3>
+                    {onNavigate && selectedDetailLog.pasienId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsDetailModalOpen(false);
+                          onNavigate(selectedDetailLog.tipe, selectedDetailLog.pasienId);
+                        }}
+                        className="text-xs font-bold text-saas-primary hover:underline cursor-pointer"
+                        title={`Lihat Profil Lengkap ${selectedDetailLog.nama}`}
+                      >
+                        (Lihat Profil &rarr;)
+                      </button>
+                    )}
+                  </div>
                   <p className="text-xs text-saas-muted font-semibold mt-0.5">
                     Kategori: <strong className="text-saas-dark">{selectedDetailLog.tipe}</strong> | Total Periksa: <strong className="text-saas-primary">{participantHistory.length}x</strong>
                   </p>
