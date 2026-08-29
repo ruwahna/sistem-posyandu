@@ -220,27 +220,49 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId, a
       .finally(() => setIsDistribusiLoading(false));
   }, [posyanduId]);
 
-  // Build kunjungan list from API data (recent pemeriksaan)
+  const targetMonth = activePeriode ? activePeriode.bulan : (new Date().getUTCMonth() + 1);
+  const targetYear = activePeriode ? activePeriode.tahun : new Date().getUTCFullYear();
+
+  const isMatchingPeriod = (tanggalStr?: string) => {
+    if (!tanggalStr) return true;
+    const d = new Date(tanggalStr);
+    return (d.getUTCMonth() + 1) === targetMonth && d.getUTCFullYear() === targetYear;
+  };
+
+  const formatJamPeriksa = (tanggalStr?: string, createdAtStr?: string) => {
+    const raw = createdAtStr || tanggalStr;
+    if (!raw) return "-";
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return "-";
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes} WIB`;
+  };
+
+  const filteredBalitaTerbaru = (summary?.pemeriksaanTerbaru.balita ?? []).filter((p) => isMatchingPeriod(p.tanggalPeriksa));
+  const filteredLansiaTerbaru = (summary?.pemeriksaanTerbaru.lansia ?? []).filter((p) => isMatchingPeriod(p.tanggalPeriksa));
+
+  // Build kunjungan list from API data (recent pemeriksaan matching active period)
   const apiKunjungans: Kunjungan[] = [
-    ...(summary?.pemeriksaanTerbaru.balita ?? []).map((p, i) => ({
+    ...filteredBalitaTerbaru.map((p, i) => ({
       id: `b-${p.id ?? i}`,
       nama: p.balita.nama,
       tipe: "Balita" as const,
-      detail: p.statusBbU ?? "-",
+      detail: p.statusBbU ? `BB/U: ${p.statusBbU}` : "-",
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: formatTanggalIndonesia(p.tanggalPeriksa),
+      waktu: formatJamPeriksa(p.tanggalPeriksa, p.createdAt),
     })),
-    ...(summary?.pemeriksaanTerbaru.lansia ?? []).map((p, i) => ({
+    ...filteredLansiaTerbaru.map((p, i) => ({
       id: `l-${p.id ?? i}`,
       nama: p.lansia.nama,
       tipe: "Lansia" as const,
       detail: `${p.tekananDarahSistol}/${p.tekananDarahDiastol} mmHg`,
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: formatTanggalIndonesia(p.tanggalPeriksa),
+      waktu: formatJamPeriksa(p.tanggalPeriksa, p.createdAt),
     })),
-  ].sort((a, b) => b.waktu.localeCompare(a.waktu)); // sort by date
+  ];
 
   // Real-time additions from quick-exam modal go here
   const [localKunjungans, setLocalKunjungans] = useState<Kunjungan[]>([]);
@@ -959,7 +981,6 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId, a
                   <th className="px-4 pb-3 text-left whitespace-nowrap">Keterangan</th>
                   <th className="px-4 pb-3 text-center whitespace-nowrap">Status</th>
                   <th className="px-4 pb-3 text-right whitespace-nowrap">Jam Periksa</th>
-                  <th className="px-4 pb-3 text-center whitespace-nowrap w-12">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -997,42 +1018,6 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId, a
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right text-saas-muted font-semibold whitespace-nowrap">{item.waktu}</td>
-                      <td className="px-4 py-3.5 text-center relative whitespace-nowrap">
-                        <button
-                          onClick={(e) => toggleMenu(`row-${item.id}`, e)}
-                          className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
-                          title="Aksi Kunjungan"
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
-                        {openMenuId === `row-${item.id}` && (
-                          <div className="absolute right-0 top-10 z-30 w-48 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs text-left">
-                            <button
-                              onClick={() => {
-                                const realId = item.id.replace(/^(b-|l-)/, '');
-                                onNavigate(item.tipe === "Balita" ? "Balita" : "Lansia", realId);
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all"
-                            >
-                              <ArrowUpRight className="w-3.5 h-3.5" /> Lihat Profil {item.tipe}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedPasien({
-                                  id: item.id,
-                                  nama: item.nama,
-                                  tipe: item.tipe as "Balita" | "Lansia",
-                                  detailInfo: item.detail,
-                                });
-                                setIsOpenModal(true);
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all"
-                            >
-                              <Plus className="w-3.5 h-3.5" /> Input Pemeriksaan
-                            </button>
-                          </div>
-                        )}
-                      </td>
                     </tr>
                   ))
                 ) : (
