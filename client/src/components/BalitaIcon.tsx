@@ -17,6 +17,8 @@ export default function BalitaIcon({
   fill,
   stroke,
   gender,
+  alt,
+  style,
   ...props
 }: BalitaIconProps) {
   const isFemale = gender === "P" || gender === "Perempuan";
@@ -26,10 +28,9 @@ export default function BalitaIcon({
     return (
       <img
         src={iconPath}
-        alt={isFemale ? "Balita Perempuan" : "Balita Laki-laki"}
-        style={{ width: size || undefined, height: size || undefined }}
+        alt={alt || (isFemale ? "Balita Perempuan" : "Balita Laki-laki")}
+        style={{ width: size || undefined, height: size || undefined, ...style }}
         className={`shrink-0 inline-block object-contain ${className}`}
-        {...props}
       />
     );
   }
@@ -46,6 +47,7 @@ export default function BalitaIcon({
       strokeLinejoin="round"
       strokeLinecap="round"
       className={`shrink-0 inline-block object-contain ${className}`}
+      style={style}
       {...props}
     >
       <path
