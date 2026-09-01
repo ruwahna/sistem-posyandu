@@ -450,6 +450,9 @@ export interface ItemRiwayat {
   status: string;
   statusType: 'success' | 'warning' | 'info';
   tanggalLahir?: string;
+  nik?: string;
+  namaIbu?: string;
+  usiaBulan?: number;
   jenisKelamin?: string;
   beratBadan?: number;
   tinggiBadan?: number;
