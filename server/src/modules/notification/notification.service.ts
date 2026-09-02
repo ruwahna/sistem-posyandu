@@ -177,6 +177,16 @@ export const notificationService = {
     }
 
 
+    // 5. Otomatis hapus notifikasi yang usianya melebihi 7 hari
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    await prisma.notification.deleteMany({
+      where: {
+        posyanduId,
+        createdAt: { lt: sevenDaysAgo },
+      },
+    });
+
     // Fetch all notifications from DB
     const dbNotifications = await prisma.notification.findMany({
       where: { posyanduId },
@@ -219,6 +229,15 @@ export const notificationService = {
         type: data.type || 'INFO',
         category: data.category || 'system',
       },
+    });
+  },
+
+  /**
+   * Delete a single notification
+   */
+  async deleteNotification(posyanduId: string, notificationId: string): Promise<void> {
+    await prisma.notification.deleteMany({
+      where: { posyanduId, id: notificationId },
     });
   },
 

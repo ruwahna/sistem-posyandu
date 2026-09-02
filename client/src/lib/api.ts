@@ -575,6 +575,12 @@ export const notificationApi = {
       body: JSON.stringify({ notificationIds }),
     });
   },
+
+  deleteNotification: async (posyanduId: string, id: string): Promise<void> => {
+    await request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // ─────────────────────────────────────────────────────────────
