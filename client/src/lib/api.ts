@@ -128,6 +128,8 @@ export interface PemeriksaanBalita {
   vitaminA: boolean;
   asiEksklusif?: boolean;
   obatCacing?: boolean;
+  vitB1?: boolean;
+  vitB6?: boolean;
   statusImunisasi?: string;
   petugas?: string;
 }
@@ -465,6 +467,8 @@ export interface ItemRiwayat {
   vitaminA?: boolean;
   asiEksklusif?: boolean;
   obatCacing?: boolean;
+  vitB1?: boolean;
+  vitB6?: boolean;
   statusImunisasi?: string;
   tekananDarahSistol?: number;
   tekananDarahDiastol?: number;

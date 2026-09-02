@@ -101,6 +101,8 @@ model PemeriksaanBalita {
   vitaminA       Boolean     @map("vitamin_a")
   asiEksklusif   Boolean?    @map("asi_eksklusif")
   obatCacing     Boolean?    @map("obat_cacing")
+  vitB1          Boolean?    @default(false) @map("vit_b1")
+  vitB6          Boolean?    @default(false) @map("vit_b6")
   statusImunisasi String?    @map("status_imunisasi")
   petugas        String?     @map("petugas")
   createdAt      DateTime    @default(now()) @map("created_at")

@@ -260,6 +260,8 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
   const [examTBU, setExamTBU] = useState("Normal");
   const [examBBTB, setExamBBTB] = useState("Normal");
   const [examVitA, setExamVitA] = useState(false);
+  const [examVitB1, setExamVitB1] = useState(false);
+  const [examVitB6, setExamVitB6] = useState(false);
   const [examLiLA, setExamLiLA] = useState("");
   const [examKms, setExamKms] = useState("N");
   const [examAsi, setExamAsi] = useState(false);
@@ -284,6 +286,8 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
       setExamLK("");
       setExamLiLA("");
       setExamVitA(false);
+      setExamVitB1(false);
+      setExamVitB6(false);
       setExamAsi(false);
       setExamCacing(false);
       setExamImunisasi("");
@@ -311,6 +315,8 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
         setExamLiLA(exam.lingkarLengan ? String(exam.lingkarLengan) : "");
         setExamKms(exam.statusKms || "N");
         setExamVitA(Boolean(exam.vitaminA));
+        setExamVitB1(Boolean(exam.vitB1));
+        setExamVitB6(Boolean(exam.vitB6));
         setExamAsi(Boolean(exam.asiEksklusif));
         setExamCacing(Boolean(exam.obatCacing));
         setExamImunisasi(exam.statusImunisasi || "");
@@ -330,6 +336,8 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
       setExamLK("");
       setExamLiLA("");
       setExamVitA(false);
+      setExamVitB1(false);
+      setExamVitB6(false);
       setExamAsi(false);
       setExamCacing(false);
       setExamImunisasi("");
@@ -470,13 +478,15 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
           statusBbTb: mapStatusBbTb(examBBTB),
           statusKms: examKms || "N",
           vitaminA: examVitA,
+          vitB1: examVitB1,
+          vitB6: examVitB6,
           asiEksklusif: examAsi,
           obatCacing: examCacing,
           statusImunisasi: examImunisasi || undefined,
           petugas: user?.nama || "Kader Posyandu",
         } as any);
 
-        summaryText += `${lk ? `, LK: ${lk}cm` : ""}${lila ? `, LiLA: ${lila}cm` : ""}${examVitA ? ", Vit A" : ""}${examAsi ? ", ASI Eksklusif" : ""}${examCacing ? ", Obat Cacing" : ""}${examImunisasi ? `, Imunisasi: ${examImunisasi}` : ""}`;
+        summaryText += `${lk ? `, LK: ${lk}cm` : ""}${lila ? `, LiLA: ${lila}cm` : ""}${examVitA ? ", Vit A" : ""}${examVitB1 ? ", B1" : ""}${examVitB6 ? ", B6" : ""}${examAsi ? ", ASI Eksklusif" : ""}${examCacing ? ", Obat Cacing" : ""}${examImunisasi ? `, Imunisasi: ${examImunisasi}` : ""}`;
         statusText = `Selesai (${examBBU})`;
       } else {
         const sis = parseInt(examSistol);
@@ -547,6 +557,8 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
       setExamTBU("Normal");
       setExamBBTB("Normal");
       setExamVitA(false);
+      setExamVitB1(false);
+      setExamVitB6(false);
       setSelectedPasien(null);
       setFormWarning("");
 
@@ -1206,44 +1218,6 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="flex items-center pt-2 pb-2 pl-2">
-                          <label className="flex items-center gap-2 cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              checked={examVitA}
-                              onChange={(e) => setExamVitA(e.target.checked)}
-                              className="w-4.5 h-4.5 text-saas-primary focus:ring-saas-primary/30"
-                            />
-                            <span className="text-xs font-bold text-saas-dark">Pemberian Vitamin A</span>
-                          </label>
-                        </div>
-
-                        <div className="flex items-center pt-2 pb-2 pl-2">
-                          <label className="flex items-center gap-2 cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              checked={examAsi}
-                              onChange={(e) => setExamAsi(e.target.checked)}
-                              className="w-4.5 h-4.5 text-saas-primary focus:ring-saas-primary/30"
-                            />
-                            <span className="text-xs font-bold text-saas-dark">ASI Eksklusif</span>
-                          </label>
-                        </div>
-
-                        <div className="flex items-center pt-2 pb-2 pl-2">
-                          <label className="flex items-center gap-2 cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              checked={examCacing}
-                              onChange={(e) => setExamCacing(e.target.checked)}
-                              className="w-4.5 h-4.5 text-saas-primary focus:ring-saas-primary/30"
-                            />
-                            <span className="text-xs font-bold text-saas-dark">Obat Cacing</span>
-                          </label>
-                        </div>
-                      </div>
-
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
                         <div className="space-y-1.5">
                           <label className="text-xs font-bold text-saas-muted">Status BB/U (Otomatis)</label>
@@ -1285,6 +1259,68 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
                             <option value="Sangat Kurus">Sangat Kurus</option>
                             <option value="Gemuk">Gemuk</option>
                           </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
+                        <div className="flex items-center">
+                          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={examVitB1}
+                              onChange={(e) => setExamVitB1(e.target.checked)}
+                              className="w-4 h-4 text-saas-primary focus:ring-saas-primary/30"
+                            />
+                            <span className="text-xs font-bold text-saas-dark">Vit B1</span>
+                          </label>
+                        </div>
+
+                        <div className="flex items-center">
+                          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={examVitB6}
+                              onChange={(e) => setExamVitB6(e.target.checked)}
+                              className="w-4 h-4 text-saas-primary focus:ring-saas-primary/30"
+                            />
+                            <span className="text-xs font-bold text-saas-dark">Vit B6</span>
+                          </label>
+                        </div>
+
+                        <div className="flex items-center">
+                          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={examVitA}
+                              onChange={(e) => setExamVitA(e.target.checked)}
+                              className="w-4 h-4 text-saas-primary focus:ring-saas-primary/30"
+                            />
+                            <span className="text-xs font-bold text-saas-dark">Vit A</span>
+                          </label>
+                        </div>
+
+                        <div className="flex items-center">
+                          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={examAsi}
+                              onChange={(e) => setExamAsi(e.target.checked)}
+                              className="w-4 h-4 text-saas-primary focus:ring-saas-primary/30"
+                            />
+                            <span className="text-xs font-bold text-saas-dark">ASI SKS</span>
+                          </label>
+                        </div>
+
+                        <div className="flex items-center">
+                          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={examCacing}
+                              onChange={(e) => setExamCacing(e.target.checked)}
+                              className="w-4 h-4 text-saas-primary focus:ring-saas-primary/30"
+                            />
+                            <span className="text-xs font-bold text-saas-dark">Obat Cacing</span>
+                          </label>
                         </div>
                       </div>
                     </div>
