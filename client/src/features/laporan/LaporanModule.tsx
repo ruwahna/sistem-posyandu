@@ -1363,8 +1363,8 @@ export default function LaporanModule({ posyanduId, onNavigate }: LaporanModuleP
                             <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{log.nik || "-"}</td>
                             <td className="px-3 py-2.5 text-gray-600 font-semibold whitespace-nowrap">{log.jenisKelamin || "-"}</td>
                             <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{usiaTahun !== "-" ? `${usiaTahun} th` : "-"}</td>
-                            <td className="px-3 py-2.5 text-gray-600 font-semibold whitespace-nowrap">{log.riwayatDm ? "Ya" : "Tdk"}</td>
-                            <td className="px-3 py-2.5 text-gray-600 font-semibold whitespace-nowrap">{log.riwayatHt ? "Ya" : "Tdk"}</td>
+                            <td className="px-3 py-2.5 text-gray-600 font-semibold whitespace-nowrap">{(log as any).riwayatDm ? "Ya" : "Tdk"}</td>
+                            <td className="px-3 py-2.5 text-gray-600 font-semibold whitespace-nowrap">{(log as any).riwayatHt ? "Ya" : "Tdk"}</td>
                             <td className="px-3 py-2.5 text-gray-900 font-bold whitespace-nowrap">
                               {sistol && diastol ? `${sistol}/${diastol} mmHg` : "-"}
                             </td>
