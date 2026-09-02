@@ -44,7 +44,7 @@ module.exports = {
         }
       },
       borderRadius: {
-        'card': '24px',          // Coinbase xl radius
+        'card': '12px',          // Match /puskesmas rounded-xl card radius
         'input': '12px',
         'pill': '100px',         // Coinbase signature CTA pill
       },
