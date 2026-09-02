@@ -809,67 +809,136 @@ export const riwayatService = {
 
       doc.fontSize(7.5).font('Helvetica').fillColor('#0f172a');
 
-      // Kolom 1: Rentang Umur Balita (Presisi Koordinat titik dua ':')
-      const col1LabelX = startX + 12;
-      const col1ColonX = startX + 85;
+      if (isBalitaOnly) {
+        // Kolom 1: Rentang Umur Balita
+        const col1LabelX = startX + 12;
+        const col1ColonX = startX + 100;
 
-      doc.font('Helvetica-Bold').text('Rentang Umur Balita:', col1LabelX, yPos + 22);
-      doc.font('Helvetica');
+        doc.font('Helvetica-Bold').text('Rentang Umur Balita:', col1LabelX, yPos + 22);
+        doc.font('Helvetica');
 
-      doc.text('• 0 - 6 Bulan', col1LabelX, yPos + 34);
-      doc.text(`:  ${age0_6} Anak`, col1ColonX, yPos + 34);
+        doc.text('• 0 - 6 Bulan', col1LabelX, yPos + 34);
+        doc.text(`:  ${age0_6} Anak`, col1ColonX, yPos + 34);
 
-      doc.text('• 7 - 12 Bulan', col1LabelX, yPos + 46);
-      doc.text(`:  ${age7_12} Anak`, col1ColonX, yPos + 46);
+        doc.text('• 7 - 12 Bulan', col1LabelX, yPos + 46);
+        doc.text(`:  ${age7_12} Anak`, col1ColonX, yPos + 46);
 
-      doc.text('• 13 - 24 Bulan', col1LabelX, yPos + 58);
-      doc.text(`:  ${age13_24} Anak`, col1ColonX, yPos + 58);
+        doc.text('• 13 - 24 Bulan', col1LabelX, yPos + 58);
+        doc.text(`:  ${age13_24} Anak`, col1ColonX, yPos + 58);
 
-      doc.text('• 25 - 60 Bulan', col1LabelX, yPos + 70);
-      doc.text(`:  ${age25_60} Anak`, col1ColonX, yPos + 70);
+        doc.text('• 25 - 60 Bulan', col1LabelX, yPos + 70);
+        doc.text(`:  ${age25_60} Anak`, col1ColonX, yPos + 70);
 
-      // Kolom 2: Rentang Umur Lansia (Presisi Koordinat titik dua ':')
-      const col2LabelX = startX + 180;
-      const col2ColonX = startX + 315;
+        // Kolom 2: Ringkasan Intervensi Balita
+        const col2LabelX = startX + 350;
+        const col2ColonX = startX + 490;
 
-      doc.font('Helvetica-Bold').text('Rentang Umur Lansia:', col2LabelX, yPos + 22);
-      doc.font('Helvetica');
+        const kmsN = allItems.filter(i => i.statusKms === 'N').length;
+        const kmsT = allItems.filter(i => i.statusKms === 'T').length;
+        const kms2T = allItems.filter(i => i.statusKms === '2T').length;
+        const vitACount = allItems.filter(i => i.vitaminA).length;
+        const asiCount = allItems.filter(i => i.asiEksklusif).length;
+        const obatCacingCount = allItems.filter(i => i.obatCacing).length;
 
-      doc.text('• 45 - 59 Tahun (Pra-Lansia)', col2LabelX, yPos + 34);
-      doc.text(`:  ${age45_59} Orang`, col2ColonX, yPos + 34);
+        doc.font('Helvetica-Bold').text('Ringkasan Intervensi Balita:', col2LabelX, yPos + 22);
+        doc.font('Helvetica');
 
-      doc.text('• 60 - 69 Tahun (Lansia)', col2LabelX, yPos + 46);
-      doc.text(`:  ${age60_69} Orang`, col2ColonX, yPos + 46);
+        doc.text('• KMS Balita (N / T / 2T)', col2LabelX, yPos + 34);
+        doc.text(`:  Naik(${kmsN}) | Tidak Naik(${kmsT}) | 2T(${kms2T})`, col2ColonX, yPos + 34);
 
-      doc.text('• ≥ 70 Tahun (Lansia Risiko)', col2LabelX, yPos + 58);
-      doc.text(`:  ${age70Plus} Orang`, col2ColonX, yPos + 58);
+        doc.text('• Vit A / ASI SKS / Obat Cacing', col2LabelX, yPos + 46);
+        doc.text(`:  Vit A(${vitACount}) | ASI SKS(${asiCount}) | Obat Cacing(${obatCacingCount})`, col2ColonX, yPos + 46);
+      } else if (isLansiaOnly) {
+        // Kolom 1: Rentang Umur Lansia
+        const col1LabelX = startX + 12;
+        const col1ColonX = startX + 165;
 
-      // Kolom 3: Ringkasan Intervensi & Kesehatan (Presisi Koordinat titik dua ':')
-      const col3LabelX = startX + 440;
-      const col3ColonX = startX + 575;
+        doc.font('Helvetica-Bold').text('Rentang Umur Lansia:', col1LabelX, yPos + 22);
+        doc.font('Helvetica');
 
-      const kmsN = allItems.filter(i => i.statusKms === 'N').length;
-      const kmsT = allItems.filter(i => i.statusKms === 'T').length;
-      const kms2T = allItems.filter(i => i.statusKms === '2T').length;
-      const vitACount = allItems.filter(i => i.vitaminA).length;
-      const asiCount = allItems.filter(i => i.asiEksklusif).length;
-      const obatCacingCount = allItems.filter(i => i.obatCacing).length;
+        doc.text('• 45 - 59 Tahun (Pra-Lansia)', col1LabelX, yPos + 34);
+        doc.text(`:  ${age45_59} Orang`, col1ColonX, yPos + 34);
 
-      const lansiaItems = allItems.filter(i => i.tipe === 'Lansia');
-      const totalHt = lansiaItems.filter(i => (i.tekananDarahSistol || 0) >= 140 || (i.tekananDarahDiastol || 0) >= 90).length;
-      const totalDm = lansiaItems.filter(i => (i.gulaDarahSewaktu || 0) >= 200).length;
+        doc.text('• 60 - 69 Tahun (Lansia)', col1LabelX, yPos + 46);
+        doc.text(`:  ${age60_69} Orang`, col1ColonX, yPos + 46);
 
-      doc.font('Helvetica-Bold').text('Ringkasan Intervensi & Kesehatan:', col3LabelX, yPos + 22);
-      doc.font('Helvetica');
+        doc.text('• ≥ 70 Tahun (Lansia Risiko)', col1LabelX, yPos + 58);
+        doc.text(`:  ${age70Plus} Orang`, col1ColonX, yPos + 58);
 
-      doc.text('• KMS Balita (N / T / 2T)', col3LabelX, yPos + 34);
-      doc.text(`:  Naik(${kmsN}) | Tidak Naik(${kmsT}) | 2T(${kms2T})`, col3ColonX, yPos + 34);
+        // Kolom 2: Ringkasan Kesehatan Lansia
+        const col2LabelX = startX + 350;
+        const col2ColonX = startX + 490;
 
-      doc.text('• Intervensi Vit A / ASI / Cacing', col3LabelX, yPos + 46);
-      doc.text(`:  Vit A(${vitACount}) | ASI SKS(${asiCount}) | Obat Cacing(${obatCacingCount})`, col3ColonX, yPos + 46);
+        const lansiaItems = allItems.filter(i => i.tipe === 'Lansia');
+        const totalHt = lansiaItems.filter(i => (i.tekananDarahSistol || 0) >= 140 || (i.tekananDarahDiastol || 0) >= 90).length;
+        const totalDm = lansiaItems.filter(i => (i.gulaDarahSewaktu || 0) >= 200).length;
 
-      doc.text('• Lansia Hipertensi / Diabetes', col3LabelX, yPos + 58);
-      doc.text(`:  Hipertensi(${totalHt}) | GDS >200(${totalDm})`, col3ColonX, yPos + 58);
+        doc.font('Helvetica-Bold').text('Ringkasan Kesehatan Lansia:', col2LabelX, yPos + 22);
+        doc.font('Helvetica');
+
+        doc.text('• Hipertensi / GDS Tinggi', col2LabelX, yPos + 34);
+        doc.text(`:  Hipertensi(${totalHt}) | GDS >200(${totalDm})`, col2ColonX, yPos + 34);
+      } else {
+        // Rekap Semua (Balita + Lansia)
+        const col1LabelX = startX + 12;
+        const col1ColonX = startX + 85;
+
+        doc.font('Helvetica-Bold').text('Rentang Umur Balita:', col1LabelX, yPos + 22);
+        doc.font('Helvetica');
+
+        doc.text('• 0 - 6 Bulan', col1LabelX, yPos + 34);
+        doc.text(`:  ${age0_6} Anak`, col1ColonX, yPos + 34);
+
+        doc.text('• 7 - 12 Bulan', col1LabelX, yPos + 46);
+        doc.text(`:  ${age7_12} Anak`, col1ColonX, yPos + 46);
+
+        doc.text('• 13 - 24 Bulan', col1LabelX, yPos + 58);
+        doc.text(`:  ${age13_24} Anak`, col1ColonX, yPos + 58);
+
+        doc.text('• 25 - 60 Bulan', col1LabelX, yPos + 70);
+        doc.text(`:  ${age25_60} Anak`, col1ColonX, yPos + 70);
+
+        const col2LabelX = startX + 180;
+        const col2ColonX = startX + 315;
+
+        doc.font('Helvetica-Bold').text('Rentang Umur Lansia:', col2LabelX, yPos + 22);
+        doc.font('Helvetica');
+
+        doc.text('• 45 - 59 Tahun (Pra-Lansia)', col2LabelX, yPos + 34);
+        doc.text(`:  ${age45_59} Orang`, col2ColonX, yPos + 34);
+
+        doc.text('• 60 - 69 Tahun (Lansia)', col2LabelX, yPos + 46);
+        doc.text(`:  ${age60_69} Orang`, col2ColonX, yPos + 46);
+
+        doc.text('• ≥ 70 Tahun (Lansia Risiko)', col2LabelX, yPos + 58);
+        doc.text(`:  ${age70Plus} Orang`, col2ColonX, yPos + 58);
+
+        const col3LabelX = startX + 440;
+        const col3ColonX = startX + 575;
+
+        const kmsN = allItems.filter(i => i.statusKms === 'N').length;
+        const kmsT = allItems.filter(i => i.statusKms === 'T').length;
+        const kms2T = allItems.filter(i => i.statusKms === '2T').length;
+        const vitACount = allItems.filter(i => i.vitaminA).length;
+        const asiCount = allItems.filter(i => i.asiEksklusif).length;
+        const obatCacingCount = allItems.filter(i => i.obatCacing).length;
+
+        const lansiaItems = allItems.filter(i => i.tipe === 'Lansia');
+        const totalHt = lansiaItems.filter(i => (i.tekananDarahSistol || 0) >= 140 || (i.tekananDarahDiastol || 0) >= 90).length;
+        const totalDm = lansiaItems.filter(i => (i.gulaDarahSewaktu || 0) >= 200).length;
+
+        doc.font('Helvetica-Bold').text('Ringkasan Intervensi & Kesehatan:', col3LabelX, yPos + 22);
+        doc.font('Helvetica');
+
+        doc.text('• KMS Balita (N / T / 2T)', col3LabelX, yPos + 34);
+        doc.text(`:  Naik(${kmsN}) | Tidak Naik(${kmsT}) | 2T(${kms2T})`, col3ColonX, yPos + 34);
+
+        doc.text('• Intervensi Vit A / ASI / Cacing', col3LabelX, yPos + 46);
+        doc.text(`:  Vit A(${vitACount}) | ASI SKS(${asiCount}) | Obat Cacing(${obatCacingCount})`, col3ColonX, yPos + 46);
+
+        doc.text('• Lansia Hipertensi / Diabetes', col3LabelX, yPos + 58);
+        doc.text(`:  Hipertensi(${totalHt}) | GDS >200(${totalDm})`, col3ColonX, yPos + 58);
+      }
 
       doc.fillColor('#000000');
       doc.y = yPos + boxHeight + 10;
