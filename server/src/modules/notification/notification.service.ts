@@ -142,6 +142,41 @@ export const notificationService = {
       });
     }
 
+    // 4. Check Periode Pelayanan & Month Change Notification
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    const monthNames = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const currentMonthName = monthNames[currentMonth - 1];
+
+    const activePeriode = await prisma.periodePelayanan.findFirst({
+      where: { posyanduId, status: 'AKTIF' },
+      orderBy: { tanggal: 'desc' },
+    });
+
+    if (!activePeriode || activePeriode.bulan !== currentMonth || activePeriode.tahun !== currentYear) {
+      const monthTitle = `Pergantian Bulan: Kelola Periode ${currentMonthName} ${currentYear}`;
+      const existingMonthNotif = await prisma.notification.findFirst({
+        where: { posyanduId, title: monthTitle },
+      });
+
+      if (!existingMonthNotif) {
+        await prisma.notification.create({
+          data: {
+            posyanduId,
+            title: monthTitle,
+            message: `Telah memasuki bulan ${currentMonthName} ${currentYear}. Harap buka atau kelola Periode Pelayanan Posyandu untuk bulan ini.`,
+            type: 'WARNING',
+            category: 'system',
+          },
+        });
+      }
+    }
+
+
     // Fetch all notifications from DB
     const dbNotifications = await prisma.notification.findMany({
       where: { posyanduId },
