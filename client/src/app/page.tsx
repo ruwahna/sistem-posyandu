@@ -974,10 +974,10 @@ export default function Home() {
               return (
                 <button
                   onClick={() => setIsPeriodeModalOpen(true)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm group border ${
+                  className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-2xs group border cursor-pointer ${
                     isOutdated
-                      ? "bg-amber-50 hover:bg-amber-100/80 border-amber-300 text-amber-900 animate-pulse"
-                      : "bg-teal-50 hover:bg-teal-100/80 border-teal-200/80 text-saas-primary"
+                      ? "bg-amber-50 hover:bg-amber-100/90 border-amber-300 text-amber-950"
+                      : "bg-white hover:bg-teal-50/60 border-teal-600/40 text-gray-900"
                   }`}
                   title={
                     isOutdated
@@ -986,8 +986,8 @@ export default function Home() {
                   }
                 >
                   <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
-                      isOutdated ? "bg-amber-600 text-white" : "bg-saas-primary text-white"
+                    className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 border ${
+                      isOutdated ? "bg-amber-600 text-white border-amber-700" : "bg-teal-700 text-white border-teal-800"
                     }`}
                   >
                     <Calendar className="w-3.5 h-3.5" weight="bold" />
@@ -995,17 +995,17 @@ export default function Home() {
                   <div className="text-left hidden sm:block">
                     <span
                       className={`block text-[9px] font-extrabold uppercase leading-none ${
-                        isOutdated ? "text-amber-700" : "text-teal-700"
+                        isOutdated ? "text-amber-800" : "text-teal-800"
                       }`}
                     >
                       {isOutdated ? "Bulan Baru - Kelola Periode" : "Periode Pelayanan"}
                     </span>
-                    <span className="block text-[11px] font-extrabold leading-tight truncate max-w-[130px]">
+                    <span className="block text-[11px] font-extrabold leading-tight truncate max-w-[130px] text-gray-900 mt-0.5">
                       {activePeriode ? activePeriode.nama : "Pilih Periode"}
                     </span>
                   </div>
                   <CaretDown
-                    className="w-3 h-3 shrink-0 group-hover:translate-y-0.5 transition-transform"
+                    className="w-3 h-3 shrink-0 group-hover:translate-y-0.5 transition-transform text-gray-500"
                     weight="bold"
                   />
                 </button>

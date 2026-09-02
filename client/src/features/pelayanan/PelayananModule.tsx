@@ -953,40 +953,36 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
       )}
 
       {/* Banner Periode Pelayanan Aktif */}
-      <div className={`rounded-card shadow-md p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-        activePeriode 
-          ? "bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 text-white"
-          : "bg-gradient-to-r from-amber-600 via-amber-700 to-orange-700 text-white"
-      }`}>
+      <div className="bg-white rounded-xl border border-gray-200/80 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/20">
-            <Calendar className="w-6 h-6 text-white" />
+          <div className="w-10 h-10 rounded-lg bg-teal-50 border border-teal-100 text-teal-700 flex items-center justify-center shrink-0">
+            <Calendar className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-extrabold tracking-wider uppercase bg-white/20 text-white px-2 py-0.5 rounded-full border border-white/20">
+              <span className="text-[10px] font-bold tracking-wider uppercase bg-teal-50 text-teal-800 border border-teal-200/80 px-2 py-0.5 rounded-md">
                 Periode Pelayanan
               </span>
               {activePeriode?.status === "AKTIF" ? (
-                <span className="text-[10px] font-bold bg-emerald-400/30 text-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300/30">
+                <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
                   AKTIF
                 </span>
               ) : (
-                <span className="text-[10px] font-bold bg-amber-400/30 text-amber-100 px-2 py-0.5 rounded-full border border-amber-300/30">
+                <span className="text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md">
                   BELUM ADA PERIODE AKTIF
                 </span>
               )}
             </div>
-            <h3 className="text-lg font-extrabold tracking-tight mt-1 text-white">
+            <h3 className="text-base font-extrabold tracking-tight mt-1 text-gray-900">
               {activePeriode ? activePeriode.nama : "Periode Pelayanan Bulan Ini Belum Dibuat"}
             </h3>
             {activePeriode ? (
-              <p className="text-xs text-teal-100 font-medium mt-0.5">
-                Tanggal Pelaksanaan: <span className="font-bold text-white">{new Date(activePeriode.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</span>
+              <p className="text-xs text-gray-600 font-medium mt-0.5">
+                Tanggal Pelaksanaan: <span className="font-bold text-teal-700">{new Date(activePeriode.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</span>
                 {activePeriode.catatan ? ` • ${activePeriode.catatan}` : ""}
               </p>
             ) : (
-              <p className="text-xs text-amber-100 font-medium mt-0.5">
+              <p className="text-xs text-amber-700 font-semibold mt-0.5">
                 Harap buat atau pilih periode baru bulan ini untuk memulai pencatatan pelayanan.
               </p>
             )}
@@ -997,7 +993,7 @@ export default function PelayananModule({ posyanduId, activePeriode, onOpenPerio
           <button
             type="button"
             onClick={onOpenPeriodeModal}
-            className="px-4 py-2 bg-white text-saas-primary hover:bg-teal-50 text-xs font-extrabold rounded-input shadow-sm transition-all hover:scale-[1.02] shrink-0 flex items-center gap-2"
+            className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-2xs transition-all shrink-0 flex items-center gap-2 cursor-pointer"
           >
             <Settings className="w-4 h-4" /> Buka / Pilih Periode Pelayanan
           </button>
