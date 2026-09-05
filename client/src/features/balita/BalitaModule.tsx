@@ -133,6 +133,33 @@ function calculateAgeInMonths(birthDateStr: string, refDate: Date = new Date()):
   return months <= 0 ? 0 : months;
 }
 
+function getStatusBadgeStyle(type: 'BBU' | 'TBU' | 'BBTB', status: string) {
+  const s = (status || '').toLowerCase();
+  
+  if (type === 'BBU') {
+    if (s.includes('sangat kurang') || s === 'sk') return 'bg-red-100 text-red-800 border-red-300 font-extrabold';
+    if (s.includes('kurang') || s === 'k') return 'bg-red-50 text-red-700 border-red-200 font-bold';
+    if (s.includes('lebih') || s === 'l') return 'bg-amber-50 text-amber-800 border-amber-200 font-bold';
+    return 'bg-emerald-50 text-emerald-800 border-emerald-200 font-bold';
+  }
+  
+  if (type === 'TBU') {
+    if (s.includes('sangat pendek') || s === 'sp') return 'bg-red-100 text-red-800 border-red-300 font-extrabold';
+    if (s.includes('pendek') || s === 'p') return 'bg-red-50 text-red-700 border-red-200 font-bold';
+    if (s.includes('tinggi') || s === 't') return 'bg-teal-50 text-teal-800 border-teal-200 font-bold';
+    return 'bg-emerald-50 text-emerald-800 border-emerald-200 font-bold';
+  }
+
+  if (type === 'BBTB') {
+    if (s.includes('sangat kurus') || s === 'sk') return 'bg-red-100 text-red-800 border-red-300 font-extrabold';
+    if (s.includes('kurus') || s === 'k') return 'bg-red-50 text-red-700 border-red-200 font-bold';
+    if (s.includes('gemuk') || s.includes('obesitas') || s === 'g') return 'bg-amber-50 text-amber-800 border-amber-200 font-bold';
+    return 'bg-emerald-50 text-emerald-800 border-emerald-200 font-bold';
+  }
+
+  return 'bg-gray-100 text-gray-800 border-gray-200';
+}
+
 interface BalitaModuleProps {
   posyanduId: string;
   onNavigateToPelayanan?: (id: string) => void;
@@ -296,13 +323,125 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
   const [examTBU, setExamTBU] = useState<PemeriksaanBalita["statusTBU"]>("Normal");
   const [examBBTB, setExamBBTB] = useState<PemeriksaanBalita["statusBBTB"]>("Normal");
   const [examVitA, setExamVitA] = useState(false);
+  const [examVitB1, setExamVitB1] = useState(false);
+  const [examVitB6, setExamVitB6] = useState(false);
   const [examLiLA, setExamLiLA] = useState("");
   const [examKms, setExamKms] = useState("N");
-  const [examAsi, setExamAsi] = useState(false);
+  const [examAsi, setExamAsi] = useState<boolean>(true); // default 'masih' = true
   const [examCacing, setExamCacing] = useState(false);
   const [examImunisasi, setExamImunisasi] = useState("");
+
+  // Permanent custom pemberian options per Posyandu
+  const [masterPemberianOptions, setMasterPemberianOptions] = useState<string[]>([]);
+  const [checkedPemberianMap, setCheckedPemberianMap] = useState<Record<string, boolean>>({});
+  const [newPemberianInput, setNewPemberianInput] = useState("");
+  const [showAddPemberianInput, setShowAddPemberianInput] = useState(false);
   const [examWarning, setExamWarning] = useState("");
   const [examError, setExamError] = useState("");
+
+  // Load permanent custom options per Posyandu from localStorage
+  useEffect(() => {
+    if (!posyanduId) return;
+    try {
+      const saved = localStorage.getItem(`posyandu_pemberian_options_${posyanduId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setMasterPemberianOptions(parsed);
+      }
+    } catch (err) {
+      console.error("Gagal membaca opsi pemberian posyandu:", err);
+    }
+  }, [posyanduId]);
+
+  const updateMasterPemberianOptions = (newList: string[]) => {
+    setMasterPemberianOptions(newList);
+    if (posyanduId) {
+      try {
+        localStorage.setItem(`posyandu_pemberian_options_${posyanduId}`, JSON.stringify(newList));
+      } catch (err) {
+        console.error("Gagal menyimpan opsi pemberian posyandu:", err);
+      }
+    }
+  };
+
+  const handleAddCustomPemberian = () => {
+    const trimmed = newPemberianInput.trim();
+    if (!trimmed) return;
+    const exists = masterPemberianOptions.some(opt => opt.toLowerCase() === trimmed.toLowerCase());
+    if (!exists) {
+      const updated = [...masterPemberianOptions, trimmed];
+      updateMasterPemberianOptions(updated);
+    }
+    setCheckedPemberianMap(prev => ({ ...prev, [trimmed]: true }));
+    setNewPemberianInput("");
+    setShowAddPemberianInput(false);
+  };
+
+  const handleDeleteMasterPemberian = (optToDelete: string) => {
+    const updated = masterPemberianOptions.filter(opt => opt !== optToDelete);
+    updateMasterPemberianOptions(updated);
+    setCheckedPemberianMap(prev => {
+      const next = { ...prev };
+      delete next[optToDelete];
+      return next;
+    });
+  };
+
+  interface FormDraftBalita {
+    examDate?: string;
+    examBB?: string;
+    examTB?: string;
+    examLK?: string;
+    examLiLA?: string;
+    examKms?: string;
+    examVitA?: boolean;
+    examVitB1?: boolean;
+    examVitB6?: boolean;
+    examAsi?: boolean;
+    examCacing?: boolean;
+    examImunisasi?: string;
+    checkedPemberianMap?: Record<string, boolean>;
+  }
+
+  const [draftsMap, setDraftsMap] = useState<Record<string, FormDraftBalita>>({});
+
+  // Auto-save form draft for selected balita
+  useEffect(() => {
+    if (!selectedBalitaId) return;
+    setDraftsMap((prev) => ({
+      ...prev,
+      [selectedBalitaId]: {
+        examDate,
+        examBB,
+        examTB,
+        examLK,
+        examLiLA,
+        examKms,
+        examVitA,
+        examVitB1,
+        examVitB6,
+        examAsi,
+        examCacing,
+        examImunisasi,
+        checkedPemberianMap,
+      },
+    }));
+  }, [
+    selectedBalitaId,
+    examDate,
+    examBB,
+    examTB,
+    examLK,
+    examLiLA,
+    examKms,
+    examVitA,
+    examVitB1,
+    examVitB6,
+    examAsi,
+    examCacing,
+    examImunisasi,
+    checkedPemberianMap,
+  ]);
 
   const activeBalita = balitas.find((b) => b.id === selectedBalitaId);
 
@@ -631,6 +770,12 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
 
     setIsSaving(true);
     try {
+      const selectedCustoms = masterPemberianOptions.filter(opt => checkedPemberianMap[opt]);
+      const combinedImunisasiPemberian = [
+        examImunisasi,
+        selectedCustoms.length > 0 ? `Pemberian: ${selectedCustoms.join(", ")}` : ""
+      ].filter(Boolean).join(" | ");
+
       await balitaApi.createPemeriksaan(posyanduId, activeBalita.id, {
         tanggalPeriksa: examDate,
         usiaBulan: calculateAgeInMonths(activeBalita.tanggalLahir, new Date(examDate)),
@@ -643,9 +788,11 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
         statusBbTb: convertStatusBbTbToCode(examBBTB),
         statusKms: examKms,
         vitaminA: examVitA,
+        vitB1: examVitB1,
+        vitB6: examVitB6,
         asiEksklusif: examAsi,
         obatCacing: examCacing,
-        statusImunisasi: examImunisasi || undefined,
+        statusImunisasi: combinedImunisasiPemberian || undefined,
         petugas: user?.nama || "Kader Posyandu",
       } as any);
       // Refresh balita detail
@@ -663,11 +810,17 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
         setBalitas((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
       }
       
+      setDraftsMap((prev) => {
+        const next = { ...prev };
+        delete next[activeBalita.id];
+        return next;
+      });
+
       // Emit event to notify Riwayat module to refresh
       window.dispatchEvent(new Event("pemeriksaanSaved"));
       setExamBB(""); setExamTB(""); setExamLK(""); setExamLiLA("");
       setExamBBU("Normal"); setExamTBU("Normal"); setExamBBTB("Normal");
-      setExamVitA(false); setExamAsi(false); setExamCacing(false); setExamImunisasi("");
+      setExamVitA(false); setExamVitB1(false); setExamVitB6(false); setExamAsi(true); setExamCacing(false); setExamImunisasi(""); setCheckedPemberianMap({});
       setExamKms("N"); setExamWarning("");
     } catch (err: unknown) {
       setExamError(err instanceof Error ? err.message : "Gagal menyimpan pemeriksaan.");
@@ -676,18 +829,25 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
     }
   };
 
-  // Pre-fill form pemeriksaan jika balita sudah memiliki data pemeriksaan
+  // Pre-fill form pemeriksaan jika balita sudah memiliki data pemeriksaan atau draft tersimpan
   useEffect(() => {
-    if (!activeBalita) {
-      setExamBB("");
-      setExamTB("");
-      setExamLK("");
-      setExamLiLA("");
-      setExamKms("N");
-      setExamVitA(false);
-      setExamAsi(false);
-      setExamCacing(false);
-      setExamImunisasi("");
+    if (!activeBalita) return;
+
+    const draft = draftsMap[activeBalita.id];
+    if (draft) {
+      if (draft.examDate) setExamDate(draft.examDate);
+      setExamBB(draft.examBB ?? "");
+      setExamTB(draft.examTB ?? "");
+      setExamLK(draft.examLK ?? "");
+      setExamLiLA(draft.examLiLA ?? "");
+      setExamKms(draft.examKms ?? "N");
+      setExamVitA(draft.examVitA ?? false);
+      setExamVitB1(draft.examVitB1 ?? false);
+      setExamVitB6(draft.examVitB6 ?? false);
+      setExamAsi(draft.examAsi ?? true);
+      setExamCacing(draft.examCacing ?? false);
+      setExamImunisasi(draft.examImunisasi ?? "");
+      setCheckedPemberianMap(draft.checkedPemberianMap ?? {});
       return;
     }
 
@@ -702,9 +862,12 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
       setExamLiLA(latest.lingkarLengan ? String(latest.lingkarLengan) : "");
       setExamKms(latest.statusKms || "N");
       setExamVitA(Boolean(latest.vitaminA));
+      setExamVitB1(Boolean((latest as any).vitB1));
+      setExamVitB6(Boolean((latest as any).vitB6));
       setExamAsi(Boolean(latest.asiEksklusif));
       setExamCacing(Boolean(latest.obatCacing));
       setExamImunisasi(latest.statusImunisasi || "");
+      setCheckedPemberianMap({});
     } else {
       setExamBB("");
       setExamTB("");
@@ -712,9 +875,12 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
       setExamLiLA("");
       setExamKms("N");
       setExamVitA(false);
-      setExamAsi(false);
+      setExamVitB1(false);
+      setExamVitB6(false);
+      setExamAsi(true);
       setExamCacing(false);
       setExamImunisasi("");
+      setCheckedPemberianMap({});
     }
   }, [activeBalita]);
 
@@ -1063,77 +1229,107 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Tanggal */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Tanggal Periksa</label>
-                    <input
-                      type="date"
-                      value={examDate}
-                      onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
-                      onChange={(e) => setExamDate(e.target.value)}
-                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 cursor-pointer"
-                    />
-                  </div>
+                {/* Tanggal Periksa */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-saas-muted flex items-center justify-between">
+                    <span>Tanggal Periksa</span>
+                    <span className="text-[10px] text-teal-600 font-normal">(mengikuti tanggal periode pelayanan)</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={examDate}
+                    onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                    onChange={(e) => setExamDate(e.target.value)}
+                    className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50 cursor-pointer"
+                  />
+                </div>
 
-                  {/* Berat Badan */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Berat Badan (kg)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      placeholder="Contoh: 8.5"
-                      value={examBB}
-                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/-/g, "");
-                        setExamBB(val);
-                        handleExamInputCheck(val, examTB);
-                      }}
-                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
-                    />
+                {/* Umur & Jenis Kelamin (Otomatis) */}
+                <div className="grid grid-cols-2 gap-3 p-3 bg-teal-50/70 rounded-xl border border-teal-150">
+                  <div>
+                    <span className="text-[11px] font-bold text-teal-800 block">Umur:</span>
+                    <span className="text-xs font-extrabold text-teal-950">
+                      {activeBalita ? `${calculateAgeInMonths(activeBalita.tanggalLahir, new Date(examDate))} Bulan` : "-"}
+                    </span>
+                    <span className="text-[10px] text-teal-600 ml-1 font-semibold">(otomatis)</span>
                   </div>
-
-                  {/* Tinggi Badan */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Tinggi Badan (cm)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      placeholder="Contoh: 72.4"
-                      value={examTB}
-                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/-/g, "");
-                        setExamTB(val);
-                        handleExamInputCheck(examBB, val);
-                      }}
-                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
-                    />
+                  <div>
+                    <span className="text-[11px] font-bold text-teal-800 block">Jenis Kelamin:</span>
+                    <span className="text-xs font-extrabold text-teal-950">
+                      {activeBalita?.jenisKelamin === 'L' ? 'Laki-laki (L)' : activeBalita?.jenisKelamin === 'P' ? 'Perempuan (P)' : '-'}
+                    </span>
+                    <span className="text-[10px] text-teal-600 ml-1 font-semibold">(otomatis)</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  {/* Lingkar Kepala */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Lingkar Kepala (cm - opsional)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      placeholder="Contoh: 44.5"
-                      value={examLK}
-                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
-                      onChange={(e) => setExamLK(e.target.value.replace(/-/g, ""))}
-                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
-                    />
+                {/* Layout BB, TB & Status Gizi */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50/80 p-3.5 rounded-xl border border-gray-200">
+                  {/* BB & TB Input */}
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-saas-dark">BB (Berat Badan - kg)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        placeholder="Contoh: 8.5"
+                        value={examBB}
+                        onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/-/g, "");
+                          setExamBB(val);
+                          handleExamInputCheck(val, examTB);
+                        }}
+                        className="w-full p-2.5 bg-white border border-gray-250 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-saas-dark">TB (Tinggi Badan - cm)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        placeholder="Contoh: 72.4"
+                        value={examTB}
+                        onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/-/g, "");
+                          setExamTB(val);
+                          handleExamInputCheck(examBB, val);
+                        }}
+                        className="w-full p-2.5 bg-white border border-gray-250 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                      />
+                    </div>
                   </div>
 
-                  {/* Lingkar Lengan (LiLA) */}
+                  {/* Status Gizi Box */}
+                  <div className="bg-white p-3 rounded-lg border border-teal-200 shadow-2xs flex flex-col justify-between space-y-2">
+                    <div className="flex items-center justify-between border-b border-teal-100 pb-1.5">
+                      <h4 className="text-xs font-extrabold text-teal-900 uppercase tracking-wider">Status Gizi</h4>
+                      <span className="text-[10px] text-teal-600 font-semibold">(otomatis)</span>
+                    </div>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-saas-muted">BB/U:</span>
+                        <span className={`px-2.5 py-1 rounded border ${getStatusBadgeStyle('BBU', examBBU || '')}`}>{examBBU}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-saas-muted">TB/U:</span>
+                        <span className={`px-2.5 py-1 rounded border ${getStatusBadgeStyle('TBU', examTBU || '')}`}>{examTBU}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-saas-muted">BB/TB:</span>
+                        <span className={`px-2.5 py-1 rounded border ${getStatusBadgeStyle('BBTB', examBBTB || '')}`}>{examBBTB}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lingkar Lengan & Lingkar Kepala */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Lingkar Lengan / LiLA (cm)</label>
+                    <label className="text-xs font-bold text-saas-muted">Lingkar Lengan (cm)</label>
                     <input
                       type="number"
                       step="0.1"
@@ -1146,9 +1342,25 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
                     />
                   </div>
 
-                  {/* Status KMS */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Indikator KMS</label>
+                    <label className="text-xs font-bold text-saas-muted">Lingkar Kepala (cm)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      placeholder="Contoh: 45"
+                      value={examLK}
+                      onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "E") e.preventDefault(); }}
+                      onChange={(e) => setExamLK(e.target.value.replace(/-/g, ""))}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-150 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary/50"
+                    />
+                  </div>
+                </div>
+
+                {/* Status KMS & Imunisasi Opsional */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-saas-muted">Status KMS</label>
                     <select
                       value={examKms}
                       onChange={(e) => setExamKms(e.target.value)}
@@ -1162,7 +1374,6 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
                     </select>
                   </div>
 
-                  {/* Status Imunisasi */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-saas-muted">Status Imunisasi</label>
                     <input
@@ -1175,88 +1386,145 @@ export default function BalitaModule({ posyanduId, onNavigateToPelayanan, select
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-50 pt-3">
-                  {/* Checkboxes: Vitamin A, ASI Eksklusif, Obat Cacing */}
-                  <div className="space-y-1.5 flex items-center pt-2">
+                {/* ASI Eksklusif */}
+                <div className="space-y-1.5 pt-2 border-t border-gray-100">
+                  <label className="text-xs font-bold text-saas-dark block">ASI Eksklusif:</label>
+                  <div className="flex items-center gap-6">
                     <label className="flex items-center gap-2 cursor-pointer select-none">
                       <input
-                        type="checkbox"
-                        checked={examVitA}
-                        onChange={(e) => setExamVitA(e.target.checked)}
-                        className="w-4.5 h-4.5 text-saas-primary border-gray-250 rounded focus:ring-saas-primary/30"
+                        type="radio"
+                        name="asiEksklusifBalita"
+                        checked={examAsi === true}
+                        onChange={() => setExamAsi(true)}
+                        className="w-4 h-4 text-saas-primary focus:ring-saas-primary/30"
                       />
-                      <span className="text-xs font-bold text-saas-dark">Pemberian Vitamin A</span>
+                      <span className="text-xs font-semibold text-saas-dark">Masih</span>
                     </label>
-                  </div>
-
-                  <div className="space-y-1.5 flex items-center pt-2">
                     <label className="flex items-center gap-2 cursor-pointer select-none">
                       <input
-                        type="checkbox"
-                        checked={examAsi}
-                        onChange={(e) => setExamAsi(e.target.checked)}
-                        className="w-4.5 h-4.5 text-saas-primary border-gray-250 rounded focus:ring-saas-primary/30"
+                        type="radio"
+                        name="asiEksklusifBalita"
+                        checked={examAsi === false}
+                        onChange={() => setExamAsi(false)}
+                        className="w-4 h-4 text-saas-primary focus:ring-saas-primary/30"
                       />
-                      <span className="text-xs font-bold text-saas-dark">ASI Eksklusif (0-6 bln)</span>
-                    </label>
-                  </div>
-
-                  <div className="space-y-1.5 flex items-center pt-2">
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={examCacing}
-                        onChange={(e) => setExamCacing(e.target.checked)}
-                        className="w-4.5 h-4.5 text-saas-primary border-gray-250 rounded focus:ring-saas-primary/30"
-                      />
-                      <span className="text-xs font-bold text-saas-dark">Pemberian Obat Cacing</span>
+                      <span className="text-xs font-semibold text-saas-dark">Tidak</span>
                     </label>
                   </div>
                 </div>
 
-                {/* Dropdown Penetapan Status Gizi (WHO Kategori) */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-50 pt-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Status Berat/Usia (BB/U) - Otomatis</label>
-                    <select
-                      value={examBBU}
-                      disabled
-                      className="w-full p-2.5 bg-gray-100 border border-gray-150 rounded-input text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
-                    >
-                      <option value="Normal">Normal</option>
-                      <option value="Kurang">Kurang</option>
-                      <option value="Sangat Kurang">Sangat Kurang</option>
-                      <option value="Lebih">Lebih</option>
-                    </select>
+                {/* Vitamin & Opsi Pemberian Lain */}
+                <div className="space-y-2 pt-2 border-t border-gray-100">
+                  <label className="text-xs font-bold text-saas-dark block">Vitamin & Pemberian Lain:</label>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none bg-gray-50 px-2.5 py-1.5 rounded-md border border-gray-200 text-xs font-semibold text-saas-dark hover:bg-gray-100">
+                      <input
+                        type="checkbox"
+                        checked={examVitA}
+                        onChange={(e) => setExamVitA(e.target.checked)}
+                        className="w-4 h-4 text-saas-primary rounded focus:ring-saas-primary/30"
+                      />
+                      <span>Vit A</span>
+                    </label>
+
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none bg-gray-50 px-2.5 py-1.5 rounded-md border border-gray-200 text-xs font-semibold text-saas-dark hover:bg-gray-100">
+                      <input
+                        type="checkbox"
+                        checked={examVitB1}
+                        onChange={(e) => setExamVitB1(e.target.checked)}
+                        className="w-4 h-4 text-saas-primary rounded focus:ring-saas-primary/30"
+                      />
+                      <span>Vit B1</span>
+                    </label>
+
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none bg-gray-50 px-2.5 py-1.5 rounded-md border border-gray-200 text-xs font-semibold text-saas-dark hover:bg-gray-100">
+                      <input
+                        type="checkbox"
+                        checked={examVitB6}
+                        onChange={(e) => setExamVitB6(e.target.checked)}
+                        className="w-4 h-4 text-saas-primary rounded focus:ring-saas-primary/30"
+                      />
+                      <span>Vit B6</span>
+                    </label>
+
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none bg-gray-50 px-2.5 py-1.5 rounded-md border border-gray-200 text-xs font-semibold text-saas-dark hover:bg-gray-100">
+                      <input
+                        type="checkbox"
+                        checked={examCacing}
+                        onChange={(e) => setExamCacing(e.target.checked)}
+                        className="w-4 h-4 text-saas-primary rounded focus:ring-saas-primary/30"
+                      />
+                      <span>Obat Cacing</span>
+                    </label>
+
+                    {/* Custom Pemberian Options (Permanen per Posyandu) */}
+                    {masterPemberianOptions.map((opt) => (
+                      <label key={opt} className="flex items-center gap-1.5 cursor-pointer select-none bg-teal-50 px-2.5 py-1.5 rounded-md border border-teal-200 text-xs font-semibold text-teal-900 hover:bg-teal-100">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(checkedPemberianMap[opt])}
+                          onChange={(e) => {
+                            setCheckedPemberianMap(prev => ({ ...prev, [opt]: e.target.checked }));
+                          }}
+                          className="w-4 h-4 text-saas-primary rounded focus:ring-saas-primary/30"
+                        />
+                        <span>{opt}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteMasterPemberian(opt);
+                          }}
+                          className="text-gray-400 hover:text-red-500 text-[11px] ml-1 font-bold"
+                          title={`Hapus opsi ${opt} secara permanen`}
+                        >
+                          ✕
+                        </button>
+                      </label>
+                    ))}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Status Tinggi/Usia (TB/U) - Otomatis</label>
-                    <select
-                      value={examTBU}
-                      disabled
-                      className="w-full p-2.5 bg-gray-100 border border-gray-150 rounded-input text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
+                  {/* Add Dynamic Option Controls */}
+                  {showAddPemberianInput ? (
+                    <div className="flex items-center gap-2 pt-1.5">
+                      <input
+                        type="text"
+                        placeholder="Nama opsi pemberian lain (contoh: Zinc, Taburia)"
+                        value={newPemberianInput}
+                        onChange={(e) => setNewPemberianInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomPemberian();
+                          }
+                        }}
+                        className="p-1.5 border border-gray-250 rounded text-xs w-64 focus:outline-none focus:border-saas-primary"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCustomPemberian}
+                        className="px-2.5 py-1.5 bg-saas-primary text-white text-xs font-bold rounded hover:bg-teal-600"
+                      >
+                        Tambah
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowAddPemberianInput(false); setNewPemberianInput(""); }}
+                        className="px-2.5 py-1.5 bg-gray-100 text-saas-muted text-xs font-bold rounded hover:bg-gray-200"
+                      >
+                        Batal
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddPemberianInput(true)}
+                      className="text-xs font-bold text-saas-primary hover:text-teal-700 flex items-center gap-1 pt-1 cursor-pointer"
                     >
-                      <option value="Normal">Normal</option>
-                      <option value="Pendek">Pendek</option>
-                      <option value="Sangat Pendek">Sangat Pendek</option>
-                      <option value="Tinggi">Tinggi</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-saas-muted">Status Berat/Tinggi (BB/TB) - Otomatis</label>
-                    <select
-                      value={examBBTB}
-                      disabled
-                      className="w-full p-2.5 bg-gray-100 border border-gray-150 rounded-input text-xs font-bold text-saas-dark focus:outline-none cursor-not-allowed"
-                    >
-                      <option value="Normal">Normal</option>
-                      <option value="Kurus">Kurus</option>
-                      <option value="Sangat Kurus">Sangat Kurus</option>
-                      <option value="Gemuk">Gemuk</option>
-                    </select>
-                  </div>
+                      <Plus className="w-3.5 h-3.5" /> Tambahkan fitur opsi pemberian lain
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex justify-end pt-2">

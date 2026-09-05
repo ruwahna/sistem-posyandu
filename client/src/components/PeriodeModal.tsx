@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, Plus, Check, Clock, AlertCircle, X, Sparkles, Trash2 } from "lucide-react";
+import { Calendar, Plus, Check, AlertCircle, X, Trash2, FolderPlus } from "lucide-react";
 import { periodeApi, PeriodePelayanan } from "../lib/api";
 import Modal from "./Modal";
 
@@ -157,23 +157,23 @@ export default function PeriodeModal({
     >
       <div className="space-y-5">
         {/* Header Summary */}
-        <div className="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-100 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="bg-white border border-gray-200/80 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-saas-primary text-white flex items-center justify-center font-bold shrink-0 shadow-sm">
+            <div className="w-10 h-10 rounded-lg bg-teal-50 border border-teal-100 text-teal-700 flex items-center justify-center font-bold shrink-0">
               <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-saas-muted">Periode Aktif Saat Ini</p>
-              <h4 className="font-extrabold text-sm text-saas-dark">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Periode Aktif Saat Ini</p>
+              <h4 className="font-extrabold text-sm text-gray-900">
                 {activePeriode ? activePeriode.nama : "Belum Ada Periode Aktif"}
               </h4>
               {activePeriode ? (
-                <p className="text-[11px] text-saas-muted font-medium mt-0.5">
-                  Pelaksanaan: {new Date(activePeriode.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                <p className="text-[11px] text-gray-600 font-medium mt-0.5">
+                  Pelaksanaan: <strong className="text-teal-700">{new Date(activePeriode.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</strong>
                 </p>
               ) : (
-                <p className="text-[11px] text-amber-600 font-semibold mt-0.5">
-                  ⚠️ Belum ada periode aktif untuk bulan ini. Mohon buat periode baru di bawah ini.
+                <p className="text-[11px] text-amber-700 font-semibold mt-0.5">
+                  ⚠️ Belum ada periode aktif. Mohon buat periode baru di bawah ini.
                 </p>
               )}
             </div>
@@ -185,7 +185,7 @@ export default function PeriodeModal({
               setShowAddForm(!showAddForm);
               setErrorMsg("");
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-lg shadow-sm transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-2xs transition-all shrink-0 cursor-pointer"
           >
             {showAddForm ? (
               <>
@@ -201,32 +201,32 @@ export default function PeriodeModal({
 
         {/* Notifications */}
         {errorMsg && (
-          <div className="p-3 bg-red-50 text-trend-dangerText border border-red-100 rounded-lg text-xs font-bold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" /> {errorMsg}
+          <div className="p-3 bg-red-50 text-red-800 border border-red-200 rounded-lg text-xs font-bold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" /> {errorMsg}
           </div>
         )}
         {successMsg && (
-          <div className="p-3 bg-green-50 text-trend-successText border border-green-150 rounded-lg text-xs font-bold flex items-center gap-2">
-            <Check className="w-4 h-4 shrink-0 text-green-600" /> {successMsg}
+          <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold flex items-center gap-2">
+            <Check className="w-4 h-4 shrink-0 text-emerald-600" /> {successMsg}
           </div>
         )}
 
         {/* FORM Buka Periode Baru */}
         {showAddForm && (
-          <form onSubmit={handleCreatePeriode} className="bg-gray-50 border border-gray-200/80 rounded-xl p-4 space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-2">
-              <h5 className="font-bold text-xs text-saas-dark flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-saas-primary" /> Form Pembukaan Periode Pelayanan Baru
+          <form onSubmit={handleCreatePeriode} className="bg-gray-50/80 border border-gray-200 rounded-xl p-4 space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-200 pb-2.5">
+              <h5 className="font-extrabold text-xs text-gray-900 flex items-center gap-1.5 uppercase tracking-wider">
+                <FolderPlus className="w-4 h-4 text-teal-700" /> Form Pembukaan Periode Pelayanan Baru
               </h5>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-saas-dark mb-1">Bulan Pelayanan</label>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">Bulan Pelayanan</label>
                 <select
                   value={bulan}
                   onChange={(e) => handleBulanYearChange(Number(e.target.value), tahun)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-input text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-900 focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 shadow-2xs"
                 >
                   {NAMA_BULAN.map((m, idx) => {
                     const monthNum = idx + 1;
@@ -241,7 +241,7 @@ export default function PeriodeModal({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-saas-dark mb-1">Tahun</label>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">Tahun</label>
                 <select
                   value={tahun}
                   onChange={(e) => {
@@ -249,7 +249,7 @@ export default function PeriodeModal({
                     const newBulan = newYear === currentYearNum && bulan > (currentMonthIdx + 1) ? (currentMonthIdx + 1) : bulan;
                     handleBulanYearChange(newBulan, newYear);
                   }}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-input text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-900 focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 shadow-2xs"
                 >
                   {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
                     <option key={y} value={y} disabled={y > currentYearNum}>
@@ -260,32 +260,32 @@ export default function PeriodeModal({
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold text-saas-dark mb-1">Nama Periode</label>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Periode</label>
                 <input
                   type="text"
                   value={nama}
                   onChange={(e) => setNama(e.target.value)}
                   placeholder="Contoh: Pelayanan Agustus 2026"
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-input text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-900 focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 shadow-2xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-saas-dark mb-1">Tanggal Pelaksanaan Kegiatan</label>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">Tanggal Pelaksanaan Kegiatan</label>
                 <input
                   type="date"
                   value={tanggal}
                   onChange={(e) => setTanggal(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-input text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-900 focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 shadow-2xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-saas-dark mb-1">Status Langsung</label>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">Status Langsung</label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as "AKTIF" | "SELESAI")}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-input text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-900 focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 shadow-2xs"
                 >
                   <option value="AKTIF">Aktif (Jadikan Periode Kerja Utama)</option>
                   <option value="SELESAI">Selesai (Simpan sebagai riwayat)</option>
@@ -293,29 +293,29 @@ export default function PeriodeModal({
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold text-saas-dark mb-1">Catatan/Keterangan Kegiatan (Opsional)</label>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">Catatan/Keterangan Kegiatan (Opsional)</label>
                 <input
                   type="text"
                   value={catatan}
                   onChange={(e) => setCatatan(e.target.value)}
                   placeholder="Contoh: Posyandu Rutin Serentak + Pembagian PMT"
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-input text-xs font-semibold text-saas-dark focus:outline-none focus:border-saas-primary"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-semibold text-gray-900 focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 shadow-2xs"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}
-                className="px-3 py-1.5 text-xs font-bold text-saas-muted hover:text-saas-dark"
+                className="px-3.5 py-2 text-xs font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-200/60 rounded-lg transition-all cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-4 py-2 bg-saas-primary hover:bg-teal-600 text-white text-xs font-bold rounded-lg shadow-sm transition-all disabled:opacity-50"
+                className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-2xs transition-all disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? "Menyimpan..." : "Simpan & Buka Periode"}
               </button>
@@ -324,20 +324,20 @@ export default function PeriodeModal({
         )}
 
         {/* DAFTAR PERIODE PELAYANAN */}
-        <div className="space-y-2">
-          <h5 className="font-bold text-xs text-saas-dark uppercase tracking-wider">
+        <div className="space-y-2.5">
+          <h5 className="font-bold text-xs text-gray-500 uppercase tracking-wider">
             Daftar Periode Pelayanan ({periodes.length})
           </h5>
 
           {isLoading ? (
-            <div className="text-center py-6 text-xs text-saas-muted font-medium">Memuat daftar periode...</div>
+            <div className="text-center py-6 text-xs text-gray-500 font-medium">Memuat daftar periode...</div>
           ) : periodes.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-100 p-4">
-              <p className="text-xs text-saas-muted font-semibold">Belum ada periode pelayanan yang dibuat.</p>
+            <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200/80 p-4">
+              <p className="text-xs text-gray-500 font-semibold">Belum ada periode pelayanan yang dibuat.</p>
               <button
                 type="button"
                 onClick={() => setShowAddForm(true)}
-                className="mt-2 text-xs font-bold text-saas-primary hover:underline"
+                className="mt-2 text-xs font-bold text-teal-700 hover:underline cursor-pointer"
               >
                 + Buka Periode Pelayanan Pertama
               </button>
@@ -345,7 +345,6 @@ export default function PeriodeModal({
           ) : (
             <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
               {periodes.map((p) => {
-                const isSelected = activePeriode?.id === p.id;
                 const isAktif = p.status === "AKTIF";
 
                 return (
@@ -353,27 +352,27 @@ export default function PeriodeModal({
                     key={p.id}
                     className={`p-3.5 border rounded-xl flex items-center justify-between transition-all ${
                       isAktif
-                        ? "border-saas-primary/50 bg-teal-50/40 shadow-sm"
-                        : "border-gray-200 hover:border-gray-300 bg-white"
+                        ? "border-teal-500 bg-teal-50/30 ring-1 ring-teal-500/20 shadow-2xs"
+                        : "border-gray-200/80 hover:border-gray-300 bg-white"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold shrink-0 ${
-                        isAktif ? "bg-saas-primary text-white" : "bg-gray-100 text-saas-muted"
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold shrink-0 border ${
+                        isAktif ? "bg-teal-700 text-white border-teal-800" : "bg-gray-100 text-gray-500 border-gray-200"
                       }`}>
                         <Calendar className="w-4 h-4" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h6 className="font-bold text-xs text-saas-dark">{p.nama}</h6>
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
-                            isAktif ? "bg-teal-100 text-saas-primary" : "bg-gray-100 text-saas-muted"
+                          <h6 className="font-extrabold text-xs text-gray-900">{p.nama}</h6>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            isAktif ? "bg-teal-50 text-teal-800 border-teal-200/80" : "bg-gray-100 text-gray-600 border-gray-200"
                           }`}>
                             {isAktif ? "Aktif" : "Selesai"}
                           </span>
                         </div>
-                        <p className="text-[10px] text-saas-muted font-medium mt-0.5">
-                          Pelaksanaan: {new Date(p.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                        <p className="text-[10px] text-gray-500 font-medium mt-0.5">
+                          Pelaksanaan: <span className="font-semibold text-gray-700">{new Date(p.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</span>
                           {p.catatan ? ` • ${p.catatan}` : ""}
                         </p>
                       </div>
@@ -384,20 +383,20 @@ export default function PeriodeModal({
                         <button
                           type="button"
                           onClick={() => handleActivate(p)}
-                          className="px-3 py-1.5 bg-white hover:bg-teal-50 border border-gray-200 text-saas-primary hover:border-teal-300 text-[11px] font-bold rounded-lg transition-all"
+                          className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 hover:text-teal-700 hover:border-teal-300 text-[11px] font-bold rounded-lg transition-all shadow-2xs cursor-pointer"
                         >
                           Pilih / Aktifkan
                         </button>
                       ) : (
-                        <span className="px-3 py-1 bg-teal-100 text-saas-primary text-[11px] font-extrabold rounded-lg flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5" /> Sedang Dipilih
+                        <span className="px-3 py-1 bg-teal-50 text-teal-800 border border-teal-200 text-[11px] font-bold rounded-lg flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5 text-teal-700" /> Sedang Dipilih
                         </span>
                       )}
 
                       <button
                         type="button"
                         onClick={() => setDeleteTarget({ id: p.id, nama: p.nama })}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                         title="Hapus Periode"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -419,8 +418,8 @@ export default function PeriodeModal({
           title="Konfirmasi Hapus Periode"
         >
           <div className="space-y-4 py-1">
-            <div className="flex items-start gap-3.5 p-3.5 bg-red-50/70 border border-red-100 rounded-xl text-red-900">
-              <div className="w-9 h-9 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+            <div className="flex items-start gap-3.5 p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-900">
+              <div className="w-9 h-9 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0 border border-red-200">
                 <AlertCircle className="w-5 h-5" />
               </div>
               <div>
@@ -435,7 +434,7 @@ export default function PeriodeModal({
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 text-xs font-bold text-saas-muted hover:text-saas-dark hover:bg-gray-100 rounded-lg transition-all"
+                className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
               >
                 Batal
               </button>
@@ -443,7 +442,7 @@ export default function PeriodeModal({
                 type="button"
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
                 {isDeleting ? "Menghapus..." : "Ya, Hapus Periode"}

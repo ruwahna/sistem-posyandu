@@ -43,6 +43,8 @@ export const createPemeriksaanBalitaSchema = z.object({
   vitaminA: z.boolean(),
   asiEksklusif: z.boolean().optional().nullable(),
   obatCacing: z.boolean().optional().nullable(),
+  vitB1: z.boolean().optional().nullable(),
+  vitB6: z.boolean().optional().nullable(),
   statusImunisasi: z.string().optional().nullable(),
   petugas: z.string().optional().nullable(),
   usiaBulan: z.number().optional(),

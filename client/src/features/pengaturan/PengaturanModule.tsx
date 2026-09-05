@@ -176,7 +176,7 @@ function ProfilSection() {
         subtitle="Kelola informasi dan lokasi administratif posyandu Anda."
       />
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      <div className="bg-white rounded-xl border border-gray-100 p-6">
         <form onSubmit={handleSave} className="space-y-5">
           {posyanduNotice && (
             <div
@@ -346,7 +346,7 @@ function AkunSection() {
         subtitle="Kelola profil pribadi dan keamanan kata sandi akun Anda."
       />
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+      <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
           <User className="w-4 h-4 text-blue-500" /> Profil Kader
         </h3>
@@ -370,7 +370,7 @@ function AkunSection() {
           )}
 
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center font-bold text-blue-600 text-xl border-2 border-blue-100 shrink-0">
+            <div className="w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center font-bold text-blue-600 text-xl border-2 border-blue-100 shrink-0">
               {initials}
             </div>
             <div>
@@ -490,7 +490,7 @@ function TampilanSection() {
       />
 
       {/* Ukuran Teks */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+      <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
           <ALargeSmall className="w-4 h-4 text-violet-500" /> Ukuran Teks
         </h3>
@@ -573,7 +573,7 @@ function TampilanSection() {
       </div>
 
       {/* Tema Mode */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+      <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
           <Palette className="w-4 h-4 text-violet-500" /> Mode Tema
         </h3>
@@ -637,7 +637,7 @@ function NotifikasiSection() {
         subtitle="Aktifkan pengingat penting agar tidak ada jadwal atau laporan yang terlewat."
       />
 
-      <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+      <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
         {items.map(({ key, label, desc }) => (
           <div key={key} className="flex items-center justify-between p-5 gap-4">
             <div className="flex items-start gap-3">
@@ -787,7 +787,7 @@ function DataSection() {
       />
 
       {/* Ekspor & Backup Data */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4 shadow-sm">
+      <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4 shadow-sm">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
           <Download className="w-4 h-4 text-rose-500" /> Ekspor & Backup Data Sistem (.json / Database Dump)
         </h3>
@@ -808,7 +808,7 @@ function DataSection() {
       </div>
 
       {/* Audit Log Aktivitas */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4 shadow-sm">
+      <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
             <Shield className="w-4 h-4 text-rose-500" /> Log Aktivitas Pengguna (Audit Log)
@@ -856,7 +856,7 @@ function DataSection() {
       </div>
 
       {/* Zona Berbahaya (Reset Data Posyandu - Owner Only) */}
-      <div className="bg-red-50/60 border border-red-200/80 rounded-2xl p-6 space-y-4">
+      <div className="bg-red-50/60 border border-red-200/80 rounded-xl p-6 space-y-4">
         <h3 className="text-sm font-bold text-red-700 flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-red-600" /> Zona Berbahaya (Reset Data Posyandu)
         </h3>
@@ -1024,7 +1024,7 @@ export default function PengaturanModule() {
 
       <button
         onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-        className="flex md:hidden w-full items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm"
+        className="flex md:hidden w-full items-center gap-3 p-4 bg-white border border-gray-100 rounded-xl shadow-sm"
       >
         <div className={`w-9 h-9 rounded-xl ${activeNav.bgColor} flex items-center justify-center`}>
           <activeNav.icon className={`w-4 h-4 ${activeNav.color}`} />
@@ -1037,7 +1037,7 @@ export default function PengaturanModule() {
       </button>
 
       {mobileSidebarOpen && (
-        <div className="md:hidden bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+        <div className="md:hidden bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
           {navItems.map((item) => {
             const isActive = activeSection === item.id;
             return (
@@ -1062,7 +1062,7 @@ export default function PengaturanModule() {
       )}
 
       <div className="flex gap-6 items-start">
-        <aside className="hidden md:flex w-60 shrink-0 flex-col bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden sticky top-6">
+        <aside className="hidden md:flex w-60 shrink-0 flex-col bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden sticky top-6">
           {navItems.map((item, idx) => {
             const isActive = activeSection === item.id;
             return (

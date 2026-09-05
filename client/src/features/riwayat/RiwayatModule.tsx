@@ -1338,17 +1338,6 @@ export default function RiwayatModule({ posyanduId, activePeriode, onNavigate }:
                   />
                 </div>
               </div>
-
-              <div>
-                <label className="text-xs font-bold text-saas-muted">Nama Petugas / Kader Pemeriksa</label>
-                <input
-                  type="text"
-                  placeholder="Nama Petugas..."
-                  value={lPetugas}
-                  onChange={(e) => setLPetugas(e.target.value)}
-                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-input text-xs font-semibold focus:outline-none focus:border-saas-primary mt-1"
-                />
-              </div>
             </>
           )}
 

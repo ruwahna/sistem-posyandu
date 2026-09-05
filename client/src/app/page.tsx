@@ -32,6 +32,7 @@ import {
   CaretDoubleLeft,
   CaretDoubleRight,
   Calendar,
+  Trash,
 } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
 import { notificationApi, authApi, balitaApi, lansiaApi, periodeApi, AppNotification, PeriodePelayanan } from "../lib/api";
@@ -52,6 +53,151 @@ import BalitaIcon from "../components/BalitaIcon";
 
 // Login Page (rendered inline when not authenticated)
 import LoginPage from "./login/page";
+
+function SwipeableNotificationItem({
+  item,
+  onItemClick,
+  onDelete,
+}: {
+  item: AppNotification;
+  onItemClick: (item: AppNotification) => void;
+  onDelete: (id: string, e?: React.MouseEvent) => void;
+}) {
+  const [offsetX, setOffsetX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const startXRef = useRef<number | null>(null);
+
+  let bgClass = "bg-blue-50 border-blue-200 text-blue-900";
+  let IconComponent = Info;
+  let iconColor = "text-blue-600";
+
+  if (item.type === "DANGER") {
+    bgClass = "bg-red-50 border-red-200 text-red-900";
+    IconComponent = WarningCircle;
+    iconColor = "text-red-600";
+  } else if (item.type === "WARNING") {
+    bgClass = "bg-amber-50 border-amber-200 text-amber-900";
+    IconComponent = Warning;
+    iconColor = "text-amber-600";
+  } else if (item.type === "SUCCESS") {
+    bgClass = "bg-emerald-50 border-emerald-200 text-emerald-900";
+    IconComponent = CheckCircle;
+    iconColor = "text-emerald-600";
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startXRef.current = e.touches[0].clientX;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (startXRef.current === null) return;
+    const diff = e.touches[0].clientX - startXRef.current;
+    setOffsetX(diff);
+  };
+
+  const handleTouchEnd = () => {
+    if (Math.abs(offsetX) > 70) {
+      onDelete(item.id);
+    } else {
+      setOffsetX(0);
+    }
+    startXRef.current = null;
+    setIsDragging(false);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    startXRef.current = e.clientX;
+    setIsDragging(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (startXRef.current === null || !isDragging) return;
+    const diff = e.clientX - startXRef.current;
+    setOffsetX(diff);
+  };
+
+  const handleMouseUp = () => {
+    if (Math.abs(offsetX) > 70) {
+      onDelete(item.id);
+    } else {
+      setOffsetX(0);
+    }
+    startXRef.current = null;
+    setIsDragging(false);
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-xl group select-none">
+      {/* Background Delete Indicator (only visible when swiped/dragged) */}
+      {offsetX !== 0 && (
+        <div className="absolute inset-0 bg-red-600 text-white flex items-center justify-between px-4 font-extrabold text-xs rounded-xl shadow-inner">
+          {offsetX > 0 ? (
+            <div className="flex items-center gap-1.5">
+              <Trash className="w-4 h-4" weight="bold" /> Hapus Notifikasi
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 ml-auto">
+              Hapus Notifikasi <Trash className="w-4 h-4" weight="bold" />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Foreground Card */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={() => {
+          if (isDragging) handleMouseUp();
+        }}
+        style={{
+          transform: `translateX(${offsetX}px)`,
+          transition: isDragging ? "none" : "transform 0.2s ease-out",
+        }}
+        onClick={() => {
+          if (Math.abs(offsetX) < 5) {
+            onItemClick(item);
+          }
+        }}
+        className={`p-3 border rounded-xl text-xs relative transition-all cursor-pointer ${bgClass} ${
+          !item.isRead ? "shadow-2xs font-semibold ring-1 ring-black/5" : "opacity-85 hover:opacity-100"
+        }`}
+      >
+        <div className="flex gap-2.5 items-start">
+          <IconComponent className={`w-4 h-4 shrink-0 mt-0.5 ${iconColor}`} weight="bold" />
+          <div className="flex-1 min-w-0 pr-6">
+            <div className="flex items-center justify-between gap-1 mb-0.5">
+              <p className="font-bold text-gray-900 text-xs truncate">
+                {item.title}
+              </p>
+              {!item.isRead && (
+                <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+              )}
+            </div>
+            <p className="text-[11px] text-gray-700 leading-relaxed">
+              {item.message}
+            </p>
+          </div>
+        </div>
+
+        {/* Hover Delete Button */}
+        <button
+          type="button"
+          onClick={(e) => onDelete(item.id, e)}
+          className="absolute top-2.5 right-2 p-1 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-md transition-all opacity-0 group-hover:opacity-100 border border-transparent hover:border-red-200 cursor-pointer"
+          title="Hapus Notifikasi"
+        >
+          <Trash className="w-3.5 h-3.5 text-gray-500 hover:text-red-600" weight="bold" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const { user, posyanduId, isLoading, logout, updateUser } = useAuth();
@@ -109,7 +255,10 @@ export default function Home() {
       const res = await periodeApi.getActive(posyanduId);
       if (res.success) {
         setActivePeriode(res.data);
-        if (!res.data) {
+        const now = new Date();
+        const curBulan = now.getMonth() + 1;
+        const curTahun = now.getFullYear();
+        if (!res.data || res.data.bulan !== curBulan || res.data.tahun !== curTahun) {
           setIsPeriodeModalOpen(true);
         }
       }
@@ -188,12 +337,29 @@ export default function Home() {
     try {
       setIsLoadingNotifications(true);
       const res = await notificationApi.getNotifications(posyanduId);
-      setNotifications(res.notifications);
+      // Filter out notifications older than 7 days
+      const now = new Date();
+      const validNotifications = res.notifications.filter((n) => {
+        const d = new Date(n.createdAt);
+        return (now.getTime() - d.getTime()) / (1000 * 3600 * 24) <= 7;
+      });
+      setNotifications(validNotifications);
       setUnreadCount(res.unreadCount);
     } catch (err) {
       console.error("Gagal memuat notifikasi:", err);
     } finally {
       setIsLoadingNotifications(false);
+    }
+  };
+
+  const handleDeleteNotification = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!posyanduId) return;
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await notificationApi.deleteNotification(posyanduId, id);
+    } catch (err) {
+      console.error("Gagal menghapus notifikasi:", err);
     }
   };
 
@@ -237,12 +403,21 @@ export default function Home() {
     } else if (item.category === "lansia") {
       setActiveMenu("Lansia");
     } else if (item.category === "system") {
-      setActiveMenu("Overview");
+      if (
+        item.title.toLowerCase().includes("periode") ||
+        item.title.toLowerCase().includes("bulan") ||
+        item.message.toLowerCase().includes("periode")
+      ) {
+        setIsPeriodeModalOpen(true);
+      } else {
+        setActiveMenu("Overview");
+      }
     }
 
     // 3. Close dropdown
     setShowNotification(false);
   };
+
 
   // Debounced Search Recommendations (After Typing)
   useEffect(() => {
@@ -953,22 +1128,52 @@ export default function Home() {
           {/* Right: Search Toggle Mobile, Periode Pelayanan, Notifikasi & Profil */}
           <div className="flex items-center gap-3 sm:gap-4">
             {/* Periode Pelayanan Badge & Selector */}
-            <button
-              onClick={() => setIsPeriodeModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-teal-50 hover:bg-teal-100/80 border border-teal-200/80 rounded-xl text-xs font-bold text-saas-primary transition-all shadow-sm group"
-              title="Buka atau Pilih Periode Pelayanan"
-            >
-              <div className="w-6 h-6 rounded-lg bg-saas-primary text-white flex items-center justify-center shrink-0">
-                <Calendar className="w-3.5 h-3.5" weight="bold" />
-              </div>
-              <div className="text-left hidden sm:block">
-                <span className="block text-[9px] text-teal-700 font-extrabold uppercase leading-none">Periode Pelayanan</span>
-                <span className="block text-[11px] font-extrabold text-saas-primary leading-tight truncate max-w-[130px]">
-                  {activePeriode ? activePeriode.nama : "Pilih Periode"}
-                </span>
-              </div>
-              <CaretDown className="w-3 h-3 text-saas-primary shrink-0 group-hover:translate-y-0.5 transition-transform" weight="bold" />
-            </button>
+            {(() => {
+              const now = new Date();
+              const isOutdated =
+                !activePeriode ||
+                activePeriode.bulan !== now.getMonth() + 1 ||
+                activePeriode.tahun !== now.getFullYear();
+              return (
+                <button
+                  onClick={() => setIsPeriodeModalOpen(true)}
+                  className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-2xs group border cursor-pointer ${
+                    isOutdated
+                      ? "bg-amber-50 hover:bg-amber-100/90 border-amber-300 text-amber-950"
+                      : "bg-white hover:bg-teal-50/60 border-teal-600/40 text-gray-900"
+                  }`}
+                  title={
+                    isOutdated
+                      ? "Periode belum sesuai bulan berjalan! Klik untuk kelola."
+                      : "Buka atau Pilih Periode Pelayanan"
+                  }
+                >
+                  <div
+                    className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 border ${
+                      isOutdated ? "bg-amber-600 text-white border-amber-700" : "bg-teal-700 text-white border-teal-800"
+                    }`}
+                  >
+                    <Calendar className="w-3.5 h-3.5" weight="bold" />
+                  </div>
+                  <div className="text-left hidden sm:block">
+                    <span
+                      className={`block text-[9px] font-extrabold uppercase leading-none ${
+                        isOutdated ? "text-amber-800" : "text-teal-800"
+                      }`}
+                    >
+                      {isOutdated ? "Bulan Baru - Kelola Periode" : "Periode Pelayanan"}
+                    </span>
+                    <span className="block text-[11px] font-extrabold leading-tight truncate max-w-[130px] text-gray-900 mt-0.5">
+                      {activePeriode ? activePeriode.nama : "Pilih Periode"}
+                    </span>
+                  </div>
+                  <CaretDown
+                    className="w-3 h-3 shrink-0 group-hover:translate-y-0.5 transition-transform text-gray-500"
+                    weight="bold"
+                  />
+                </button>
+              );
+            })()}
 
             {/* Container Lonceng & Dropdown Notifikasi */}
             <div className="relative" ref={notificationRef}>
@@ -1024,52 +1229,14 @@ export default function Home() {
                         Tidak ada notifikasi saat ini
                       </div>
                     ) : (
-                      notifications.map((item) => {
-                        let bgClass = "bg-blue-50/50 border-blue-100 text-blue-900";
-                        let IconComponent = Info;
-                        let iconColor = "text-blue-500";
-
-                        if (item.type === "DANGER") {
-                          bgClass = "bg-red-50/60 border-red-200/70 text-red-900";
-                          IconComponent = WarningCircle;
-                          iconColor = "text-red-500";
-                        } else if (item.type === "WARNING") {
-                          bgClass = "bg-amber-50/60 border-amber-200/70 text-amber-900";
-                          IconComponent = Warning;
-                          iconColor = "text-amber-500";
-                        } else if (item.type === "SUCCESS") {
-                          bgClass = "bg-emerald-50/50 border-emerald-100 text-emerald-900";
-                          IconComponent = CheckCircle;
-                          iconColor = "text-emerald-500";
-                        }
-
-                        return (
-                          <div
-                            key={item.id}
-                            onClick={() => handleNotificationItemClick(item)}
-                            className={`p-3 border rounded-xl text-xs relative transition-all cursor-pointer hover:shadow-md hover:scale-[1.01] active:scale-[0.99] ${bgClass} ${
-                              !item.isRead ? "shadow-xs font-semibold ring-1 ring-black/5" : "opacity-75 hover:opacity-100"
-                            }`}
-                          >
-                            <div className="flex gap-2.5 items-start">
-                              <IconComponent className={`w-4 h-4 shrink-0 mt-0.5 ${iconColor}`} weight="bold" />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-1 mb-0.5">
-                                  <p className="font-bold text-saas-dark text-xs truncate">
-                                    {item.title}
-                                  </p>
-                                  {!item.isRead && (
-                                    <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-                                  )}
-                                </div>
-                                <p className="text-[11px] text-saas-dark/80 leading-relaxed">
-                                  {item.message}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
+                      notifications.map((item) => (
+                        <SwipeableNotificationItem
+                          key={item.id}
+                          item={item}
+                          onItemClick={handleNotificationItemClick}
+                          onDelete={handleDeleteNotification}
+                        />
+                      ))
                     )}
                   </div>
                 </div>
