@@ -172,8 +172,8 @@ export const riwayatService = {
           vitaminA: item.vitaminA,
           asiEksklusif: item.asiEksklusif || undefined,
           obatCacing: item.obatCacing || undefined,
-          vitB1: item.vitB1 || undefined,
-          vitB6: item.vitB6 || undefined,
+          vitB1: (item as any).vitB1 || undefined,
+          vitB6: (item as any).vitB6 || undefined,
           statusImunisasi: item.statusImunisasi || undefined,
         });
       }
