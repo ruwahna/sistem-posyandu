@@ -24,9 +24,12 @@ model Posyandu {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   // Relations
-  kaders  Kader[]
-  balitas Balita[]
-  lansias Lansia[]
+  kaders        Kader[]
+  balitas       Balita[]
+  lansias       Lansia[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  periodePelayanans PeriodePelayanan[]
 
   @@map("posyandu")
 }
@@ -38,6 +41,7 @@ model Kader {
   id          String   @id @default(uuid())
   posyanduId  String   @map("posyandu_id")
   nama        String
+  username    String?  @unique
   email       String   @unique
   password    String
   role        Role     @default(KADER)
@@ -66,6 +70,7 @@ model Balita {
   posyanduId    String        @map("posyandu_id")
   nama          String
   nik           String?
+  noHp          String?       @map("no_hp")
   tanggalLahir  DateTime      @map("tanggal_lahir") @db.Date
   jenisKelamin  JenisKelamin  @map("jenis_kelamin")
   namaIbu       String        @map("nama_ibu")
@@ -96,7 +101,10 @@ model PemeriksaanBalita {
   vitaminA       Boolean     @map("vitamin_a")
   asiEksklusif   Boolean?    @map("asi_eksklusif")
   obatCacing     Boolean?    @map("obat_cacing")
+  vitB1          Boolean?    @default(false) @map("vit_b1")
+  vitB6          Boolean?    @default(false) @map("vit_b6")
   statusImunisasi String?    @map("status_imunisasi")
+  petugas        String?     @map("petugas")
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
@@ -115,6 +123,7 @@ model Lansia {
   nama                    String
   nik                     String
   noBpjs                  String?          @map("no_bpjs")
+  noHp                    String?          @map("no_hp")
   rtRw                    String           @map("rt_rw")
   tanggalLahir            DateTime         @map("tanggal_lahir") @db.Date
   jenisKelamin            JenisKelamin     @map("jenis_kelamin")
@@ -147,6 +156,7 @@ model PemeriksaanLansia {
   asamUrat            Decimal? @map("asam_urat") @db.Decimal(5, 2)
   keluhan             String?  @map("keluhan") @db.Text
   tindakan            String?  @map("tindakan") @db.Text
+  petugas             String?  @map("petugas")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
@@ -190,3 +200,66 @@ enum Kemandirian {
   B
   C
 }
+
+// ─────────────────────────────────────────────────────────────
+// NOTIFICATION
+// ─────────────────────────────────────────────────────────────
+model Notification {
+  id         String   @id @default(uuid())
+  posyanduId String   @map("posyandu_id")
+  title      String
+  message    String   @db.Text
+  type       String   @default("INFO") // DANGER | WARNING | SUCCESS | INFO
+  category   String   @default("system") // balita | lansia | system
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  posyandu Posyandu @relation(fields: [posyanduId], references: [id], onDelete: Cascade)
+
+  @@map("notification")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────────────────────
+model AuditLog {
+  id         String   @id @default(uuid())
+  posyanduId String?  @map("posyandu_id")
+  kaderId    String?  @map("kader_id")
+  kaderNama  String?  @map("kader_nama")
+  action     String   // E.g. LOGIN, BACKUP_DATA, RESET_POSYANDU
+  details    String?  @db.Text
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  posyandu Posyandu? @relation(fields: [posyanduId], references: [id], onDelete: SetNull)
+
+  @@map("audit_log")
+}
+
+// ─────────────────────────────────────────────────────────────
+// PERIODE PELAYANAN
+// ─────────────────────────────────────────────────────────────
+model PeriodePelayanan {
+  id          String        @id @default(uuid())
+  posyanduId  String        @map("posyandu_id")
+  nama        String        // E.g. "Periode Pelayanan Agustus 2026"
+  bulan       Int           // 1 - 12
+  tahun       Int           // E.g. 2026
+  tanggal     DateTime      @db.Date
+  status      StatusPeriode @default(AKTIF)
+  catatan     String?       @db.Text
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  posyandu    Posyandu      @relation(fields: [posyanduId], references: [id], onDelete: Cascade)
+
+  @@map("periode_pelayanan")
+}
+
+enum StatusPeriode {
+  AKTIF
+  SELESAI
+}
+

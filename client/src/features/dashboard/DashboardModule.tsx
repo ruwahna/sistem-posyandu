@@ -1,8 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { dashboardApi, DashboardSummary, balitaApi, lansiaApi } from "../../lib/api";
+import { dashboardApi, DashboardSummary, DistribusiKehadiran, balitaApi, lansiaApi, TrenGiziItem, AktivitasKunjunganData, ItemAktivitasKunjungan, periodeApi, PeriodePelayanan } from "../../lib/api";
+import { formatTanggalIndonesia } from "../../lib/dateUtils";
 import Modal from "../../components/Modal";
+import PageHelmet from "../../components/PageHelmet";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+  LineChart,
+  Line,
+  ComposedChart,
+  ReferenceLine,
+} from "recharts";
 import {
   ArrowUpRight,
   SlidersHorizontal,
@@ -13,20 +29,28 @@ import {
   Clock,
   Plus,
   Search,
-  Baby,
   Heart,
   X,
   UserCheck2,
+  TrendingUp,
+  Activity,
   RefreshCw,
   Filter,
-  Eye
+  Eye,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import ActionMenu from "../../components/ActionMenu";
+import LansiaIcon from "../../components/LansiaIcon";
+import BalitaIcon from "../../components/BalitaIcon";
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb, hitungIMT } from "../../lib/zScoreCalculator";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface DashboardModuleProps {
   searchQuery: string;
-  onNavigate: (menu: string) => void;
+  onNavigate: (menu: string, patientId?: string) => void;
   posyanduId: string;
+  activePeriode?: PeriodePelayanan | null;
 }
 
 interface Kunjungan {
@@ -47,18 +71,77 @@ interface Pasien {
   detailInfo: string; // "12 Bulan" or "RT 02"
   tanggalLahir?: string;
   jenisKelamin?: "L" | "P";
+  currentPeriodExam?: any;
 }
 
 import { DashboardSkeleton, Skeleton } from "../../components/Skeleton";
 
-export default function DashboardModule({ searchQuery, onNavigate, posyanduId }: DashboardModuleProps) {
-
+export default function DashboardModule({ searchQuery, onNavigate, posyanduId, activePeriode }: DashboardModuleProps) {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"Semua" | "Balita" | "Lansia">("Semua");
 
   // ── API state ──────────────────────────────────────────────
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const [dbPasiens, setDbPasiens] = useState<Pasien[]>([]);
+  const [distribusiKehadiran, setDistribusiKehadiran] = useState<DistribusiKehadiran[]>([]);
+  const [isDistribusiLoading, setIsDistribusiLoading] = useState(false);
+
+  // ── Aktivitas Kunjungan State ─────────────────────────────
+  const [aktivitasData, setAktivitasData] = useState<AktivitasKunjunganData | null>(null);
+  const [isAktivitasLoading, setIsAktivitasLoading] = useState(false);
+  const [aktivitasTab, setAktivitasTab] = useState<"balita" | "lansia" | "belum_balita" | "belum_lansia">("balita");
+  const [aktivitasSearch, setAktivitasSearch] = useState("");
+
+  const fetchAktivitas = () => {
+    setIsAktivitasLoading(true);
+    dashboardApi
+      .getAktivitasKunjungan(posyanduId)
+      .then((res) => {
+        if (res.success && res.data) {
+          setAktivitasData(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsAktivitasLoading(false));
+  };
+
+  useEffect(() => {
+    fetchAktivitas();
+  }, [posyanduId, activePeriode]);
+
+  // ── Action Menu & Detail Modals ──
+  const [showDetailAktivitas, setShowDetailAktivitas] = useState(false);
+  const [showDetailDistribusi, setShowDetailDistribusi] = useState(false);
+
+  const handleDetailAktivitas = () => setShowDetailAktivitas(true);
+  const handleExportAktivitas = () => {
+    window.print();
+  };
+
+  const handleDetailDistribusi = () => setShowDetailDistribusi(true);
+  const handleExportDistribusi = () => {
+    window.print();
+  };
+
+  // ── Tren Gizi & Z-Score State ──
+  const [trenPeriod, setTrenPeriod] = useState<"bulanan" | "tahunan">("bulanan");
+  const [trenViewMode, setTrenViewMode] = useState<"status" | "zscore">("status");
+  const [trenGiziData, setTrenGiziData] = useState<TrenGiziItem[]>([]);
+  const [isTrenGiziLoading, setIsTrenGiziLoading] = useState(false);
+
+  useEffect(() => {
+    setIsTrenGiziLoading(true);
+    dashboardApi
+      .getTrenGizi(posyanduId, trenPeriod)
+      .then((res) => {
+        if (res.success && res.data) {
+          setTrenGiziData(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsTrenGiziLoading(false));
+  }, [posyanduId, trenPeriod]);
 
   const fetchSummary = () => {
     dashboardApi
@@ -73,56 +156,115 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   useEffect(() => {
     setIsSummaryLoading(true);
     fetchSummary();
-  }, [posyanduId]);
+  }, [posyanduId, activePeriode]);
 
   useEffect(() => {
+    const targetMonth = activePeriode ? activePeriode.bulan : (new Date().getMonth() + 1);
+    const targetYear = activePeriode ? activePeriode.tahun : new Date().getFullYear();
+
     Promise.all([
       balitaApi.getAll(posyanduId),
       lansiaApi.getAll(posyanduId)
     ])
       .then(([balitaRes, lansiaRes]) => {
-        const balitas: Pasien[] = (balitaRes.data || []).map((b) => ({
-          id: b.id,
-          nama: b.nama,
-          tipe: "Balita",
-          detailInfo: `Usia ${b.usiaBulan || calculateAgeInMonths(b.tanggalLahir)} Bulan, Ibu: ${b.namaIbu}`,
-          tanggalLahir: b.tanggalLahir,
-          jenisKelamin: b.jenisKelamin,
-        }));
-        const lansias: Pasien[] = (lansiaRes.data || []).map((l) => ({
-          id: l.id,
-          nama: l.nama,
-          tipe: "Lansia",
-          detailInfo: `RT/RW ${l.rtRw || "-"}`,
-          tanggalLahir: l.tanggalLahir,
-          jenisKelamin: l.jenisKelamin,
-        }));
+        const balitas: Pasien[] = (balitaRes.data || []).map((b) => {
+          const currentExam = (b.pemeriksaans || []).find((exam) => {
+            const d = new Date(exam.tanggalPeriksa);
+            return (d.getMonth() + 1) === targetMonth && d.getFullYear() === targetYear;
+          });
+
+          return {
+            id: b.id,
+            nama: b.nama,
+            tipe: "Balita",
+            detailInfo: `Usia ${b.usiaBulan || calculateAgeInMonths(b.tanggalLahir)} Bulan, Ibu: ${b.namaIbu}`,
+            tanggalLahir: b.tanggalLahir,
+            jenisKelamin: b.jenisKelamin,
+            currentPeriodExam: currentExam,
+          };
+        });
+
+        const lansias: Pasien[] = (lansiaRes.data || []).map((l) => {
+          const currentExam = (l.pemeriksaans || []).find((exam) => {
+            const d = new Date(exam.tanggalPeriksa);
+            return (d.getMonth() + 1) === targetMonth && d.getFullYear() === targetYear;
+          });
+
+          return {
+            id: l.id,
+            nama: l.nama,
+            tipe: "Lansia",
+            detailInfo: `RT/RW ${l.rtRw || "-"}`,
+            tanggalLahir: l.tanggalLahir,
+            jenisKelamin: l.jenisKelamin,
+            currentPeriodExam: currentExam,
+          };
+        });
+
         setDbPasiens([...balitas, ...lansias]);
       })
       .catch(console.error);
+  }, [posyanduId, activePeriode]);
+
+  // Fetch Distribusi Kehadiran RT/RW (Poin 20)
+  useEffect(() => {
+    setIsDistribusiLoading(true);
+    dashboardApi
+      .getDistribusiKehadiran(posyanduId)
+      .then((res) => {
+        if (res.success && res.data) {
+          setDistribusiKehadiran(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsDistribusiLoading(false));
   }, [posyanduId]);
 
-  // Build kunjungan list from API data (recent pemeriksaan)
+  const targetMonth = activePeriode ? activePeriode.bulan : (new Date().getUTCMonth() + 1);
+  const targetYear = activePeriode ? activePeriode.tahun : new Date().getUTCFullYear();
+
+  const isMatchingPeriod = (tanggalStr?: string) => {
+    if (!tanggalStr) return true;
+    const d = new Date(tanggalStr);
+    return (d.getUTCMonth() + 1) === targetMonth && d.getUTCFullYear() === targetYear;
+  };
+
+  const formatJamDanTanggal = (tanggalStr?: string, createdAtStr?: string) => {
+    const raw = createdAtStr || tanggalStr;
+    if (!raw) return "-";
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return "-";
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const jamStr = `${hours}:${minutes} WIB`;
+    const tglStr = formatTanggalIndonesia(tanggalStr || raw);
+    return `${jamStr} • ${tglStr}`;
+  };
+
+  const filteredBalitaTerbaru = (summary?.pemeriksaanTerbaru.balita ?? []).filter((p) => isMatchingPeriod(p.tanggalPeriksa));
+  const filteredLansiaTerbaru = (summary?.pemeriksaanTerbaru.lansia ?? []).filter((p) => isMatchingPeriod(p.tanggalPeriksa));
+
+  // Build kunjungan list from API data (recent pemeriksaan matching active period)
   const apiKunjungans: Kunjungan[] = [
-    ...(summary?.pemeriksaanTerbaru.balita ?? []).map((p, i) => ({
+    ...filteredBalitaTerbaru.map((p, i) => ({
       id: `b-${p.id ?? i}`,
       nama: p.balita.nama,
       tipe: "Balita" as const,
-      detail: p.statusBbU ?? "-",
+      detail: p.statusBbU ? `BB/U: ${p.statusBbU}` : "-",
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: new Date(p.tanggalPeriksa).toLocaleDateString("id-ID"),
+      waktu: formatJamDanTanggal(p.tanggalPeriksa, p.createdAt),
     })),
-    ...(summary?.pemeriksaanTerbaru.lansia ?? []).map((p, i) => ({
+    ...filteredLansiaTerbaru.map((p, i) => ({
       id: `l-${p.id ?? i}`,
       nama: p.lansia.nama,
       tipe: "Lansia" as const,
       detail: `${p.tekananDarahSistol}/${p.tekananDarahDiastol} mmHg`,
       status: "Selesai Periksa",
       statusType: "success" as const,
-      waktu: new Date(p.tanggalPeriksa).toLocaleDateString("id-ID"),
+      waktu: formatJamDanTanggal(p.tanggalPeriksa, p.createdAt),
     })),
-  ].sort((a, b) => b.waktu.localeCompare(a.waktu)); // sort by date
+  ];
 
   // Real-time additions from quick-exam modal go here
   const [localKunjungans, setLocalKunjungans] = useState<Kunjungan[]>([]);
@@ -131,34 +273,6 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   // Popover State 3-Dots Menu
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Trend Chart Timeframe State (Bulanan vs Tahunan)
-  const [trendTimeframe, setTrendTimeframe] = useState<"bulanan" | "tahunan">("bulanan");
-
-  const monthlyTrendData = [
-    { label: "Jan", normal: 82, kurang: 18 },
-    { label: "Feb", normal: 85, kurang: 15 },
-    { label: "Mar", normal: 88, kurang: 12 },
-    { label: "Apr", normal: 78, kurang: 22 },
-    { label: "Mei", normal: 92, kurang: 8 },
-    { label: "Jun", normal: 87, kurang: 13 },
-    { label: "Jul", normal: 90, kurang: 10 },
-    { label: "Ags", normal: 93, kurang: 7 },
-    { label: "Sep", normal: 91, kurang: 9 },
-    { label: "Okt", normal: 94, kurang: 6 },
-    { label: "Nov", normal: 89, kurang: 11 },
-    { label: "Des", normal: 95, kurang: 5 },
-  ];
-
-  const yearlyTrendData = [
-    { label: "2022", normal: 74, kurang: 26 },
-    { label: "2023", normal: 79, kurang: 21 },
-    { label: "2024", normal: 84, kurang: 16 },
-    { label: "2025", normal: 88, kurang: 12 },
-    { label: "2026", normal: 93, kurang: 7 },
-  ];
-
-  const currentTrendData = trendTimeframe === "bulanan" ? monthlyTrendData : yearlyTrendData;
 
   const toggleMenu = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -208,6 +322,74 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   const [examKeluhan, setExamKeluhan] = useState("");
   const [examTindakan, setExamTindakan] = useState("");
 
+  // Pre-fill form modal jika pasien sudah memiliki data di periode ini
+  useEffect(() => {
+    if (!selectedPasien) {
+      setExamBB("");
+      setExamTB("");
+      setExamLK("");
+      setExamLiLA("");
+      setExamVitA(false);
+      setExamAsi(false);
+      setExamCacing(false);
+      setExamImunisasi("");
+      setExamSistol("");
+      setExamDiastol("");
+      setExamGds("");
+      setExamLp("");
+      setExamCholesterol("");
+      setExamUricAcid("");
+      setExamKeluhan("");
+      setExamTindakan("");
+      return;
+    }
+
+    const exam = selectedPasien.currentPeriodExam;
+    if (exam) {
+      if (exam.tanggalPeriksa) {
+        setExamDate(new Date(exam.tanggalPeriksa).toISOString().slice(0, 10));
+      }
+      setExamBB(exam.beratBadan ? String(exam.beratBadan) : "");
+      setExamTB(exam.tinggiBadan ? String(exam.tinggiBadan) : "");
+
+      if (selectedPasien.tipe === "Balita") {
+        setExamLK(exam.lingkarKepala ? String(exam.lingkarKepala) : "");
+        setExamLiLA(exam.lingkarLengan ? String(exam.lingkarLengan) : "");
+        setExamKms(exam.statusKms || "N");
+        setExamVitA(Boolean(exam.vitaminA));
+        setExamAsi(Boolean(exam.asiEksklusif));
+        setExamCacing(Boolean(exam.obatCacing));
+        setExamImunisasi(exam.statusImunisasi || "");
+      } else {
+        setExamSistol(exam.tekananDarahSistol ? String(exam.tekananDarahSistol) : "");
+        setExamDiastol(exam.tekananDarahDiastol ? String(exam.tekananDarahDiastol) : "");
+        setExamGds(exam.gulaDarahSewaktu ? String(exam.gulaDarahSewaktu) : "");
+        setExamLp(exam.lingkarPerut ? String(exam.lingkarPerut) : "");
+        setExamCholesterol(exam.kolesterol ? String(exam.kolesterol) : "");
+        setExamUricAcid(exam.asamUrat ? String(exam.asamUrat) : "");
+        setExamKeluhan(exam.keluhan || "");
+        setExamTindakan(exam.tindakan || "");
+      }
+    } else {
+      setExamBB("");
+      setExamTB("");
+      setExamLK("");
+      setExamLiLA("");
+      setExamVitA(false);
+      setExamAsi(false);
+      setExamCacing(false);
+      setExamImunisasi("");
+      setExamSistol("");
+      setExamDiastol("");
+      setExamGds("");
+      setExamLp("");
+      setExamCholesterol("");
+      setExamUricAcid("");
+      setExamKeluhan("");
+      setExamTindakan("");
+    }
+  }, [selectedPasien]);
+
   // Helper Hitung Usia (Bulan)
   const calculateAgeInMonths = (birthDateStr: string, refDate: Date = new Date()): number => {
     const birth = new Date(birthDateStr);
@@ -240,11 +422,25 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
   const [toastSuccess, setToastSuccess] = useState("");
 
   // Filter Kunjungan
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 5;
+
   const filteredKunjungan = kunjungans.filter((k) => {
     const matchesSearch = k.nama.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTab = activeTab === "Semua" || k.tipe === activeTab;
     return matchesSearch && matchesTab;
   });
+
+  const totalPages = Math.ceil(filteredKunjungan.length / itemsPerPage) || 1;
+  const paginatedKunjungan = filteredKunjungan.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset pagination to page 1 when filter tab or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
 
   // Filter Pasien in Modal
   const filteredPasiens = dbPasiens.filter((p) =>
@@ -299,6 +495,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
           asiEksklusif: examAsi,
           obatCacing: examCacing,
           statusImunisasi: examImunisasi || undefined,
+          petugas: user?.nama || "Kader Posyandu",
         };
         await balitaApi.createPemeriksaan(posyanduId, selectedPasien.id, data);
       } else {
@@ -324,12 +521,14 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
           asamUrat: examUricAcid ? parseFloat(examUricAcid) : undefined,
           keluhan: examKeluhan || undefined,
           tindakan: examTindakan || undefined,
+          petugas: user?.nama || "Kader Posyandu",
         };
         await lansiaApi.createPemeriksaan(posyanduId, selectedPasien.id, data);
       }
 
       setToastSuccess(`Pemeriksaan untuk ${selectedPasien.nama} berhasil dicatat.`);
       fetchSummary();
+      fetchAktivitas();
 
       // Close & Reset
       setIsOpenModal(false);
@@ -365,6 +564,10 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
 
   return (
     <div className="space-y-8">
+      <PageHelmet
+        title="Dashboard Overview"
+        description="Ringkasan statistik data balita, lansia, dan grafik status gizi Posyandu."
+      />
       {/* Toast Success Alert */}
       {toastSuccess && (
         <div className="fixed bottom-6 right-6 z-50 p-4 bg-green-50 text-trend-successText border border-green-150 rounded-card shadow-lg flex items-center gap-2.5">
@@ -460,9 +663,9 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
           <div>
             <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-white/80 font-medium">Perhatian Gizi</span>
             <h3 className="text-2xl sm:text-3xl font-mono font-medium mt-0.5 sm:mt-1">
-              {isSummaryLoading ? "…" : `${(summary?.statusGizi?.bbU?.["Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["Sangat Kurang"] ?? 0)}`}
+              {isSummaryLoading ? "…" : `${(summary?.statusGizi?.bbU?.["Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["Sangat Kurang"] ?? 0) + (summary?.statusGizi?.bbU?.["K"] ?? 0) + (summary?.statusGizi?.bbU?.["SK"] ?? 0)}`}
             </h3>
-            <span className="text-[11px] sm:text-xs text-white/70 font-sans block">Gizi Kurang</span>
+            <span className="text-[11px] sm:text-xs text-white/70 font-sans block">Gizi Kurang / Buruk</span>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-medium text-white/90 z-10">
@@ -498,79 +701,133 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
 
       {/* Main Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Tren Status Gizi Balita (Bar Chart) */}
+        {/* Tren Status Gizi Balita (Recharts & WHO Z-Score) */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 lg:col-span-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div>
-              <h3 className="font-bold text-base text-saas-dark">Tren Status Gizi Balita</h3>
+              <h3 className="font-bold text-base text-saas-dark flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-saas-primary" />
+                Tren Status Gizi & Z-Score Balita
+              </h3>
               <p className="text-xs text-saas-muted mt-0.5">
-                {trendTimeframe === "bulanan"
-                  ? "Distribusi hasil pemeriksaan bulanan tahun 2026"
-                  : "Perbandingan tren tahunan gizi balita (2022 - 2026)"}
+                Agregasi data historis {trenPeriod === "bulanan" ? "bulanan" : "tahunan"} & kurva presisi Z-score WHO
               </p>
             </div>
-            <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-1 border border-gray-100/60 self-start sm:self-auto">
-              <button
-                onClick={() => setTrendTimeframe("bulanan")}
-                className={`text-xs px-3.5 py-1.5 rounded-md font-bold transition-all ${
-                  trendTimeframe === "bulanan"
-                    ? "bg-white text-saas-primary shadow-sm"
-                    : "text-saas-muted hover:text-saas-dark"
-                }`}
-              >
-                Bulanan
-              </button>
-              <button
-                onClick={() => setTrendTimeframe("tahunan")}
-                className={`text-xs px-3.5 py-1.5 rounded-md font-bold transition-all ${
-                  trendTimeframe === "tahunan"
-                    ? "bg-white text-saas-primary shadow-sm"
-                    : "text-saas-muted hover:text-saas-dark"
-                }`}
-              >
-                Tahunan
-              </button>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Toggle Mode Display */}
+              <div className="flex items-center gap-1 bg-gray-100/80 rounded-lg p-1">
+                <button
+                  onClick={() => setTrenViewMode("status")}
+                  className={`text-xs px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    trenViewMode === "status"
+                      ? "bg-white text-saas-dark shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Status Gizi
+                </button>
+                <button
+                  onClick={() => setTrenViewMode("zscore")}
+                  className={`text-xs px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    trenViewMode === "zscore"
+                      ? "bg-white text-saas-dark shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Kurva Z-Score WHO
+                </button>
+              </div>
+
+              {/* Toggle Period */}
+              <div className="flex items-center gap-1 bg-gray-100/80 rounded-lg p-1">
+                <button
+                  onClick={() => setTrenPeriod("bulanan")}
+                  className={`text-xs px-3 py-1.5 rounded-md font-bold transition-all ${
+                    trenPeriod === "bulanan"
+                      ? "bg-saas-primary text-white shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Bulanan
+                </button>
+                <button
+                  onClick={() => setTrenPeriod("tahunan")}
+                  className={`text-xs px-3 py-1.5 rounded-md font-bold transition-all ${
+                    trenPeriod === "tahunan"
+                      ? "bg-saas-primary text-white shadow-sm"
+                      : "text-saas-muted hover:text-saas-dark"
+                  }`}
+                >
+                  Tahunan
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="h-64 flex flex-col justify-between">
-            <div className="flex-1 flex items-end justify-between px-2 sm:px-4 pb-2 border-b border-gray-100 relative overflow-x-auto">
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-full border-t border-dashed border-gray-100/80"></div>
-                ))}
+          <div className="h-72 w-full">
+            {isTrenGiziLoading ? (
+              <div className="h-full flex items-center justify-center text-sm text-saas-muted">
+                Memuat data grafik tren gizi...
               </div>
-
-              {currentTrendData.map((data, index) => (
-                <div key={index} className="flex flex-col items-center gap-2 z-10 w-7 sm:w-10 group">
-                  <div className="w-full flex justify-center gap-0.5 items-end h-48 relative">
-                    <div className="absolute -top-10 bg-saas-dark text-white text-[10px] py-1 px-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none z-20">
-                      {data.label} | Normal: {data.normal}% | Kurang: {data.kurang}%
-                    </div>
-                    <div
-                      style={{ height: `${data.normal * 0.45}%` }}
-                      className="w-2.5 sm:w-3.5 bg-saas-primary rounded-t-full transition-all duration-500 hover:opacity-85"
-                    ></div>
-                    <div
-                      style={{ height: `${data.kurang * 0.45}%` }}
-                      className="w-2.5 sm:w-3.5 bg-trend-dangerText/80 rounded-t-full transition-all duration-500 hover:opacity-85"
-                    ></div>
-                  </div>
-                  <span className="text-[10px] text-saas-muted font-bold tracking-tight">{data.label}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-4 mt-4 px-2">
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-saas-primary"></span>
-                <span className="text-xs text-saas-muted font-medium">Balita Gizi Normal (%)</span>
+            ) : trenGiziData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-sm text-saas-muted">
+                Belum ada data pemeriksaan balita untuk periode ini.
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-trend-dangerText/80"></span>
-                <span className="text-xs text-saas-muted font-medium">Balita Gizi Kurang / Perlu Perhatian (%)</span>
-              </div>
-            </div>
+            ) : trenViewMode === "status" ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={trenGiziData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "10px", border: "none", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", fontSize: "12px" }}
+                    formatter={(value: any, name: any) => [
+                      value,
+                      name === "normal"
+                        ? "Gizi Normal (BB/U)"
+                        : name === "kurang"
+                        ? "Gizi Kurang (BB/U)"
+                        : name === "sangatKurang"
+                        ? "Gizi Buruk/SK (BB/U)"
+                        : name === "stunting"
+                        ? "Stunting (TB/U)"
+                        : String(name || ""),
+                    ]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
+                  <Bar dataKey="normal" name="Gizi Normal" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="kurang" name="Gizi Kurang" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="sangatKurang" name="Gizi Buruk" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Line type="monotone" dataKey="stunting" name="Stunting (TB/U)" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trenGiziData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <YAxis domain={[-4, 4]} tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "10px", border: "none", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", fontSize: "12px" }}
+                    formatter={(val: any, name: any) => [
+                      `${val} SD`,
+                      name === "avgZScoreBBU"
+                        ? "Rata-rata Z-Score BB/U"
+                        : name === "avgZScoreTBU"
+                        ? "Rata-rata Z-Score TB/U"
+                        : String(name || ""),
+                    ]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
+                  <ReferenceLine y={0} label={{ value: "Median WHO (0 SD)", fill: "#10b981", fontSize: 10 }} stroke="#10b981" strokeDasharray="4 4" />
+                  <ReferenceLine y={-2} label={{ value: "Batas Stunting/K (-2 SD)", fill: "#ef4444", fontSize: 10 }} stroke="#ef4444" strokeDasharray="4 4" />
+                  <ReferenceLine y={2} label={{ value: "Batas Lebih (+2 SD)", fill: "#f59e0b", fontSize: 10 }} stroke="#f59e0b" strokeDasharray="4 4" />
+                  <Line type="monotone" dataKey="avgZScoreBBU" name="Rata-rata Z-Score BB/U" stroke="#0284c7" strokeWidth={2.5} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="avgZScoreTBU" name="Rata-rata Z-Score TB/U" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -581,87 +838,100 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Aktivitas Kunjungan</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat partisipasi kader & posyandu</p>
             </div>
-            <div className="relative">
-              <button
-                onClick={(e) => toggleMenu("aktivitas-kunjungan", e)}
-                className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
-                title="Opsi Aktivitas Kunjungan"
-              >
-                <MoreHorizontal className="w-5 h-5" />
-              </button>
-              {openMenuId === "aktivitas-kunjungan" && (
-                <div className="absolute right-0 top-8 z-30 w-52 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs">
-                  <button
-                    onClick={() => {
-                      fetchSummary();
-                      showToast("Data aktivitas kunjungan berhasil diperbarui");
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" /> Refresh Data
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab("Semua");
-                      showToast("Tampilan difilter ke Semua Kategori");
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
-                  >
-                    <Filter className="w-3.5 h-3.5" /> Tampilkan Semua Kategori
-                  </button>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={() => handleDetailAktivitas()}
+              className="p-1.5 hover:bg-gray-100 text-saas-muted hover:text-saas-dark rounded-lg transition-colors"
+              title="Lihat Detail Aktivitas"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="flex flex-col items-center justify-center">
-            <div className="relative w-44 h-44 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="transparent"
-                  stroke="#F3F4F6"
-                  strokeWidth="10"
-                  strokeDasharray="251.2"
-                  strokeDashoffset="62.8"
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="transparent"
-                  stroke="#14B8A6"
-                  strokeWidth="10"
-                  strokeDasharray="251.2"
-                  strokeDashoffset="110"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center text-center">
-                <span className="text-2xl font-black text-saas-dark leading-none">78%</span>
-                <span className="text-[10px] text-saas-muted font-bold uppercase tracking-wider mt-1">Selesai</span>
+          {isAktivitasLoading ? (
+            <div className="py-12 text-center text-xs text-saas-muted">Memuat data aktivitas...</div>
+          ) : (
+            <div className="flex flex-col items-center justify-center">
+              <div className="relative w-44 h-44 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="transparent"
+                    stroke="#F3F4F6"
+                    strokeWidth="10"
+                  />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="transparent"
+                    stroke="#14B8A6"
+                    strokeWidth="10"
+                    strokeDasharray="251.2"
+                    strokeDashoffset={251.2 - (251.2 * (aktivitasData?.persentaseSelesai ?? 0)) / 100}
+                    strokeLinecap="round"
+                    className="transition-all duration-700 ease-out"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center text-center">
+                  <span className="text-2xl font-black text-saas-dark leading-none">
+                    {aktivitasData?.persentaseSelesai ?? 0}%
+                  </span>
+                  <span className="text-[10px] text-saas-muted font-bold uppercase tracking-wider mt-1">Selesai</span>
+                </div>
+              </div>
+
+              <div className="w-full space-y-2 mt-6">
+                {[
+                  {
+                    key: "balita" as const,
+                    label: "Balita Selesai Periksa",
+                    count: `${aktivitasData?.balitaSelesaiCount ?? 0} Anak`,
+                    color: "bg-sky-500",
+                  },
+                  {
+                    key: "lansia" as const,
+                    label: "Lansia Selesai Periksa",
+                    count: `${aktivitasData?.lansiaSelesaiCount ?? 0} Lansia`,
+                    color: "bg-emerald-500",
+                  },
+                  {
+                    key: "belum_balita" as const,
+                    label: "Balita Belum Periksa",
+                    count: `${(aktivitasData?.belumMengisiList ?? []).filter(i => i.tipe === 'Balita').length} Anak`,
+                    color: "bg-amber-400",
+                  },
+                  {
+                    key: "belum_lansia" as const,
+                    label: "Lansia Belum Periksa",
+                    count: `${(aktivitasData?.belumMengisiList ?? []).filter(i => i.tipe === 'Lansia').length} Lansia`,
+                    color: "bg-orange-400",
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => {
+                      setAktivitasTab(item.key);
+                      setShowDetailAktivitas(true);
+                    }}
+                    className="w-full flex items-center justify-between text-xs border-b border-gray-50 pb-2.5 pt-1.5 hover:bg-gray-50/80 px-2 rounded-lg transition-colors group cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${item.color}`}></span>
+                      <span className="text-saas-muted group-hover:text-saas-dark font-semibold transition-colors">
+                        {item.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-saas-dark">{item.count}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-saas-primary group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
-
-            <div className="w-full space-y-3 mt-6">
-              {[
-                { label: "Balita Selesai Periksa", count: "45 Anak", color: "bg-saas-primary" },
-                { label: "Lansia Selesai Periksa", count: "23 Lansia", color: "bg-green-500" },
-                { label: "Belum Mengisi Data", count: "12 Orang", color: "bg-yellow-400" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between text-xs border-b border-gray-50 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${item.color}`}></span>
-                    <span className="text-saas-muted font-semibold">{item.label}</span>
-                  </div>
-                  <span className="font-bold text-saas-dark">{item.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -669,105 +939,75 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Kunjungan Terakhir Table */}
         <div className="bg-white rounded-card shadow-soft-card border border-gray-100/70 p-6 lg:col-span-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div>
-              <h3 className="font-bold text-base text-saas-dark">Riwayat Antrean & Kunjungan Hari Ini</h3>
-              <p className="text-xs text-saas-muted mt-0.5">Daftar pemeriksaan pelayanan posyandu terkini</p>
-            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
+              <div>
+                <h3 className="font-bold text-base text-saas-dark flex items-center gap-2">
+                  Riwayat Antrean & Kunjungan Terkini
+                </h3>
+                <p className="text-xs text-saas-muted mt-0.5">Umpan aktivitas pemeriksaan pelayanan posyandu terbaru</p>
+              </div>
 
-            <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-1 border border-gray-100/50">
-              {(["Semua", "Balita", "Lansia"] as const).map((tab) => (
+              <div className="flex items-center gap-3">
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`text-xs px-3.5 py-1.5 rounded-md font-bold transition-all ${
-                    activeTab === tab 
-                      ? "bg-white text-saas-primary shadow-sm" 
-                      : "text-saas-muted hover:text-saas-dark"
-                  }`}
+                  onClick={() => onNavigate("Riwayat")}
+                  className="text-xs font-bold text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100/70 border border-teal-200/60 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shrink-0"
+                  title="Buka Halaman Riwayat Lengkap"
                 >
-                  {tab}
+                  Lihat Semua di Riwayat &rarr;
                 </button>
-              ))}
+
+                <div className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-1 border border-gray-100/50">
+                  {(["Semua", "Balita", "Lansia"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`text-xs px-3.5 py-1.5 rounded-md font-bold transition-all ${
+                        activeTab === tab 
+                          ? "bg-white text-saas-primary shadow-sm" 
+                          : "text-saas-muted hover:text-saas-dark"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="border-b border-gray-100 text-xs font-bold text-saas-muted uppercase tracking-wider">
-                  <th className="pb-3 text-left">Nama</th>
-                  <th className="pb-3">Kategori</th>
-                  <th className="pb-3">Keterangan</th>
-                  <th className="pb-3 text-center">Status</th>
-                  <th className="pb-3 text-right">Jam Periksa</th>
-                  <th className="pb-3 text-center w-12">Aksi</th>
+                  <th className="px-4 pb-3 text-left whitespace-nowrap">Nama</th>
+                  <th className="px-4 pb-3 text-left whitespace-nowrap">Kategori</th>
+                  <th className="px-4 pb-3 text-left whitespace-nowrap">Keterangan</th>
+                  <th className="px-4 pb-3 text-right whitespace-nowrap">Jam &amp; Tanggal</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredKunjungan.length > 0 ? (
-                  filteredKunjungan.map((item) => (
+                {paginatedKunjungan.length > 0 ? (
+                  paginatedKunjungan.map((item) => (
                     <tr key={item.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors text-sm">
-                      <td className="py-4 font-bold text-saas-dark">{item.nama}</td>
-                      <td className="py-4 text-saas-muted font-medium">{item.tipe}</td>
-                      <td className="py-4 text-saas-muted font-medium">{item.detail}</td>
-                      <td className="py-4 text-center">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1.5 ${
-                            item.statusType === "success"
-                              ? "bg-trend-successBg text-trend-successText"
-                              : item.statusType === "warning"
-                              ? "bg-trend-dangerBg text-trend-dangerText"
-                              : "bg-blue-50 text-saas-primary"
-                          }`}
-                        >
-                          {item.statusType === "success" && <CheckCircle2 className="w-3 h-3" />}
-                          {item.statusType === "warning" && <AlertCircle className="w-3 h-3" />}
-                          {item.statusType === "info" && <Clock className="w-3 h-3" />}
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="py-4 text-right text-saas-muted font-semibold">{item.waktu}</td>
-                      <td className="py-4 text-center relative">
+                      <td className="px-4 py-3.5 whitespace-nowrap">
                         <button
-                          onClick={(e) => toggleMenu(`row-${item.id}`, e)}
-                          className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
-                          title="Aksi Kunjungan"
+                          onClick={() => {
+                            const realId = item.id.replace(/^(b-|l-)/, '');
+                            onNavigate(item.tipe === "Balita" ? "Balita" : "Lansia", realId);
+                          }}
+                          className="font-bold text-saas-dark hover:text-saas-primary hover:underline transition-colors text-left"
+                          title={`Lihat Profil ${item.nama}`}
                         >
-                          <MoreHorizontal className="w-4 h-4" />
+                          {item.nama}
                         </button>
-                        {openMenuId === `row-${item.id}` && (
-                          <div className="absolute right-0 top-10 z-30 w-48 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs text-left">
-                            <button
-                              onClick={() => {
-                                onNavigate(item.tipe === "Balita" ? "balita" : "lansia");
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all"
-                            >
-                              <ArrowUpRight className="w-3.5 h-3.5" /> Buka Data {item.tipe}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedPasien({
-                                  id: item.id,
-                                  nama: item.nama,
-                                  tipe: item.tipe as "Balita" | "Lansia",
-                                  detailInfo: item.detail,
-                                });
-                                setIsOpenModal(true);
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all"
-                            >
-                              <Plus className="w-3.5 h-3.5" /> Input Pemeriksaan
-                            </button>
-                          </div>
-                        )}
                       </td>
+                      <td className="px-4 py-3.5 text-saas-muted font-medium whitespace-nowrap">{item.tipe}</td>
+                      <td className="px-4 py-3.5 text-saas-muted font-medium whitespace-nowrap">{item.detail}</td>
+                      <td className="px-4 py-3.5 text-right text-saas-muted font-semibold whitespace-nowrap">{item.waktu}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-xs text-saas-muted font-medium">
+                    <td colSpan={4} className="py-8 text-center text-xs text-saas-muted font-medium">
                       Tidak menemukan data kunjungan yang cocok
                     </td>
                   </tr>
@@ -775,6 +1015,57 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {filteredKunjungan.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-gray-100 mt-4 text-xs">
+              <p className="text-saas-muted font-semibold">
+                Menampilkan{" "}
+                <span className="text-saas-dark font-bold">
+                  {Math.min((currentPage - 1) * itemsPerPage + 1, filteredKunjungan.length)}
+                </span>{" "}
+                -{" "}
+                <span className="text-saas-dark font-bold">
+                  {Math.min(currentPage * itemsPerPage, filteredKunjungan.length)}
+                </span>{" "}
+                dari <span className="text-saas-dark font-bold">{filteredKunjungan.length}</span> data
+              </p>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded-lg border border-gray-200 text-saas-dark hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  title="Halaman Sebelumnya"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
+                      currentPage === page
+                        ? "bg-saas-primary text-white shadow-sm"
+                        : "text-saas-muted hover:text-saas-dark hover:bg-gray-100"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 rounded-lg border border-gray-200 text-saas-dark hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  title="Halaman Berikutnya"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Distribusi RT/RW */}
@@ -784,48 +1075,42 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
               <h3 className="font-bold text-base text-saas-dark">Distribusi Kehadiran RT/RW</h3>
               <p className="text-xs text-saas-muted mt-0.5">Tingkat kehadiran per wilayah</p>
             </div>
-            <div className="relative">
-              <button
-                onClick={(e) => toggleMenu("distribusi-rtrw", e)}
-                className="p-1.5 rounded-lg text-saas-muted hover:text-saas-dark hover:bg-gray-100 transition-colors"
-                title="Opsi Distribusi RT/RW"
-              >
-                <MoreHorizontal className="w-5 h-5" />
-              </button>
-              {openMenuId === "distribusi-rtrw" && (
-                <div className="absolute right-0 top-8 z-30 w-52 bg-white rounded-xl shadow-lg border border-gray-150 p-1.5 space-y-1 text-xs">
-                  <button
-                    onClick={() => {
-                      fetchSummary();
-                      showToast("Statistik kehadiran wilayah diperbarui");
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-saas-dark hover:bg-teal-50 hover:text-saas-primary rounded-lg font-semibold transition-all text-left"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" /> Refresh Statistik Wilayah
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
 
           <div className="space-y-6">
-            {[
-              { region: "RT 01 / RW 02", percent: 84, color: "bg-saas-primary" },
-              { region: "RT 02 / RW 02", percent: 72, color: "bg-green-500" },
-              { region: "RT 03 / RW 02", percent: 65, color: "bg-indigo-500" },
-              { region: "RT 04 / RW 02", percent: 48, color: "bg-yellow-400" },
-              { region: "RT 05 / RW 02", percent: 30, color: "bg-red-400" },
-            ].map((row, i) => (
-              <div key={i} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-saas-dark font-bold">{row.region}</span>
-                  <span className="text-saas-muted font-bold">{row.percent}%</span>
-                </div>
-                <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden border border-gray-100/20">
-                  <div style={{ width: `${row.percent}%` }} className={`h-full rounded-full ${row.color}`}></div>
-                </div>
+            {isDistribusiLoading ? (
+              <div className="flex items-center justify-center py-8 text-xs text-saas-muted">
+                Memuat data distribusi kehadiran...
               </div>
-            ))}
+            ) : distribusiKehadiran.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-xs text-saas-muted">
+                Belum ada data kehadiran tersedia.
+              </div>
+            ) : (
+              distribusiKehadiran.map((row, i) => {
+                // Dynamic color based on percentage
+                let color = "bg-saas-primary";
+                if (row.persentase < 30) color = "bg-red-400";
+                else if (row.persentase < 50) color = "bg-yellow-400";
+                else if (row.persentase < 70) color = "bg-indigo-500";
+                else if (row.persentase < 85) color = "bg-green-500";
+
+                return (
+                  <div key={i} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-saas-dark font-bold">{row.rtRw}</span>
+                      <span className="text-saas-muted font-bold">{row.persentase}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden border border-gray-100/20">
+                        <div style={{ width: `${row.persentase}%` }} className={`h-full rounded-full ${color}`}></div>
+                      </div>
+                      <span className="text-[10px] text-saas-muted font-semibold whitespace-nowrap">{row.hadir}/{row.total}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -869,7 +1154,7 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                             p.tipe === "Balita" ? "bg-teal-50 text-saas-primary" : "bg-red-50 text-red-500"
                           }`}>
-                            {p.tipe === "Balita" ? <Baby className="w-4 h-4" /> : <Heart className="w-4 h-4" />}
+                            {p.tipe === "Balita" ? <BalitaIcon className="w-4 h-4" gender={p.jenisKelamin} /> : <LansiaIcon className="w-4 h-4" gender={p.jenisKelamin} />}
                           </div>
                           <div>
                             <p className="font-bold text-saas-dark group-hover:text-saas-primary transition-colors">{p.nama}</p>
@@ -1280,6 +1565,409 @@ export default function DashboardModule({ searchQuery, onNavigate, posyanduId }:
                 </div>
               </form>
             )}
+      </Modal>
+
+      {/* Modal Detail Aktivitas Kunjungan */}
+      <Modal
+        isOpen={showDetailAktivitas}
+        onClose={() => setShowDetailAktivitas(false)}
+        title="Detail Aktivitas Kunjungan Posyandu"
+      >
+        <div className="space-y-4 max-w-xl">
+          {/* Header Stats Selector Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button
+              onClick={() => setAktivitasTab("balita")}
+              className={`p-2.5 rounded-xl border text-left transition-all ${
+                aktivitasTab === "balita"
+                  ? "bg-sky-50 border-sky-300 ring-2 ring-sky-400/20"
+                  : "bg-gray-50/60 border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center gap-1 text-sky-700 font-bold text-[11px] mb-0.5 truncate">
+                <BalitaIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Balita Selesai</span>
+              </div>
+              <div className="text-base font-black text-saas-dark">
+                {aktivitasData?.balitaSelesaiCount ?? 0} <span className="text-[10px] font-normal text-saas-muted">Anak</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setAktivitasTab("lansia")}
+              className={`p-2.5 rounded-xl border text-left transition-all ${
+                aktivitasTab === "lansia"
+                  ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400/20"
+                  : "bg-gray-50/60 border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center gap-1 text-emerald-700 font-bold text-[11px] mb-0.5 truncate">
+                <LansiaIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Lansia Selesai</span>
+              </div>
+              <div className="text-base font-black text-saas-dark">
+                {aktivitasData?.lansiaSelesaiCount ?? 0} <span className="text-[10px] font-normal text-saas-muted">Lansia</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setAktivitasTab("belum_balita")}
+              className={`p-2.5 rounded-xl border text-left transition-all ${
+                aktivitasTab === "belum_balita"
+                  ? "bg-amber-50 border-amber-300 ring-2 ring-amber-400/20"
+                  : "bg-gray-50/60 border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center gap-1 text-amber-700 font-bold text-[11px] mb-0.5 truncate">
+                <BalitaIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Balita Belum</span>
+              </div>
+              <div className="text-base font-black text-saas-dark">
+                {(aktivitasData?.belumMengisiList ?? []).filter(i => i.tipe === "Balita").length}{" "}
+                <span className="text-[10px] font-normal text-saas-muted">Anak</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setAktivitasTab("belum_lansia")}
+              className={`p-2.5 rounded-xl border text-left transition-all ${
+                aktivitasTab === "belum_lansia"
+                  ? "bg-orange-50 border-orange-300 ring-2 ring-orange-400/20"
+                  : "bg-gray-50/60 border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center gap-1 text-orange-700 font-bold text-[11px] mb-0.5 truncate">
+                <LansiaIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Lansia Belum</span>
+              </div>
+              <div className="text-base font-black text-saas-dark">
+                {(aktivitasData?.belumMengisiList ?? []).filter(i => i.tipe === "Lansia").length}{" "}
+                <span className="text-[10px] font-normal text-saas-muted">Lansia</span>
+              </div>
+            </button>
+          </div>
+
+          {/* Search filter in modal */}
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Cari nama pasien atau keterangan..."
+              value={aktivitasSearch}
+              onChange={(e) => setAktivitasSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-saas-primary"
+            />
+            {aktivitasSearch && (
+              <button
+                onClick={() => setAktivitasSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* List display */}
+          <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+            {aktivitasTab === "balita" && (
+              <>
+                {(aktivitasData?.balitaSelesaiList ?? [])
+                  .filter((item) =>
+                    item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                    item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                  )
+                  .map((item) => {
+                    const isFemale = item.jenisKelamin === "P" || item.jenisKelamin === "Perempuan";
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-3 bg-white border border-gray-150 rounded-xl shadow-xs flex items-center justify-between hover:border-sky-200 transition-colors group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate("Balita", item.id);
+                            }}
+                            className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                              isFemale ? "bg-pink-50 border-pink-100" : "bg-blue-50 border-blue-100"
+                            }`}
+                            title="Lihat Profil Balita"
+                          >
+                            <BalitaIcon className="w-5 h-5" gender={item.jenisKelamin} />
+                          </button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setShowDetailAktivitas(false);
+                                  onNavigate("Balita", item.id);
+                                }}
+                                className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
+                              >
+                                {item.nama}
+                              </button>
+                              <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-semibold">
+                                Balita
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
+                            {item.detailPemeriksaan && (
+                              <p className="text-[11px] font-semibold text-sky-700 mt-0.5">
+                                {item.detailPemeriksaan}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="text-right hidden sm:block">
+                            <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-md inline-block mb-1">
+                              Selesai Periksa
+                            </span>
+                            {item.tanggalPeriksa && (
+                              <p className="text-[10px] text-saas-muted">
+                                {formatTanggalIndonesia(item.tanggalPeriksa)}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate("Balita", item.id);
+                            }}
+                            className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Buka profil lengkap balita"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Profil</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                {(aktivitasData?.balitaSelesaiList ?? []).filter((item) =>
+                  item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                  item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                ).length === 0 && (
+                  <div className="py-8 text-center text-xs text-saas-muted bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    Tidak ada balita selesai periksa ditemukan.
+                  </div>
+                )}
+              </>
+            )}
+
+            {aktivitasTab === "lansia" && (
+              <>
+                {(aktivitasData?.lansiaSelesaiList ?? [])
+                  .filter((item) =>
+                    item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                    item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                  )
+                  .map((item) => {
+                    const isFemale = item.jenisKelamin === "P" || item.jenisKelamin === "Perempuan";
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-3 bg-white border border-gray-150 rounded-xl shadow-xs flex items-center justify-between hover:border-emerald-200 transition-colors group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate("Lansia", item.id);
+                            }}
+                            className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                              isFemale ? "bg-pink-50 border-pink-100" : "bg-blue-50 border-blue-100"
+                            }`}
+                            title="Lihat Profil Lansia"
+                          >
+                            <LansiaIcon className="w-5 h-5" gender={item.jenisKelamin} />
+                          </button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setShowDetailAktivitas(false);
+                                  onNavigate("Lansia", item.id);
+                                }}
+                                className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
+                              >
+                                {item.nama}
+                              </button>
+                              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                                Lansia
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
+                            {item.detailPemeriksaan && (
+                              <p className="text-[11px] font-semibold text-emerald-700 mt-0.5">
+                                {item.detailPemeriksaan}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="text-right hidden sm:block">
+                            <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-md inline-block mb-1">
+                              Selesai Periksa
+                            </span>
+                            {item.tanggalPeriksa && (
+                              <p className="text-[10px] text-saas-muted">
+                                {formatTanggalIndonesia(item.tanggalPeriksa)}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate("Lansia", item.id);
+                            }}
+                            className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Buka profil lengkap lansia"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Profil</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                {(aktivitasData?.lansiaSelesaiList ?? []).filter((item) =>
+                  item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                  item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                ).length === 0 && (
+                  <div className="py-8 text-center text-xs text-saas-muted bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    Tidak ada lansia selesai periksa ditemukan.
+                  </div>
+                )}
+              </>
+            )}
+
+            {(aktivitasTab === "belum_balita" || aktivitasTab === "belum_lansia") && (
+              <>
+                {(aktivitasData?.belumMengisiList ?? [])
+                  .filter((item) => item.tipe === (aktivitasTab === "belum_balita" ? "Balita" : "Lansia"))
+                  .filter((item) =>
+                    item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                    item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                  )
+                  .map((item) => {
+                    const isFemale = item.jenisKelamin === "P" || item.jenisKelamin === "Perempuan";
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-3 bg-white border border-amber-150 rounded-xl shadow-xs flex items-center justify-between hover:border-amber-300 transition-colors group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate(item.tipe, item.id);
+                            }}
+                            className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                              isFemale ? "bg-pink-50 border-pink-100" : "bg-blue-50 border-blue-100"
+                            }`}
+                            title={`Lihat Profil ${item.tipe}`}
+                          >
+                            {item.tipe === "Balita" ? <BalitaIcon className="w-5 h-5" gender={item.jenisKelamin} /> : <LansiaIcon className="w-5 h-5" gender={item.jenisKelamin} />}
+                          </button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setShowDetailAktivitas(false);
+                                  onNavigate(item.tipe, item.id);
+                                }}
+                                className="font-bold text-xs text-saas-dark hover:text-saas-primary hover:underline text-left cursor-pointer"
+                              >
+                                {item.nama}
+                              </button>
+                              <span
+                                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                                  item.tipe === "Balita"
+                                    ? "bg-sky-100 text-sky-700"
+                                    : "bg-emerald-100 text-emerald-700"
+                                }`}
+                              >
+                                {item.tipe}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-saas-muted">{item.detailInfo}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => {
+                              setShowDetailAktivitas(false);
+                              onNavigate(item.tipe, item.id);
+                            }}
+                            className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-saas-dark font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Buka profil lengkap"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Profil</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              const targetPasien = dbPasiens.find((p) => p.id === item.id) || {
+                                id: item.id,
+                                nama: item.nama,
+                                tipe: item.tipe,
+                                detailInfo: item.detailInfo,
+                              };
+                              setSelectedPasien(targetPasien);
+                              setShowDetailAktivitas(false);
+                              setIsOpenModal(true);
+                            }}
+                            className="px-2.5 py-1 bg-saas-primary hover:bg-teal-600 text-white font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Input Data</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                {(aktivitasData?.belumMengisiList ?? [])
+                  .filter((item) => item.tipe === (aktivitasTab === "belum_balita" ? "Balita" : "Lansia"))
+                  .filter((item) =>
+                    item.nama.toLowerCase().includes(aktivitasSearch.toLowerCase()) ||
+                    item.detailInfo.toLowerCase().includes(aktivitasSearch.toLowerCase())
+                  ).length === 0 && (
+                  <div className="py-8 text-center text-xs text-emerald-600 bg-emerald-50/50 rounded-xl border border-dashed border-emerald-200 font-semibold">
+                    🎉 Luar biasa! Semua {aktivitasTab === "belum_balita" ? "balita" : "lansia"} telah mengisi data pemeriksaan.
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Detail Distribusi Kehadiran */}
+      <Modal
+        isOpen={showDetailDistribusi}
+        onClose={() => setShowDetailDistribusi(false)}
+        title="Detail Distribusi Kehadiran per RT/RW"
+      >
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {distribusiKehadiran.length > 0 ? (
+            distribusiKehadiran.map((item, i) => (
+              <div key={i} className="border border-gray-200 rounded-lg p-3 text-xs">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="font-semibold text-saas-dark">{item.rtRw}</span>
+                  <span className="bg-saas-primary/10 text-saas-primary px-2.5 py-0.5 rounded-full text-xs font-bold">{item.persentase}%</span>
+                </div>
+                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
+                  <div style={{ width: `${item.persentase}%` }} className="h-full bg-saas-primary rounded-full"></div>
+                </div>
+                <div className="text-[11px] text-saas-muted text-right font-medium">{item.hadir} dari {item.total} Warga Hadir</div>
+              </div>
+            ))
+          ) : (
+            <p className="text-xs text-saas-muted text-center py-4">Belum ada data distribusi kehadiran.</p>
+          )}
+        </div>
       </Modal>
 
       {toastMessage && (

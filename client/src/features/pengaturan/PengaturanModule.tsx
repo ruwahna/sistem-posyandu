@@ -28,8 +28,11 @@ import {
   Loader2,
 } from "lucide-react";
 import { useFontSize, FontSizeLevel } from "../../contexts/FontSizeContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
-import { authApi, posyanduApi } from "../../lib/api";
+import PageHelmet from "../../components/PageHelmet";
+import Modal from "../../components/Modal";
+import { authApi, posyanduApi, ownerApi, AuditLogItem } from "../../lib/api";
 
 // ─── Types ────────────────────────────────────────────────
 type SettingSection =
@@ -173,7 +176,7 @@ function ProfilSection() {
         subtitle="Kelola informasi dan lokasi administratif posyandu Anda."
       />
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      <div className="bg-white rounded-xl border border-gray-100 p-6">
         <form onSubmit={handleSave} className="space-y-5">
           {posyanduNotice && (
             <div
@@ -272,6 +275,7 @@ function ProfilSection() {
 function AkunSection() {
   const { user, updateUser } = useAuth();
   const [namaKader, setNamaKader] = useState(user?.nama || "");
+  const [usernameKader, setUsernameKader] = useState(user?.username || "");
   const [emailKader, setEmailKader] = useState(user?.email || "");
   const [newPassword, setNewPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -281,6 +285,7 @@ function AkunSection() {
   useEffect(() => {
     if (user) {
       setNamaKader(user.nama);
+      setUsernameKader(user.username || "");
       setEmailKader(user.email);
     }
   }, [user]);
@@ -304,12 +309,14 @@ function AkunSection() {
       const res = await authApi.updateProfile({
         nama: namaKader.trim(),
         email: emailKader.trim(),
+        username: usernameKader.trim(),
         ...(newPassword.trim() ? { password: newPassword.trim() } : {}),
       });
 
       if (res.success && res.data) {
         updateUser({
           nama: res.data.nama,
+          username: res.data.username,
           email: res.data.email,
         });
         setNewPassword("");
@@ -339,7 +346,7 @@ function AkunSection() {
         subtitle="Kelola profil pribadi dan keamanan kata sandi akun Anda."
       />
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+      <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
           <User className="w-4 h-4 text-blue-500" /> Profil Kader
         </h3>
@@ -363,11 +370,14 @@ function AkunSection() {
           )}
 
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center font-bold text-blue-600 text-xl border-2 border-blue-100 shrink-0">
+            <div className="w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center font-bold text-blue-600 text-xl border-2 border-blue-100 shrink-0">
               {initials}
             </div>
             <div>
               <p className="text-sm font-bold text-saas-dark">{user?.nama}</p>
+              {user?.username && (
+                <p className="text-xs text-blue-600 font-semibold">@{user.username}</p>
+              )}
               <p className="text-xs text-saas-muted">{user?.email}</p>
               <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold border border-teal-100">
                 {user?.role === "OWNER" ? "Pengelola (Owner)" : "Kader"}
@@ -383,6 +393,16 @@ function AkunSection() {
                 onChange={(e) => setNamaKader(e.target.value)}
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
                 required
+              />
+            </FormField>
+
+            <FormField label="Username (opsional)">
+              <input
+                type="text"
+                value={usernameKader}
+                onChange={(e) => setUsernameKader(e.target.value)}
+                placeholder="Cth: siti.aminah"
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
               />
             </FormField>
 
@@ -442,7 +462,7 @@ function AkunSection() {
 // ─── Tampilan ─────────────────────────────────────────────
 function TampilanSection() {
   const { fontSizeLevel, setFontSizeLevel, increaseFontSize, decreaseFontSize } = useFontSize();
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("light");
+  const { theme, setTheme } = useTheme();
   const [fontSaveBanner, setFontSaveBanner] = useState(false);
 
   const handleFontChange = (level: FontSizeLevel) => {
@@ -470,7 +490,7 @@ function TampilanSection() {
       />
 
       {/* Ukuran Teks */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+      <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
           <ALargeSmall className="w-4 h-4 text-violet-500" /> Ukuran Teks
         </h3>
@@ -553,7 +573,7 @@ function TampilanSection() {
       </div>
 
       {/* Tema Mode */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+      <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
           <Palette className="w-4 h-4 text-violet-500" /> Mode Tema
         </h3>
@@ -617,7 +637,7 @@ function NotifikasiSection() {
         subtitle="Aktifkan pengingat penting agar tidak ada jadwal atau laporan yang terlewat."
       />
 
-      <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+      <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
         {items.map(({ key, label, desc }) => (
           <div key={key} className="flex items-center justify-between p-5 gap-4">
             <div className="flex items-start gap-3">
@@ -658,11 +678,102 @@ function NotifikasiSection() {
 
 // ─── Data & Privasi ───────────────────────────────────────
 function DataSection() {
+  const { user, posyanduId } = useAuth();
   const [exporting, setExporting] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
-  const handleExport = () => {
+  // Modal Reset State
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [ownerPassword, setOwnerPassword] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
+
+  const isOwner = user?.role === "OWNER";
+
+  const fetchAuditLogs = () => {
+    if (!posyanduId) return;
+    setIsLoadingLogs(true);
+    ownerApi
+      .getAuditLogs(posyanduId)
+      .then((res) => {
+        if (res.success && res.data) {
+          setAuditLogs(res.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsLoadingLogs(false));
+  };
+
+  useEffect(() => {
+    fetchAuditLogs();
+  }, [posyanduId]);
+
+  const handleDownloadBackupJson = () => {
+    if (!posyanduId) return;
     setExporting(true);
-    setTimeout(() => setExporting(false), 2000);
+    const token = localStorage.getItem("posyandu_auth_token");
+    fetch(ownerApi.backupDataUrl(posyanduId), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.blob())
+      .then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `backup-posyandu-${posyanduId}-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      })
+      .catch(console.error)
+      .finally(() => setExporting(false));
+  };
+
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError("");
+    setResetSuccess("");
+
+    if (confirmText !== "RESET POSYANDU PERMANEN") {
+      setResetError("Teks konfirmasi harus persis 'RESET POSYANDU PERMANEN'");
+      return;
+    }
+
+    if (!ownerPassword) {
+      setResetError("Masukkan password Owner Anda.");
+      return;
+    }
+
+    if (!posyanduId) return;
+
+    setIsResetting(true);
+    try {
+      const res = await ownerApi.resetData(posyanduId, {
+        confirmText,
+        password: ownerPassword,
+      });
+
+      if (res.success) {
+        setResetSuccess("Semua data Posyandu telah berhasil direset secara permanen.");
+        setConfirmText("");
+        setOwnerPassword("");
+        setTimeout(() => {
+          setIsResetModalOpen(false);
+          fetchAuditLogs();
+        }, 2000);
+      } else {
+        setResetError(res.message || "Gagal mereset data.");
+      }
+    } catch (err: any) {
+      setResetError(err.message || "Terjadi kesalahan saat mereset data.");
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   return (
@@ -671,78 +782,178 @@ function DataSection() {
         icon={Database}
         iconColor="text-rose-600"
         iconBg="bg-rose-500/10"
-        title="Data & Privasi"
-        subtitle="Kelola backup, ekspor data posyandu, dan keamanan informasi."
+        title="Data & Privasi System"
+        subtitle="Kelola backup sistem (.json), riwayat log aktivitas (Audit Log), dan keamanan data."
       />
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+      {/* Ekspor & Backup Data */}
+      <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4 shadow-sm">
         <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
-          <Download className="w-4 h-4 text-rose-500" /> Ekspor & Backup Data
+          <Download className="w-4 h-4 text-rose-500" /> Ekspor & Backup Data Sistem (.json / Database Dump)
         </h3>
         <p className="text-sm text-saas-muted">
-          Unduh seluruh data posyandu dalam format Excel untuk keperluan pelaporan ke Puskesmas atau backup mandiri.
+          Unduh backup lengkap data Posyandu (Profil, Kader, Balita, Lansia, Pemeriksaan & Notifikasi) dalam format file JSON tereksplor.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[
-            { label: "Data Balita", desc: "Seluruh catatan tumbuh kembang balita", color: "text-blue-600 bg-blue-50 border-blue-100 hover:bg-blue-100" },
-            { label: "Data Lansia", desc: "Rekam kesehatan seluruh warga lansia", color: "text-teal-600 bg-teal-50 border-teal-100 hover:bg-teal-100" },
-            { label: "Laporan Bulanan", desc: "Rekap pelayanan posyandu per bulan", color: "text-violet-600 bg-violet-50 border-violet-100 hover:bg-violet-100" },
-            { label: "Semua Data", desc: "Export lengkap seluruh data posyandu", color: "text-rose-600 bg-rose-50 border-rose-100 hover:bg-rose-100" },
-          ].map(({ label, desc, color }) => (
-            <button
-              key={label}
-              onClick={handleExport}
-              className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all ${color}`}
-            >
-              <Download className="w-4 h-4 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-bold">{label}</p>
-                <p className="text-xs opacity-80 mt-0.5">{desc}</p>
-              </div>
-            </button>
-          ))}
+
+        <div className="flex flex-wrap items-center gap-3 pt-2">
+          <button
+            onClick={handleDownloadBackupJson}
+            disabled={exporting}
+            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
+          >
+            <Download className="w-4 h-4" />
+            {exporting ? "Mengunduh Backup..." : "Ekspor Backup Data (.json)"}
+          </button>
         </div>
-        {exporting && (
-          <p className="text-xs text-saas-muted text-center animate-pulse">⏳ Sedang mempersiapkan file ekspor...</p>
+      </div>
+
+      {/* Audit Log Aktivitas */}
+      <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
+            <Shield className="w-4 h-4 text-rose-500" /> Log Aktivitas Pengguna (Audit Log)
+          </h3>
+          <button
+            onClick={fetchAuditLogs}
+            className="text-xs font-semibold text-saas-primary hover:underline"
+          >
+            Refresh Log
+          </button>
+        </div>
+
+        {isLoadingLogs ? (
+          <p className="text-xs text-saas-muted">Memuat catatan log aktivitas...</p>
+        ) : auditLogs.length === 0 ? (
+          <p className="text-xs text-saas-muted">Belum ada riwayat aktivitas yang tercatat.</p>
+        ) : (
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            {auditLogs.map((log) => (
+              <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100 text-xs">
+                <span
+                  className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                    log.action.includes("RESET")
+                      ? "bg-red-500"
+                      : log.action.includes("BACKUP")
+                      ? "bg-blue-500"
+                      : "bg-emerald-500"
+                  }`}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold text-saas-dark">{log.action}</p>
+                    <span className="text-[10px] text-saas-muted">
+                      {new Date(log.createdAt).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <p className="text-saas-muted text-[11px] mt-0.5">
+                    Oleh: <span className="font-medium text-saas-dark">{log.kaderNama}</span> • Details: {log.details || "-"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
-        <h3 className="text-sm font-bold text-saas-dark flex items-center gap-2">
-          <Shield className="w-4 h-4 text-rose-500" /> Log Aktivitas Terakhir
-        </h3>
-        <div className="space-y-2">
-          {[
-            { action: "Login berhasil", user: "Kader Posyandu", time: "Hari ini, 08:24", dot: "bg-green-400" },
-            { action: "Tambah data balita baru", user: "Kader Posyandu", time: "Kemarin, 14:05", dot: "bg-blue-400" },
-            { action: "Edit laporan bulanan", user: "Kader Posyandu", time: "3 hari lalu, 09:10", dot: "bg-violet-400" },
-            { action: "Ubah pengaturan posyandu", user: "Pengelola Posyandu", time: "5 hari lalu, 11:30", dot: "bg-amber-400" },
-          ].map((log, i) => (
-            <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-              <span className={`w-2 h-2 rounded-full shrink-0 ${log.dot}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-saas-dark truncate">{log.action}</p>
-                <p className="text-xs text-saas-muted">{log.user} · {log.time}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-red-50/50 border border-red-100 rounded-2xl p-6 space-y-4">
+      {/* Zona Berbahaya (Reset Data Posyandu - Owner Only) */}
+      <div className="bg-red-50/60 border border-red-200/80 rounded-xl p-6 space-y-4">
         <h3 className="text-sm font-bold text-red-700 flex items-center gap-2">
-          ⚠️ Zona Berbahaya
+          <AlertCircle className="w-4 h-4 text-red-600" /> Zona Berbahaya (Reset Data Posyandu)
         </h3>
         <p className="text-xs text-red-600 leading-relaxed">
-          Tindakan di bawah ini bersifat permanen dan tidak dapat dibatalkan. Pastikan Anda sudah melakukan backup data sebelum melanjutkan.
+          Reset data akan **menghapus secara permanen** seluruh data Balita, Lansia, Hasil Pemeriksaan, dan Notifikasi untuk Posyandu ini. Fitur ini khusus untuk akun ber-role **OWNER**.
         </p>
-        <button
-          disabled
-          className="px-4 py-2.5 border border-red-200 text-red-500 text-sm font-bold rounded-xl hover:bg-red-100 transition-all flex items-center gap-2 opacity-50 cursor-not-allowed"
-        >
-          Reset Semua Data Posyandu
-        </button>
+
+        {isOwner ? (
+          <button
+            onClick={() => {
+              setConfirmText("");
+              setOwnerPassword("");
+              setResetError("");
+              setResetSuccess("");
+              setIsResetModalOpen(true);
+            }}
+            className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2"
+          >
+            Reset Semua Data Posyandu
+          </button>
+        ) : (
+          <p className="text-xs text-saas-muted italic">
+            * Aksi ini terkunci dan hanya dapat dilakukan oleh pengguna ber-role OWNER.
+          </p>
+        )}
       </div>
+
+      {/* Double Confirmation Modal Reset Data Posyandu */}
+      <Modal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        title="⚠️ Reset Permanen Semua Data Posyandu"
+      >
+        <form onSubmit={handleResetSubmit} className="space-y-4">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 space-y-1">
+            <p className="font-bold">PERINGATAN DESTRUKTIF TIADA KEMBALI!</p>
+            <p>Aksi ini akan menghapus seluruh data balita, lansia, dan rekam medis di Posyandu Anda secara permanen dari database server PostgreSQL.</p>
+          </div>
+
+          {resetError && (
+            <div className="p-3 bg-red-100 border border-red-300 rounded-xl text-xs text-red-800 font-semibold">
+              ⚠️ {resetError}
+            </div>
+          )}
+
+          {resetSuccess && (
+            <div className="p-3 bg-emerald-100 border border-emerald-300 rounded-xl text-xs text-emerald-800 font-semibold">
+              ✅ {resetSuccess}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-saas-dark mb-1">
+              Ketik &apos;RESET POSYANDU PERMANEN&apos; untuk konfirmasi:
+            </label>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="RESET POSYANDU PERMANEN"
+              className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-red-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-saas-dark mb-1">
+              Password Akun Owner Anda:
+            </label>
+            <input
+              type="password"
+              value={ownerPassword}
+              onChange={(e) => setOwnerPassword(e.target.value)}
+              placeholder="Masukkan password Owner..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-red-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsResetModalOpen(false)}
+              className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-saas-muted hover:bg-gray-50"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isResetting}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50"
+            >
+              {isResetting ? "Memproses Reset..." : "YA, RESET SEMUA DATA"}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
@@ -802,6 +1013,10 @@ export default function PengaturanModule() {
 
   return (
     <div className="space-y-4">
+      <PageHelmet
+        title="Pengaturan Sistem"
+        description="Konfigurasi akun profil kader, ubah kata sandi, dan preferensi tampilan."
+      />
       <div>
         <h2 className="text-2xl font-bold text-saas-dark tracking-tight">Pengaturan</h2>
         <p className="text-sm text-saas-muted mt-0.5">Kelola preferensi, profil, dan konfigurasi sistem posyandu Anda.</p>
@@ -809,7 +1024,7 @@ export default function PengaturanModule() {
 
       <button
         onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-        className="flex md:hidden w-full items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm"
+        className="flex md:hidden w-full items-center gap-3 p-4 bg-white border border-gray-100 rounded-xl shadow-sm"
       >
         <div className={`w-9 h-9 rounded-xl ${activeNav.bgColor} flex items-center justify-center`}>
           <activeNav.icon className={`w-4 h-4 ${activeNav.color}`} />
@@ -822,7 +1037,7 @@ export default function PengaturanModule() {
       </button>
 
       {mobileSidebarOpen && (
-        <div className="md:hidden bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+        <div className="md:hidden bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
           {navItems.map((item) => {
             const isActive = activeSection === item.id;
             return (
@@ -847,7 +1062,7 @@ export default function PengaturanModule() {
       )}
 
       <div className="flex gap-6 items-start">
-        <aside className="hidden md:flex w-60 shrink-0 flex-col bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden sticky top-6">
+        <aside className="hidden md:flex w-60 shrink-0 flex-col bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden sticky top-6">
           {navItems.map((item, idx) => {
             const isActive = activeSection === item.id;
             return (

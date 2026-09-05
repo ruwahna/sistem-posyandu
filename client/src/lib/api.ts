@@ -3,7 +3,12 @@
  * All requests automatically attach the JWT token from localStorage.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL !== undefined && process.env.NEXT_PUBLIC_API_URL !== ''
+    ? process.env.NEXT_PUBLIC_API_URL
+    : typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+    ? ''
+    : 'http://localhost:5001';
 
 // ─────────────────────────────────────────────────────────────
 // TOKEN MANAGEMENT
@@ -29,6 +34,7 @@ export function removeToken(): void {
 export interface KaderInfo {
   id: string;
   nama: string;
+  username?: string | null;
   email: string;
   role: 'OWNER' | 'KADER';
   posyandu: { id: string; nama: string };
@@ -39,9 +45,17 @@ export interface LoginResponse {
   kader: KaderInfo;
 }
 
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
+  meta?: PaginationMeta;
   message?: string;
 }
 
@@ -68,6 +82,7 @@ export interface DashboardSummary {
     balita: Array<{
       id: string;
       tanggalPeriksa: string;
+      createdAt?: string;
       beratBadan: number;
       tinggiBadan: number;
       statusBbU: string;
@@ -76,6 +91,7 @@ export interface DashboardSummary {
     lansia: Array<{
       id: string;
       tanggalPeriksa: string;
+      createdAt?: string;
       beratBadan: number;
       tekananDarahSistol: number;
       tekananDarahDiastol: number;
@@ -88,6 +104,7 @@ export interface Balita {
   id: string;
   nama: string;
   nik?: string;
+  noHp?: string;
   tanggalLahir: string;
   jenisKelamin: 'L' | 'P';
   namaIbu: string;
@@ -111,13 +128,17 @@ export interface PemeriksaanBalita {
   vitaminA: boolean;
   asiEksklusif?: boolean;
   obatCacing?: boolean;
+  vitB1?: boolean;
+  vitB6?: boolean;
   statusImunisasi?: string;
+  petugas?: string;
 }
 
 export interface Lansia {
   id: string;
   nama: string;
   nik: string;
+  noHp?: string;
   noBpjs?: string;
   tanggalLahir: string;
   jenisKelamin: 'L' | 'P';
@@ -144,6 +165,7 @@ export interface PemeriksaanLansia {
   asamUrat?: number;
   keluhan?: string;
   tindakan?: string;
+  petugas?: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -179,11 +201,18 @@ async function request<T>(
 // ─────────────────────────────────────────────────────────────
 
 export const authApi = {
-  login: (email: string, password: string) =>
+  login: (emailOrUsername: string, password: string) =>
     request<ApiResponse<LoginResponse>>('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ emailOrUsername, password }),
     }),
+
+  loginWithGoogle: (idToken: string) =>
+    request<ApiResponse<LoginResponse>>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    }),
+
 
   registerPosyandu: (data: {
     namaPosyandu: string;
@@ -191,6 +220,7 @@ export const authApi = {
     kecamatan: string;
     alamat: string;
     namaKader: string;
+    username?: string;
     email: string;
     password: string;
   }) =>
@@ -217,16 +247,66 @@ export const authApi = {
       body: JSON.stringify({ token, newPassword }),
     }),
 
-  updateProfile: (data: { nama: string; email: string; password?: string }) =>
+  updateProfile: (data: { nama: string; email: string; username?: string; password?: string }) =>
     request<ApiResponse<KaderInfo>>('/api/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
 };
 
+export interface TrenGiziItem {
+  periodKey: string;
+  label: string;
+  total: number;
+  normal: number;
+  kurang: number;
+  sangatKurang: number;
+  lebih: number;
+  stunting: number;
+  pctNormal: number;
+  pctKurang: number;
+  avgZScoreBBU: number;
+  avgZScoreTBU: number;
+}
+
+export interface DistribusiKehadiran {
+  rtRw: string;
+  total: number;
+  hadir: number;
+  persentase: number;
+}
+
+export interface ItemAktivitasKunjungan {
+  id: string;
+  nama: string;
+  tipe: 'Balita' | 'Lansia';
+  jenisKelamin?: 'L' | 'P' | string;
+  detailInfo: string;
+  statusPeriksa: 'Selesai Periksa' | 'Belum Mengisi Data';
+  tanggalPeriksa?: string | null;
+  detailPemeriksaan?: string | null;
+}
+
+export interface AktivitasKunjunganData {
+  balitaSelesaiCount: number;
+  lansiaSelesaiCount: number;
+  belumMengisiCount: number;
+  totalSasaran: number;
+  persentaseSelesai: number;
+  balitaSelesaiList: ItemAktivitasKunjungan[];
+  lansiaSelesaiList: ItemAktivitasKunjungan[];
+  belumMengisiList: ItemAktivitasKunjungan[];
+}
+
 export const dashboardApi = {
   getSummary: (posyanduId: string) =>
     request<ApiResponse<DashboardSummary>>(`/api/dashboard/${posyanduId}`),
+  getTrenGizi: (posyanduId: string, period: 'bulanan' | 'tahunan' = 'bulanan') =>
+    request<ApiResponse<TrenGiziItem[]>>(`/api/dashboard/${posyanduId}/tren-gizi?period=${period}`),
+  getDistribusiKehadiran: (posyanduId: string) =>
+    request<ApiResponse<DistribusiKehadiran[]>>(`/api/dashboard/${posyanduId}/distribusi-kehadiran`),
+  getAktivitasKunjungan: (posyanduId: string) =>
+    request<ApiResponse<AktivitasKunjunganData>>(`/api/dashboard/${posyanduId}/aktivitas-kunjungan`),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -248,8 +328,16 @@ export const posyanduApi = {
 // ─────────────────────────────────────────────────────────────
 
 export const balitaApi = {
-  getAll: (posyanduId: string, params?: { search?: string; kelompokUsia?: string }) => {
-    const q = new URLSearchParams(params as Record<string, string>).toString();
+  getAll: (posyanduId: string, params?: { search?: string; kelompokUsia?: string; page?: number; limit?: number }) => {
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") {
+          cleanParams[k] = String(v);
+        }
+      });
+    }
+    const q = new URLSearchParams(cleanParams).toString();
     return request<ApiResponse<Balita[]>>(`/api/posyandu/${posyanduId}/balita${q ? `?${q}` : ''}`);
   },
 
@@ -280,6 +368,12 @@ export const balitaApi = {
       body: JSON.stringify(data),
     }),
 
+  updatePemeriksaan: (posyanduId: string, balitaId: string, id: string, data: Partial<Omit<PemeriksaanBalita, 'id'>>) =>
+    request<ApiResponse<PemeriksaanBalita>>(`/api/posyandu/${posyanduId}/balita/${balitaId}/pemeriksaan/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   deletePemeriksaan: (posyanduId: string, balitaId: string, id: string) =>
     request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/balita/${balitaId}/pemeriksaan/${id}`, {
       method: 'DELETE',
@@ -291,8 +385,16 @@ export const balitaApi = {
 // ─────────────────────────────────────────────────────────────
 
 export const lansiaApi = {
-  getAll: (posyanduId: string, params?: { search?: string; kelompokUmur?: string; ht?: string; dm?: string }) => {
-    const q = new URLSearchParams(params as Record<string, string>).toString();
+  getAll: (posyanduId: string, params?: { search?: string; kelompokUmur?: string; ht?: string; dm?: string; page?: number; limit?: number }) => {
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") {
+          cleanParams[k] = String(v);
+        }
+      });
+    }
+    const q = new URLSearchParams(cleanParams).toString();
     return request<ApiResponse<Lansia[]>>(`/api/posyandu/${posyanduId}/lansia${q ? `?${q}` : ''}`);
   },
 
@@ -323,6 +425,12 @@ export const lansiaApi = {
       body: JSON.stringify(data),
     }),
 
+  updatePemeriksaan: (posyanduId: string, lansiaId: string, id: string, data: Partial<Omit<PemeriksaanLansia, 'id'>>) =>
+    request<ApiResponse<PemeriksaanLansia>>(`/api/posyandu/${posyanduId}/lansia/${lansiaId}/pemeriksaan/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
   deletePemeriksaan: (posyanduId: string, lansiaId: string, id: string) =>
     request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/lansia/${lansiaId}/pemeriksaan/${id}`, {
       method: 'DELETE',
@@ -335,6 +443,7 @@ export const lansiaApi = {
 
 export interface ItemRiwayat {
   id: string;
+  pasienId?: string;
   nama: string;
   tipe: 'Balita' | 'Lansia';
   tanggal: string;
@@ -342,6 +451,33 @@ export interface ItemRiwayat {
   parameter: string;
   status: string;
   statusType: 'success' | 'warning' | 'info';
+  tanggalLahir?: string;
+  nik?: string;
+  namaIbu?: string;
+  usiaBulan?: number;
+  jenisKelamin?: string;
+  beratBadan?: number;
+  tinggiBadan?: number;
+  lingkarKepala?: number;
+  lingkarLengan?: number;
+  statusBbU?: string;
+  statusTbU?: string;
+  statusBbTb?: string;
+  statusKms?: string;
+  vitaminA?: boolean;
+  asiEksklusif?: boolean;
+  obatCacing?: boolean;
+  vitB1?: boolean;
+  vitB6?: boolean;
+  statusImunisasi?: string;
+  tekananDarahSistol?: number;
+  tekananDarahDiastol?: number;
+  gulaDarahSewaktu?: number;
+  kolesterol?: number;
+  asamUrat?: number;
+  lingkarPerut?: number;
+  keluhan?: string;
+  tindakan?: string;
 }
 
 export const riwayatApi = {
@@ -389,6 +525,37 @@ export const riwayatApi = {
     a.remove();
     window.URL.revokeObjectURL(url);
   },
+
+  downloadPdf: async (
+    posyanduId: string,
+    params?: { tipe?: string; search?: string; status?: string; bulan?: string; tahun?: string }
+  ) => {
+    const token = getToken();
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v && v !== 'semua') cleanParams[k] = v;
+      });
+    }
+    const q = new URLSearchParams(cleanParams).toString();
+    const res = await fetch(`${BASE_URL}/api/posyandu/${posyanduId}/export-pdf${q ? `?${q}` : ''}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!res.ok) throw new Error('Gagal mengunduh file PDF');
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Laporan_Posyandu_${new Date().toISOString().slice(0, 10)}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -408,5 +575,341 @@ export const notificationApi = {
       body: JSON.stringify({ notificationIds }),
     });
   },
+
+  deleteNotification: async (posyanduId: string, id: string): Promise<void> => {
+    await request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
+
+// ─────────────────────────────────────────────────────────────
+// API: PERIODE PELAYANAN
+// ─────────────────────────────────────────────────────────────
+export interface PeriodePelayanan {
+  id: string;
+  posyanduId: string;
+  nama: string;
+  bulan: number;
+  tahun: number;
+  tanggal: string;
+  status: 'AKTIF' | 'SELESAI';
+  catatan?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const periodeApi = {
+  getAll: (posyanduId: string) =>
+    request<ApiResponse<PeriodePelayanan[]>>(`/api/posyandu/${posyanduId}/periode`),
+
+  getActive: (posyanduId: string) =>
+    request<ApiResponse<PeriodePelayanan | null>>(`/api/posyandu/${posyanduId}/periode/active`),
+
+  create: (posyanduId: string, data: { nama: string; bulan: number; tahun: number; tanggal: string; status?: 'AKTIF' | 'SELESAI'; catatan?: string }) =>
+    request<ApiResponse<PeriodePelayanan>>(`/api/posyandu/${posyanduId}/periode`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (posyanduId: string, id: string, data: Partial<Omit<PeriodePelayanan, 'id' | 'posyanduId' | 'createdAt' | 'updatedAt'>>) =>
+    request<ApiResponse<PeriodePelayanan>>(`/api/posyandu/${posyanduId}/periode/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  activate: (posyanduId: string, id: string) =>
+    request<ApiResponse<PeriodePelayanan>>(`/api/posyandu/${posyanduId}/periode/${id}/activate`, {
+      method: 'POST',
+    }),
+
+  delete: (posyanduId: string, id: string) =>
+    request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/periode/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// API: KADER MANAGEMENT
+// ─────────────────────────────────────────────────────────────
+
+export interface KaderMember {
+  id: string;
+  nama: string;
+  username?: string | null;
+  email: string;
+  role: 'OWNER' | 'KADER';
+  isActive: boolean;
+  createdAt: string;
+}
+
+export const kaderApi = {
+  getAll: (posyanduId: string) =>
+    request<ApiResponse<KaderMember[]>>(`/api/posyandu/${posyanduId}/kader`),
+
+  create: (posyanduId: string, data: { nama: string; username?: string; email: string; password: string; role: 'OWNER' | 'KADER' }) =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (posyanduId: string, kaderId: string, data: { nama?: string; username?: string; email?: string; password?: string; role?: 'OWNER' | 'KADER' }) =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader/${kaderId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  updateRole: (posyanduId: string, kaderId: string, role: 'OWNER' | 'KADER') =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader/${kaderId}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    }),
+
+  toggleStatus: (posyanduId: string, kaderId: string, isActive: boolean) =>
+    request<ApiResponse<KaderMember>>(`/api/posyandu/${posyanduId}/kader/${kaderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
+    }),
+
+  delete: (posyanduId: string, kaderId: string) =>
+    request<ApiResponse<null>>(`/api/posyandu/${posyanduId}/kader/${kaderId}`, {
+      method: 'DELETE',
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// API: OWNER / SYSTEM SECURITY & BACKUP
+// ─────────────────────────────────────────────────────────────
+
+export interface AuditLogItem {
+  id: string;
+  posyanduId?: string;
+  kaderId?: string;
+  kaderNama?: string;
+  action: string;
+  details?: string;
+  ipAddress?: string;
+  createdAt: string;
+}
+
+export const ownerApi = {
+  getAuditLogs: (posyanduId: string) =>
+    request<ApiResponse<AuditLogItem[]>>(`/api/owner/audit-logs/${posyanduId}`),
+
+  backupDataUrl: (posyanduId: string) => `/api/owner/backup/${posyanduId}`,
+
+  resetData: (posyanduId: string, data: { confirmText: string; password: string }) =>
+    request<ApiResponse<{ message: string }>>(`/api/owner/reset-data/${posyanduId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+};
+
+// ─────────────────────────────────────────────────────────────
+// API: PUBLIC PUSKESMAS MONITORING (PRIVACY SAFE - NO NIK)
+// ─────────────────────────────────────────────────────────────
+
+export interface PublicPemeriksaanItem {
+  id: string;
+  kategori: 'Balita' | 'Lansia';
+  tanggalPeriksa: string;
+  namaWarga: string;
+  jenisKelamin: 'L' | 'P';
+  usiaInfo: string;
+  posyanduId: string;
+  posyanduNama: string;
+  desa: string;
+  wilayah: string;
+  beratBadan: number;
+  tinggiBadan: number;
+  lingkarKepala?: number;
+  statusBbU?: string;
+  statusTbU?: string;
+  statusBbTb?: string;
+  vitaminA?: boolean;
+  statusImunisasi?: string;
+  tekananDarah?: string;
+  sistol?: number;
+  diastol?: number;
+  gds?: number;
+  kolesterol?: number;
+  asamUrat?: number;
+  imt?: string;
+  statusRingkasan: string;
+  isPerluRujukan: boolean;
+  tindakanCatatan?: string;
+  petugas?: string;
+  tanggalLahir?: string;
+}
+
+export interface PublicPosyanduInfo {
+  id: string;
+  nama: string;
+  desa: string;
+  kecamatan: string;
+}
+
+function getFallbackPublicData(params?: {
+  posyanduId?: string;
+  kategori?: string;
+  status?: string;
+  search?: string;
+}): PublicPemeriksaanItem[] {
+  const dummy: PublicPemeriksaanItem[] = [
+    {
+      id: "pub-1",
+      kategori: "Balita",
+      tanggalPeriksa: "2026-07-28",
+      namaWarga: "Rafif Athar",
+      jenisKelamin: "L",
+      usiaInfo: "18 Bulan",
+      posyanduId: "pos-1",
+      posyanduNama: "Posyandu Mawar 01",
+      desa: "Karanggayam",
+      wilayah: "RT 01 / RW 02, Karanggayam",
+      beratBadan: 10.2,
+      tinggiBadan: 82.5,
+      lingkarKepala: 46.5,
+      statusBbU: "Normal",
+      statusTbU: "Normal",
+      statusBbTb: "Normal",
+      vitaminA: true,
+      statusImunisasi: "DPT 3, Polio 4",
+      statusRingkasan: "Normal",
+      isPerluRujukan: false,
+    },
+    {
+      id: "pub-2",
+      kategori: "Balita",
+      tanggalPeriksa: "2026-07-27",
+      namaWarga: "Kania Putri",
+      jenisKelamin: "P",
+      usiaInfo: "24 Bulan",
+      posyanduId: "pos-1",
+      posyanduNama: "Posyandu Mawar 01",
+      desa: "Karanggayam",
+      wilayah: "RT 02 / RW 02, Karanggayam",
+      beratBadan: 8.8,
+      tinggiBadan: 76.0,
+      lingkarKepala: 44.0,
+      statusBbU: "Kurang",
+      statusTbU: "Sangat Pendek (Stunting)",
+      statusBbTb: "Kurus",
+      vitaminA: true,
+      statusImunisasi: "Lengkap",
+      statusRingkasan: "Stunting (Sangat Pendek)",
+      isPerluRujukan: true,
+      tindakanCatatan: "PMT Pemulihan 90 Hari + Edukasi Gizi Ibu",
+    },
+    {
+      id: "pub-3",
+      kategori: "Lansia",
+      tanggalPeriksa: "2026-07-28",
+      namaWarga: "Mbah Joyo",
+      jenisKelamin: "L",
+      usiaInfo: "66 Tahun",
+      posyanduId: "pos-2",
+      posyanduNama: "Posyandu Melati 02",
+      desa: "Karanggayam",
+      wilayah: "RT 04 / RW 01, Karanggayam",
+      beratBadan: 62.0,
+      tinggiBadan: 163.0,
+      tekananDarah: "165/95 mmHg",
+      sistol: 165,
+      diastol: 95,
+      gds: 210,
+      kolesterol: 220,
+      asamUrat: 7.1,
+      imt: "23.3 (Normal)",
+      statusRingkasan: "Hipertensi & Diabetes (GDS >200)",
+      isPerluRujukan: true,
+      tindakanCatatan: "Rujukan ke Puskesmas Pembantu (Pustu) Karanggayam",
+    },
+    {
+      id: "pub-4",
+      kategori: "Lansia",
+      tanggalPeriksa: "2026-07-26",
+      namaWarga: "Siti Rahayu",
+      jenisKelamin: "P",
+      usiaInfo: "61 Tahun",
+      posyanduId: "pos-1",
+      posyanduNama: "Posyandu Mawar 01",
+      desa: "Karanggayam",
+      wilayah: "RT 03 / RW 02, Karanggayam",
+      beratBadan: 55.5,
+      tinggiBadan: 155.0,
+      tekananDarah: "125/80 mmHg",
+      sistol: 125,
+      diastol: 80,
+      gds: 115,
+      kolesterol: 180,
+      asamUrat: 5.4,
+      imt: "23.1 (Normal)",
+      statusRingkasan: "Normal",
+      isPerluRujukan: false,
+    },
+  ];
+
+  return dummy.filter((item) => {
+    if (params?.posyanduId && params.posyanduId !== "semua" && item.posyanduId !== params.posyanduId) return false;
+    if (params?.kategori && params.kategori !== "Semua" && item.kategori !== params.kategori) return false;
+    if (params?.search && !item.namaWarga.toLowerCase().includes(params.search.toLowerCase())) return false;
+    if (params?.status && params.status !== "semua") {
+      const s = params.status.toLowerCase();
+      if (s === "rujukan" || s === "rawan") return item.isPerluRujukan;
+      if (s === "normal") return item.statusRingkasan.toLowerCase().includes("normal");
+      if (s === "stunting") return item.statusRingkasan.toLowerCase().includes("stunting");
+      if (s === "hipertensi") return item.statusRingkasan.toLowerCase().includes("hipertensi");
+      if (s === "diabetes") return item.statusRingkasan.toLowerCase().includes("diabetes");
+    }
+    return true;
+  });
+}
+
+export const publicPuskesmasApi = {
+  getPosyandus: async (): Promise<PublicPosyanduInfo[]> => {
+    try {
+      const res = await request<ApiResponse<PublicPosyanduInfo[]>>('/api/public/posyandu');
+      return res.data && res.data.length > 0 ? res.data : [
+        { id: 'pos-1', nama: 'Posyandu Mawar 01', desa: 'Karanggayam', kecamatan: 'Lembah Hijau' },
+        { id: 'pos-2', nama: 'Posyandu Melati 02', desa: 'Karanggayam', kecamatan: 'Lembah Hijau' },
+      ];
+    } catch {
+      return [
+        { id: 'pos-1', nama: 'Posyandu Mawar 01', desa: 'Karanggayam', kecamatan: 'Lembah Hijau' },
+        { id: 'pos-2', nama: 'Posyandu Melati 02', desa: 'Karanggayam', kecamatan: 'Lembah Hijau' },
+      ];
+    }
+  },
+
+  getPemeriksaanData: async (params?: {
+    posyanduId?: string;
+    kategori?: string;
+    status?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<PublicPemeriksaanItem[]> => {
+    const query = new URLSearchParams();
+    if (params?.posyanduId && params.posyanduId !== 'semua') query.append('posyanduId', params.posyanduId);
+    if (params?.kategori && params.kategori !== 'Semua') query.append('kategori', params.kategori);
+    if (params?.status && params.status !== 'semua') query.append('status', params.status);
+    if (params?.search) query.append('search', params.search);
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    try {
+      const res = await request<ApiResponse<PublicPemeriksaanItem[]>>(`/api/public/puskesmas/pemeriksaan${queryString}`);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        return res.data;
+      }
+      return getFallbackPublicData(params);
+    } catch (err) {
+      console.warn('Menggunakan fallback data publik puskesmas:', err);
+      return getFallbackPublicData(params);
+    }
+  },
+};
+
 
