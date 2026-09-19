@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import {
   SquaresFour,
   ClipboardText,
-  Heartbeat,
   ClockCounterClockwise,
   Users,
   Gear,
@@ -34,9 +33,12 @@ import {
   Calendar,
   Trash,
 } from "@phosphor-icons/react";
+import { Sun, Moon } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { notificationApi, authApi, balitaApi, lansiaApi, periodeApi, AppNotification, PeriodePelayanan } from "../lib/api";
 import PeriodeModal from "../components/PeriodeModal";
+import toast from "react-hot-toast";
 
 // Feature Modules
 import DashboardModule from "../features/dashboard/DashboardModule";
@@ -201,6 +203,7 @@ function SwipeableNotificationItem({
 
 export default function Home() {
   const { user, posyanduId, isLoading, logout, updateUser } = useAuth();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchRecommendations, setSearchRecommendations] = useState<
     Array<{
@@ -218,6 +221,7 @@ export default function Home() {
   const [showNotification, setShowNotification] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Overview");
   const [navigationOrigin, setNavigationOrigin] = useState<string | null>(null);
+  const [navKey, setNavKey] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -319,14 +323,19 @@ export default function Home() {
           email: res.data.email,
         });
         setModalNotice({ type: "success", message: "Profil berhasil diperbarui!" });
+        toast.success("Profil Anda berhasil diperbarui!");
         setTimeout(() => {
           setIsEditProfileOpen(false);
         }, 1200);
       } else {
-        setModalNotice({ type: "error", message: res.message || "Gagal memperbarui profil" });
+        const msg = res.message || "Gagal memperbarui profil";
+        setModalNotice({ type: "error", message: msg });
+        toast.error(msg);
       }
     } catch (err: any) {
-      setModalNotice({ type: "error", message: err.message || "Gagal memperbarui profil" });
+      const msg = err.message || "Gagal memperbarui profil";
+      setModalNotice({ type: "error", message: msg });
+      toast.error(msg);
     } finally {
       setIsSavingProfile(false);
     }
@@ -572,7 +581,7 @@ export default function Home() {
 
   // ── Conditional Rendering of Views ──────────────────────
   const handleDashboardNavigate = (menu: string, patientId?: string) => {
-    const target = menu.toLowerCase();
+    const target = menu.toLowerCase().trim();
     if (target === "balita") {
       if (patientId) {
         setSelectedBalitaId(patientId);
@@ -589,6 +598,20 @@ export default function Home() {
         }
       }
       setActiveMenu("Lansia");
+    } else if (target === "pelayanan") {
+      setActiveMenu("Pelayanan");
+    } else if (target === "laporan") {
+      setActiveMenu("Laporan");
+    } else if (target === "riwayat") {
+      setActiveMenu("Riwayat");
+    } else if (target === "overview" || target === "dashboard") {
+      setActiveMenu("Overview");
+    } else if (target === "pengaturan" || target === "settings") {
+      setActiveMenu("Pengaturan");
+    } else if (target === "manajemen akun" || target === "manajemen-akun") {
+      setActiveMenu("Manajemen Akun");
+    } else if (target === "bantuan" || target === "help") {
+      setActiveMenu("Bantuan");
     } else {
       setActiveMenu(menu);
     }
@@ -599,6 +622,9 @@ export default function Home() {
       setActiveMenu(navigationOrigin);
       setNavigationOrigin(null);
     }
+    setSelectedBalitaId(undefined);
+    setSelectedLansiaId(undefined);
+    setNavKey((prev) => prev + 1);
   };
 
   const getBackLabel = (defaultLabel: string) => {
@@ -633,7 +659,9 @@ export default function Home() {
       case "Balita":
         return (
           <BalitaModule
+            key={`balita-${navKey}`}
             posyanduId={posyanduId}
+            activePeriode={activePeriode}
             searchQuery={searchQuery}
             selectedId={selectedBalitaId}
             onBack={handleBackFromProfile}
@@ -643,7 +671,9 @@ export default function Home() {
       case "Lansia":
         return (
           <LansiaModule
+            key={`lansia-${navKey}`}
             posyanduId={posyanduId}
+            activePeriode={activePeriode}
             searchQuery={searchQuery}
             selectedId={selectedLansiaId}
             onBack={handleBackFromProfile}
@@ -653,7 +683,7 @@ export default function Home() {
       case "Riwayat":
         return <RiwayatModule posyanduId={posyanduId} activePeriode={activePeriode} onNavigate={handleDashboardNavigate} />;
       case "Laporan":
-        return <LaporanModule posyanduId={posyanduId} onNavigate={handleDashboardNavigate} />;
+        return <LaporanModule posyanduId={posyanduId} activePeriode={activePeriode} onNavigate={handleDashboardNavigate} />;
       case "Manajemen Akun":
         return <ManajemenAkunModule posyanduId={posyanduId} />;
       case "Pengaturan":
@@ -687,6 +717,7 @@ export default function Home() {
       setSelectedLansiaId(undefined);
     }
     setActiveMenu(menuName);
+    setNavKey((prev) => prev + 1);
     setIsMobileMenuOpen(false);
     setShowNotification(false);
     setShowProfileMenu(false);
@@ -697,7 +728,7 @@ export default function Home() {
       {/* 1. SIDEBAR NAVIGASI DESKTOP (Bisa dibuka/tutup, Tampil di md+) */}
       <aside
         className={`hidden md:flex ${
-          isSidebarCollapsed ? "w-[76px] px-3 py-5" : "w-64 p-5"
+          isSidebarCollapsed ? "w-[76px] px-3 py-5" : "w-[272px] p-5"
         } h-full bg-white border-r border-gray-100 flex-col justify-between shrink-0 overflow-y-auto transition-all duration-300 select-none z-20`}
       >
         <div>
@@ -707,9 +738,9 @@ export default function Home() {
               <div
                 onClick={toggleSidebar}
                 title="Buka Sidebar"
-                className="w-10 h-10 rounded-xl bg-saas-primary flex items-center justify-center text-white shadow-md shadow-teal-500/20 shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+                className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-gray-200/90 dark:border-slate-800 flex items-center justify-center p-1.5 shadow-2xs shrink-0 cursor-pointer hover:border-gray-300 transition-all"
               >
-                <Heartbeat className="w-6 h-6" weight="bold" />
+                <img src="/logo.svg" alt="Logo SIPANDU" className="w-7 h-7 object-contain" />
               </div>
               <button
                 onClick={toggleSidebar}
@@ -720,24 +751,24 @@ export default function Home() {
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-between mb-6 px-1">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-saas-primary flex items-center justify-center text-white shadow-md shadow-teal-500/20 shrink-0">
-                  <Heartbeat className="w-6 h-6" weight="bold" />
+            <div className="flex items-start justify-between mb-6 px-1">
+              <div className="flex items-start gap-3 min-w-0 flex-1 pr-1">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-gray-200/90 dark:border-slate-800 flex items-center justify-center p-1.5 shadow-2xs shrink-0 mt-0.5">
+                  <img src="/logo.svg" alt="Logo SIPANDU" className="w-7 h-7 object-contain" />
                 </div>
-                <div className="min-w-0">
-                  <h1 className="font-bold text-saas-dark text-base tracking-tight leading-none truncate">
-                    PosyanduKita
+                <div className="min-w-0 flex-1">
+                  <h1 className="font-black text-saas-dark dark:text-white text-base tracking-tight leading-none">
+                    SIPANDU
                   </h1>
-                  <span className="text-[10px] text-saas-muted font-bold tracking-wider uppercase">
-                    Sistem Informasi
-                  </span>
+                  <p className="text-[9px] text-saas-muted dark:text-gray-400 font-semibold tracking-wide uppercase leading-tight mt-1">
+                    Sistem Informasi Pelayanan dan Data Posyandu
+                  </p>
                 </div>
               </div>
               <button
                 onClick={toggleSidebar}
                 title="Tutup Sidebar (Hanya Ikon)"
-                className="w-8 h-8 rounded-lg text-gray-400 hover:text-saas-primary hover:bg-teal-50 flex items-center justify-center transition-colors shrink-0"
+                className="w-8 h-8 rounded-lg text-gray-400 hover:text-saas-primary hover:bg-teal-50 flex items-center justify-center transition-colors shrink-0 mt-1"
               >
                 <CaretDoubleLeft className="w-4 h-4" weight="bold" />
               </button>
@@ -916,19 +947,21 @@ export default function Home() {
           <aside className="relative w-4/5 max-w-xs h-full bg-white shadow-2xl flex flex-col justify-between p-6 z-10 overflow-y-auto transform transition-transform duration-300">
             <div>
               {/* Header Drawer dengan Tombol Close */}
-              <div className="flex items-center justify-between mb-6 px-1">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-saas-primary flex items-center justify-center text-white shadow-md shadow-teal-500/20">
-                    <Heartbeat className="w-5 h-5" weight="bold" />
+              <div className="flex items-start justify-between mb-6 px-1">
+                <div className="flex items-start gap-3 min-w-0 flex-1 pr-2">
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-gray-200/90 dark:border-slate-800 flex items-center justify-center p-1.5 shadow-2xs shrink-0 mt-0.5">
+                    <img src="/logo.svg" alt="Logo SIPANDU" className="w-6 h-6 object-contain" />
                   </div>
-                  <div>
-                    <h1 className="font-bold text-saas-dark text-base tracking-tight leading-none">PosyanduKita</h1>
-                    <span className="text-[9px] text-saas-muted font-bold tracking-wider uppercase">Sistem Informasi</span>
+                  <div className="min-w-0 flex-1">
+                    <h1 className="font-black text-saas-dark dark:text-white text-base tracking-tight leading-none">SIPANDU</h1>
+                    <p className="text-[8.5px] text-saas-muted dark:text-gray-400 font-semibold tracking-wide uppercase leading-tight mt-1">
+                      Sistem Informasi Pelayanan dan Data Posyandu
+                    </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-saas-muted hover:text-saas-dark"
+                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-saas-muted hover:text-saas-dark shrink-0 mt-0.5"
                 >
                   <X className="w-5 h-5" weight="bold" />
                 </button>
@@ -948,11 +981,14 @@ export default function Home() {
                         return (
                           <button
                             key={menu.name}
-                            onClick={() => handleMenuSelect(menu.name)}
+                            onClick={() => {
+                              handleMenuSelect(menu.name);
+                              setIsMobileMenuOpen(false);
+                            }}
                             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                               isActive
                                 ? "bg-saas-primary text-white shadow-md shadow-teal-500/15"
-                                : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80"
+                                : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80 dark:hover:bg-gray-800/60"
                             }`}
                           >
                             <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-saas-muted"}`} weight="bold" />
@@ -967,22 +1003,57 @@ export default function Home() {
             </div>
 
             {/* Menu Bawah Drawer */}
-            <div className="border-t border-gray-100 pt-4 space-y-1.5 mt-6">
+            <div className="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-2 mt-6">
+              {/* Dark Mode Toggle */}
+              <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-150/60 dark:border-gray-700/50">
+                <span className="text-xs font-semibold text-saas-dark dark:text-slate-200 flex items-center gap-1.5">
+                  {resolvedTheme === "dark" ? (
+                    <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                  ) : (
+                    <Sun className="w-3.5 h-3.5 text-amber-500" />
+                  )}
+                  Mode Gelap
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
+                    setTheme(nextTheme);
+                    toast.success(nextTheme === "dark" ? "Mode Gelap diaktifkan" : "Mode Terang diaktifkan");
+                  }}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                    resolvedTheme === "dark" ? "bg-saas-primary" : "bg-gray-300 dark:bg-gray-600"
+                  }`}
+                  role="switch"
+                  aria-checked={resolvedTheme === "dark"}
+                  aria-label="Toggle mode gelap"
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                      resolvedTheme === "dark" ? "translate-x-4" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
               <a
                 href="/puskesmas"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-saas-primary hover:bg-teal-50 transition-all border border-teal-200"
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-saas-primary hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-all border border-teal-200 dark:border-teal-800/50"
               >
                 <Buildings className="w-4 h-4 shrink-0 text-saas-primary" weight="bold" />
                 <span>Portal Puskesmas ↗</span>
               </a>
               <button
-                onClick={() => handleMenuSelect("Bantuan")}
+                onClick={() => {
+                  handleMenuSelect("Bantuan");
+                  setIsMobileMenuOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                   activeMenu === "Bantuan"
                     ? "bg-saas-primary text-white shadow-md shadow-teal-500/15"
-                    : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80"
+                    : "text-saas-muted hover:text-saas-dark hover:bg-gray-50/80 dark:hover:bg-gray-800/60"
                 }`}
               >
                 <Question className={`w-4 h-4 ${activeMenu === "Bantuan" ? "text-white" : "text-saas-muted"}`} weight="bold" />
@@ -996,14 +1067,14 @@ export default function Home() {
                 className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50/60 transition-all"
               >
                 <SignOut className="w-4 h-4" weight="bold" />
-                <span>Keluar</span>
+                <span>Keluar (Logout)</span>
               </button>
             </div>
           </aside>
         </div>
       )}
 
-      {/* AREA KONTEN UTAMA */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto">
         {/* 3. TOP NAVBAR (RESPONSIF) */}
         <header className="h-16 md:h-20 bg-white border-b border-gray-100 px-4 sm:px-8 flex items-center justify-between shrink-0 sticky top-0 z-30">
@@ -1017,10 +1088,13 @@ export default function Home() {
               <List className="w-6 h-6" weight="bold" />
             </button>
             <div className="flex items-center gap-2 md:hidden">
-              <div className="w-8 h-8 rounded-lg bg-saas-primary flex items-center justify-center text-white">
-                <Heartbeat className="w-4 h-4" weight="bold" />
+              <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-900 border border-gray-200/90 dark:border-slate-800 flex items-center justify-center p-1 shrink-0">
+                <img src="/logo.svg" alt="Logo SIPANDU" className="w-5 h-5 object-contain" />
               </div>
-              <span className="font-bold text-saas-dark text-sm tracking-tight">PosyanduKita</span>
+              <div>
+                <span className="font-black text-saas-dark dark:text-white text-sm tracking-tight leading-none block">SIPANDU</span>
+                <span className="text-[7.5px] text-saas-muted dark:text-gray-400 font-bold uppercase tracking-wider block mt-0.5">Sistem Informasi Pelayanan dan Data Posyandu</span>
+              </div>
             </div>
 
             {/* Desktop Search Input with Autocomplete Recommendations */}
@@ -1174,6 +1248,24 @@ export default function Home() {
                 </button>
               );
             })()}
+
+            {/* Quick Theme Toggle Button (Terang / Gelap) */}
+            <button
+              onClick={() => {
+                const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
+                setTheme(nextTheme);
+                toast.success(nextTheme === "dark" ? "Mode Gelap diaktifkan" : "Mode Terang diaktifkan");
+              }}
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-all cursor-pointer group"
+              title={resolvedTheme === "dark" ? "Ganti ke Mode Terang" : "Ganti ke Mode Gelap"}
+              aria-label="Ubah Tema Tampilan"
+            >
+              {resolvedTheme === "dark" ? (
+                <Sun className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform" />
+              ) : (
+                <Moon className="w-4 h-4 text-saas-dark group-hover:-rotate-12 transition-transform" />
+              )}
+            </button>
 
             {/* Container Lonceng & Dropdown Notifikasi */}
             <div className="relative" ref={notificationRef}>
@@ -1330,6 +1422,27 @@ export default function Home() {
                     <Question className="w-4 h-4 text-saas-muted" weight="bold" />
                     Pusat Bantuan & Dokumen
                   </button>
+
+                  <div className="px-3 py-2 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <span className="text-saas-muted font-semibold flex items-center gap-1.5">
+                      {resolvedTheme === "dark" ? (
+                        <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                      ) : (
+                        <Sun className="w-3.5 h-3.5 text-amber-500" />
+                      )}
+                      Tema: {theme === "dark" ? "Gelap" : theme === "light" ? "Terang" : "Sistem"}
+                    </span>
+                    <button
+                      onClick={() => {
+                        const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
+                        setTheme(nextTheme);
+                        toast.success(nextTheme === "dark" ? "Mode Gelap diaktifkan" : "Mode Terang diaktifkan");
+                      }}
+                      className="text-[10px] font-bold text-saas-primary hover:underline cursor-pointer"
+                    >
+                      Ubah
+                    </button>
+                  </div>
 
                   <div className="border-t border-gray-100 pt-1 mt-1">
                     <button

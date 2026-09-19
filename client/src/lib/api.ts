@@ -269,11 +269,19 @@ export interface TrenGiziItem {
   avgZScoreTBU: number;
 }
 
+export interface DistribusiKehadiranDetail {
+  total: number;
+  hadir: number;
+  persentase: number;
+}
+
 export interface DistribusiKehadiran {
   rtRw: string;
   total: number;
   hadir: number;
   persentase: number;
+  balita?: DistribusiKehadiranDetail;
+  lansia?: DistribusiKehadiranDetail;
 }
 
 export interface ItemAktivitasKunjungan {
@@ -303,8 +311,10 @@ export const dashboardApi = {
     request<ApiResponse<DashboardSummary>>(`/api/dashboard/${posyanduId}`),
   getTrenGizi: (posyanduId: string, period: 'bulanan' | 'tahunan' = 'bulanan') =>
     request<ApiResponse<TrenGiziItem[]>>(`/api/dashboard/${posyanduId}/tren-gizi?period=${period}`),
-  getDistribusiKehadiran: (posyanduId: string) =>
-    request<ApiResponse<DistribusiKehadiran[]>>(`/api/dashboard/${posyanduId}/distribusi-kehadiran`),
+  getDistribusiKehadiran: (posyanduId: string, kategori?: string) =>
+    request<ApiResponse<DistribusiKehadiran[]>>(
+      `/api/dashboard/${posyanduId}/distribusi-kehadiran${kategori ? `?kategori=${kategori}` : ''}`
+    ),
   getAktivitasKunjungan: (posyanduId: string) =>
     request<ApiResponse<AktivitasKunjunganData>>(`/api/dashboard/${posyanduId}/aktivitas-kunjungan`),
 };
@@ -476,6 +486,8 @@ export interface ItemRiwayat {
   kolesterol?: number;
   asamUrat?: number;
   lingkarPerut?: number;
+  riwayatHt?: boolean;
+  riwayatDm?: boolean;
   keluhan?: string;
   tindakan?: string;
 }
@@ -551,6 +563,42 @@ export const riwayatApi = {
     const a = document.createElement('a');
     a.href = url;
     a.download = `Laporan_Posyandu_${new Date().toISOString().slice(0, 10)}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  getPdfBlobUrl: async (
+    posyanduId: string,
+    params?: { tipe?: string; search?: string; status?: string; bulan?: string; tahun?: string }
+  ): Promise<{ url: string; blob: Blob }> => {
+    const token = getToken();
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v && v !== 'semua') cleanParams[k] = v;
+      });
+    }
+    const q = new URLSearchParams(cleanParams).toString();
+    const res = await fetch(`${BASE_URL}/api/posyandu/${posyanduId}/export-pdf${q ? `?${q}` : ''}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!res.ok) throw new Error('Gagal memuat pratinjau file PDF');
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    return { url, blob };
+  },
+
+  downloadPdfBlob: (blob: Blob, filename?: string) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || `Laporan_Posyandu_${new Date().toISOString().slice(0, 10)}.pdf`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -723,10 +771,17 @@ export interface PublicPemeriksaanItem {
   beratBadan: number;
   tinggiBadan: number;
   lingkarKepala?: number;
+  lingkarLengan?: number;
+  nik?: string;
+  namaIbu?: string;
   statusBbU?: string;
   statusTbU?: string;
   statusBbTb?: string;
   vitaminA?: boolean;
+  asiEksklusif?: boolean;
+  obatCacing?: boolean;
+  vitB1?: boolean;
+  vitB6?: boolean;
   statusImunisasi?: string;
   tekananDarah?: string;
   sistol?: number;
@@ -734,7 +789,13 @@ export interface PublicPemeriksaanItem {
   gds?: number;
   kolesterol?: number;
   asamUrat?: number;
+  lingkarPerut?: number;
+  riwayatHt?: boolean;
+  riwayatDm?: boolean;
+  rtRw?: string;
   imt?: string;
+  keluhan?: string;
+  tindakan?: string;
   statusRingkasan: string;
   isPerluRujukan: boolean;
   tindakanCatatan?: string;

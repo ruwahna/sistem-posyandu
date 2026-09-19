@@ -22,6 +22,8 @@ import { kaderApi, KaderMember } from "../../lib/api";
 import PageHelmet from "../../components/PageHelmet";
 import { AkunTableSkeleton } from "../../components/Skeleton";
 import ActionMenu from "../../components/ActionMenu";
+import toast from "react-hot-toast";
+import { clientDataCache } from "../../lib/dataCache";
 
 interface ManajemenAkunModuleProps {
   posyanduId?: string | null;
@@ -33,8 +35,21 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
   const isOwner = user?.role === "OWNER";
 
   // State
-  const [kaders, setKaders] = useState<KaderMember[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const cacheKey = `kaders_${currentPosyanduId}`;
+  const [kaders, setKaders] = useState<KaderMember[]>(() => {
+    if (typeof window !== "undefined" && currentPosyanduId) {
+      const cached = clientDataCache.get<KaderMember[]>(`kaders_${currentPosyanduId}`);
+      if (cached && cached.length > 0) return cached;
+    }
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && currentPosyanduId) {
+      const cached = clientDataCache.get<KaderMember[]>(`kaders_${currentPosyanduId}`);
+      if (cached && cached.length > 0) return false;
+    }
+    return true;
+  });
   const [errorNotice, setErrorNotice] = useState<string>("");
 
   // Form State
@@ -53,12 +68,21 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
   // Fetch Kader List
   const fetchData = useCallback(async () => {
     if (!currentPosyanduId) return;
-    setIsLoading(true);
+    const currentKey = `kaders_${currentPosyanduId}`;
+    const cached = clientDataCache.get<KaderMember[]>(currentKey);
+
+    if (cached && cached.length > 0) {
+      setKaders(cached);
+      setIsLoading(false);
+    } else if (kaders.length === 0) {
+      setIsLoading(true);
+    }
     setErrorNotice("");
     try {
       const res = await kaderApi.getAll(currentPosyanduId);
       if (res.success && res.data) {
         setKaders(res.data);
+        clientDataCache.set(currentKey, res.data);
       }
     } catch (err: any) {
       console.error("Error loading kader data:", err);
@@ -66,7 +90,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
     } finally {
       setIsLoading(false);
     }
-  }, [currentPosyanduId]);
+  }, [currentPosyanduId, kaders.length]);
 
   useEffect(() => {
     fetchData();
@@ -109,6 +133,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
       if (res.success && res.data) {
         setKaders((prev) => [...prev, res.data]);
         setAddMemberSuccess(`Akun untuk ${newMemberNama} berhasil dibuat.`);
+        toast.success(`Akun untuk ${newMemberNama} berhasil dibuat.`);
         setNewMemberNama("");
         setNewMemberUsername("");
         setNewMemberEmail("");
@@ -118,7 +143,9 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
         setTimeout(() => setAddMemberSuccess(""), 4000);
       }
     } catch (err: any) {
-      setAddMemberError(err.message || "Gagal membuat akun kader.");
+      const msg = err.message || "Gagal membuat akun kader.";
+      setAddMemberError(msg);
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -129,6 +156,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
     if (!currentPosyanduId || !isOwner) return;
     if (targetKader.role === "OWNER") {
       setActionNotice("Tidak dapat menonaktifkan akun Owner posyandu.");
+      toast.error("Tidak dapat menonaktifkan akun Owner posyandu.");
       setTimeout(() => setActionNotice(""), 3000);
       return;
     }
@@ -140,11 +168,15 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
         setKaders((prev) =>
           prev.map((k) => (k.id === targetKader.id ? { ...k, isActive: res.data.isActive } : k))
         );
-        setActionNotice(`Status ${targetKader.nama} berhasil diubah.`);
+        const msg = `Status ${targetKader.nama} diubah menjadi ${res.data.isActive ? "Aktif" : "Nonaktif"}.`;
+        setActionNotice(msg);
+        toast.success(msg);
         setTimeout(() => setActionNotice(""), 3000);
       }
     } catch (err: any) {
-      setActionNotice(err.message || "Gagal mengubah status kader.");
+      const msg = err.message || "Gagal mengubah status kader.";
+      setActionNotice(msg);
+      toast.error(msg);
       setTimeout(() => setActionNotice(""), 3000);
     }
   };
@@ -154,6 +186,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
     if (!currentPosyanduId || !isOwner) return;
     if (targetKader.id === user?.id) {
       setActionNotice("Anda tidak dapat mengubah peran Anda sendiri.");
+      toast.error("Anda tidak dapat mengubah peran Anda sendiri.");
       setTimeout(() => setActionNotice(""), 3000);
       return;
     }
@@ -165,11 +198,15 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
         setKaders((prev) =>
           prev.map((k) => (k.id === targetKader.id ? { ...k, role: res.data.role } : k))
         );
-        setActionNotice(`Peran ${targetKader.nama} diubah menjadi ${res.data.role === "OWNER" ? "Owner" : "Anggota"}.`);
+        const msg = `Peran ${targetKader.nama} diubah menjadi ${res.data.role === "OWNER" ? "Owner" : "Anggota"}.`;
+        setActionNotice(msg);
+        toast.success(msg);
         setTimeout(() => setActionNotice(""), 3000);
       }
     } catch (err: any) {
-      setActionNotice(err.message || "Gagal mengubah peran kader.");
+      const msg = err.message || "Gagal mengubah peran kader.";
+      setActionNotice(msg);
+      toast.error(msg);
       setTimeout(() => setActionNotice(""), 3000);
     }
   };
@@ -229,13 +266,17 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
 
       if (res.success && res.data) {
         setKaders((prev) => prev.map((k) => (k.id === editingKader.id ? { ...k, ...res.data } : k)));
-        setEditModalNotice({ type: "success", message: `Akun ${res.data.nama} berhasil diperbarui.` });
+        const msg = `Akun ${res.data.nama} berhasil diperbarui.`;
+        setEditModalNotice({ type: "success", message: msg });
+        toast.success(msg);
         setTimeout(() => {
           setEditingKader(null);
         }, 1200);
       }
     } catch (err: any) {
-      setEditModalNotice({ type: "error", message: err.message || "Gagal memperbarui data kader." });
+      const msg = err.message || "Gagal memperbarui data kader.";
+      setEditModalNotice({ type: "error", message: msg });
+      toast.error(msg);
     } finally {
       setIsUpdatingKader(false);
     }
@@ -250,6 +291,7 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
     if (!currentPosyanduId || !isOwner) return;
     if (targetKader.role === "OWNER") {
       setActionNotice("Akses Akun dengan peran Owner tidak dapat dihapus.");
+      toast.error("Akses Akun dengan peran Owner tidak dapat dihapus.");
       setTimeout(() => setActionNotice(""), 3000);
       return;
     }
@@ -263,12 +305,16 @@ export default function ManajemenAkunModule({ posyanduId: propPosyanduId }: Mana
       const res = await kaderApi.delete(currentPosyanduId, deletingKader.id);
       if (res.success) {
         setKaders((prev) => prev.filter((k) => k.id !== deletingKader.id));
-        setActionNotice(`Akses kader ${deletingKader.nama} berhasil dicabut.`);
+        const msg = `Akses kader ${deletingKader.nama} berhasil dicabut.`;
+        setActionNotice(msg);
+        toast.success(msg);
         setTimeout(() => setActionNotice(""), 3000);
         setDeletingKader(null);
       }
     } catch (err: any) {
-      setActionNotice(err.message || "Gagal mencabut akses kader.");
+      const msg = err.message || "Gagal mencabut akses kader.";
+      setActionNotice(msg);
+      toast.error(msg);
       setTimeout(() => setActionNotice(""), 3000);
     } finally {
       setIsDeleting(false);

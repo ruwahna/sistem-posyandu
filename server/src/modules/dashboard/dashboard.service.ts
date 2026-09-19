@@ -1,79 +1,83 @@
 import prisma from '../../shared/config/prisma';
 import { hitungZScoreBBU, hitungZScoreTBU } from '../../shared/utils/zScoreCalculator';
+import cacheService from '../../shared/services/cache.service';
 
 export const dashboardService = {
   /**
    * Mengambil semua metrik ringkasan untuk satu posyandu (FR-05 sd FR-09).
    */
   async getSummary(posyanduId: string) {
-    const [
-      totalBalita,
-      totalLansia,
-      pemeriksaanBalitaTerbaru,
-      pemeriksaanLansiaTerbaru,
-      lansiaHtDm,
-    ] = await Promise.all([
-      prisma.balita.count({ where: { posyanduId } }),
-      prisma.lansia.count({ where: { posyanduId } }),
-      prisma.pemeriksaanBalita.findMany({
-        where: { balita: { posyanduId } },
-        orderBy: { tanggalPeriksa: 'desc' },
-        take: 10,
-        include: { balita: { select: { nama: true, tanggalLahir: true } } },
-      }),
-      prisma.pemeriksaanLansia.findMany({
-        where: { lansia: { posyanduId } },
-        orderBy: { tanggalPeriksa: 'desc' },
-        take: 10,
-        include: { lansia: { select: { nama: true, tanggalLahir: true } } },
-      }),
-      prisma.lansia.findMany({
-        where: { posyanduId },
-        select: { riwayatHt: true, riwayatDm: true },
-      }),
-    ]);
+    return cacheService.getOrSet(`dashboard:summary:${posyanduId}`, async () => {
+      const [
+        totalBalita,
+        totalLansia,
+        pemeriksaanBalitaTerbaru,
+        pemeriksaanLansiaTerbaru,
+        lansiaHtDm,
+      ] = await Promise.all([
+        prisma.balita.count({ where: { posyanduId } }),
+        prisma.lansia.count({ where: { posyanduId } }),
+        prisma.pemeriksaanBalita.findMany({
+          where: { balita: { posyanduId } },
+          orderBy: { tanggalPeriksa: 'desc' },
+          take: 10,
+          include: { balita: { select: { nama: true, tanggalLahir: true } } },
+        }),
+        prisma.pemeriksaanLansia.findMany({
+          where: { lansia: { posyanduId } },
+          orderBy: { tanggalPeriksa: 'desc' },
+          take: 10,
+          include: { lansia: { select: { nama: true, tanggalLahir: true } } },
+        }),
+        prisma.lansia.findMany({
+          where: { posyanduId },
+          select: { riwayatHt: true, riwayatDm: true },
+        }),
+      ]);
 
-    const balitasLatestExam = await prisma.$queryRaw<
-      Array<{ status_bb_u: string; status_tb_u: string; status_bb_tb: string }>
-    >`
-      SELECT DISTINCT ON (pb.balita_id) pb.status_bb_u, pb.status_tb_u, pb.status_bb_tb
-      FROM pemeriksaan_balita pb
-      INNER JOIN balita b ON b.id = pb.balita_id
-      WHERE b.posyandu_id = ${posyanduId}
-      ORDER BY pb.balita_id, pb.tanggal_periksa DESC
-    `;
+      const balitasLatestExam = await prisma.$queryRaw<
+        Array<{ status_bb_u: string; status_tb_u: string; status_bb_tb: string }>
+      >`
+        SELECT DISTINCT ON (pb.balita_id) pb.status_bb_u, pb.status_tb_u, pb.status_bb_tb
+        FROM pemeriksaan_balita pb
+        INNER JOIN balita b ON b.id = pb.balita_id
+        WHERE b.posyandu_id = ${posyanduId}
+        ORDER BY pb.balita_id, pb.tanggal_periksa DESC
+      `;
 
-    const statusGiziSummary = balitasLatestExam.reduce(
-      (acc, exam) => {
-        acc.bbU[exam.status_bb_u] = (acc.bbU[exam.status_bb_u] || 0) + 1;
-        acc.tbU[exam.status_tb_u] = (acc.tbU[exam.status_tb_u] || 0) + 1;
-        acc.bbTb[exam.status_bb_tb] = (acc.bbTb[exam.status_bb_tb] || 0) + 1;
-        return acc;
-      },
-      { bbU: {} as Record<string, number>, tbU: {} as Record<string, number>, bbTb: {} as Record<string, number> }
-    );
+      const statusGiziSummary = balitasLatestExam.reduce(
+        (acc, exam) => {
+          acc.bbU[exam.status_bb_u] = (acc.bbU[exam.status_bb_u] || 0) + 1;
+          acc.tbU[exam.status_tb_u] = (acc.tbU[exam.status_tb_u] || 0) + 1;
+          acc.bbTb[exam.status_bb_tb] = (acc.bbTb[exam.status_bb_tb] || 0) + 1;
+          return acc;
+        },
+        { bbU: {} as Record<string, number>, tbU: {} as Record<string, number>, bbTb: {} as Record<string, number> }
+      );
 
-    const totalHt = lansiaHtDm.filter((l) => l.riwayatHt).length;
-    const totalDm = lansiaHtDm.filter((l) => l.riwayatDm).length;
-    const totalHtDm = lansiaHtDm.filter((l) => l.riwayatHt && l.riwayatDm).length;
+      const totalHt = lansiaHtDm.filter((l) => l.riwayatHt).length;
+      const totalDm = lansiaHtDm.filter((l) => l.riwayatDm).length;
+      const totalHtDm = lansiaHtDm.filter((l) => l.riwayatHt && l.riwayatDm).length;
 
-    return {
-      totalBalita,
-      totalLansia,
-      statusGizi: statusGiziSummary,
-      lansiaHtDm: { totalHt, totalDm, totalHtDm },
-      pemeriksaanTerbaru: {
-        balita: pemeriksaanBalitaTerbaru,
-        lansia: pemeriksaanLansiaTerbaru,
-      },
-    };
+      return {
+        totalBalita,
+        totalLansia,
+        statusGizi: statusGiziSummary,
+        lansiaHtDm: { totalHt, totalDm, totalHtDm },
+        pemeriksaanTerbaru: {
+          balita: pemeriksaanBalitaTerbaru,
+          lansia: pemeriksaanLansiaTerbaru,
+        },
+      };
+    }, 180);
   },
 
   /**
    * Agregasi tren historis status gizi balita & Z-score WHO (Bulanan vs Tahunan)
    */
   async getTrenGizi(posyanduId: string, period: 'bulanan' | 'tahunan' = 'bulanan') {
-    const examinations = await prisma.pemeriksaanBalita.findMany({
+    return cacheService.getOrSet(`dashboard:tren:${posyanduId}:${period}`, async () => {
+      const examinations = await prisma.pemeriksaanBalita.findMany({
       where: { balita: { posyanduId } },
       include: {
         balita: {
@@ -218,126 +222,187 @@ export const dashboardService = {
     });
 
     return result;
+    }, 300);
   },
 
   /**
    * Poin 20: Agregasi distribusi kehadiran per RT/RW (menggantikan mockup)
    */
-  async getDistribusiKehadiran(posyanduId: string) {
-    // Fetch semua Balita & Lansia
-    const [balitas, lansias] = await Promise.all([
-      prisma.balita.findMany({
-        where: { posyanduId },
-        select: { id: true, alamat: true },
-      }),
-      prisma.lansia.findMany({
-        where: { posyanduId },
-        select: { id: true, rtRw: true },
-      }),
-    ]);
+  async getDistribusiKehadiran(posyanduId: string, kategori?: string) {
+    const rawData = await cacheService.getOrSet(`dashboard:kehadiran:${posyanduId}`, async () => {
+      // Fetch semua Balita & Lansia
+      const [balitas, lansias] = await Promise.all([
+        prisma.balita.findMany({
+          where: { posyanduId },
+          select: { id: true, alamat: true },
+        }),
+        prisma.lansia.findMany({
+          where: { posyanduId },
+          select: { id: true, rtRw: true },
+        }),
+      ]);
 
-    const activePeriode = await prisma.periodePelayanan.findFirst({
-      where: { posyanduId, status: 'AKTIF' },
-      orderBy: { tanggal: 'desc' },
-    });
+      const activePeriode = await prisma.periodePelayanan.findFirst({
+        where: { posyanduId, status: 'AKTIF' },
+        orderBy: { tanggal: 'desc' },
+      });
 
-    const now = new Date();
-    const targetMonth = activePeriode ? activePeriode.bulan : (now.getMonth() + 1);
-    const targetYear = activePeriode ? activePeriode.tahun : now.getFullYear();
+      const now = new Date();
+      const targetMonth = activePeriode ? activePeriode.bulan : (now.getMonth() + 1);
+      const targetYear = activePeriode ? activePeriode.tahun : now.getFullYear();
 
-    // Fetch pemeriksaan Balita pada periode aktif
-    const balitaExams = await prisma.pemeriksaanBalita.findMany({
-      where: { balita: { posyanduId } },
-      orderBy: { tanggalPeriksa: 'desc' },
-      distinct: ['balitaId'],
-      select: {
-        balitaId: true,
-        tanggalPeriksa: true,
-        balita: { select: { alamat: true } },
-      },
-    });
+      // Fetch pemeriksaan Balita pada periode aktif
+      const balitaExams = await prisma.pemeriksaanBalita.findMany({
+        where: { balita: { posyanduId } },
+        orderBy: { tanggalPeriksa: 'desc' },
+        distinct: ['balitaId'],
+        select: {
+          balitaId: true,
+          tanggalPeriksa: true,
+          balita: { select: { alamat: true } },
+        },
+      });
 
-    // Fetch pemeriksaan Lansia pada periode aktif
-    const lansiaExams = await prisma.pemeriksaanLansia.findMany({
-      where: { lansia: { posyanduId } },
-      orderBy: { tanggalPeriksa: 'desc' },
-      distinct: ['lansiaId'],
-      select: {
-        lansiaId: true,
-        tanggalPeriksa: true,
-        lansia: { select: { rtRw: true } },
-      },
-    });
+      // Fetch pemeriksaan Lansia pada periode aktif
+      const lansiaExams = await prisma.pemeriksaanLansia.findMany({
+        where: { lansia: { posyanduId } },
+        orderBy: { tanggalPeriksa: 'desc' },
+        distinct: ['lansiaId'],
+        select: {
+          lansiaId: true,
+          tanggalPeriksa: true,
+          lansia: { select: { rtRw: true } },
+        },
+      });
 
-    // Aggregate kehadiran per RT/RW (hanya yang periksa di periode ini)
-    const rtRwMap = new Map<string, { total: number; hadir: number }>();
+      const getBalitaRtRw = (alamat?: string | null) => {
+        const match = alamat?.match(/RT\s*\d+\s*\/\s*RW\s*\d+/i);
+        return match ? match[0] : 'RT ?/RW ?';
+      };
 
-    balitaExams.forEach((exam) => {
-      const examDate = new Date(exam.tanggalPeriksa);
-      if ((examDate.getMonth() + 1) === targetMonth && examDate.getFullYear() === targetYear) {
-        const match = exam.balita.alamat?.match(/RT\s*\d+\s*\/\s*RW\s*\d+/);
-        const rtRw = match ? match[0] : 'RT ?/RW ?';
-        const current = rtRwMap.get(rtRw) || { total: 0, hadir: 0 };
-        current.hadir += 1;
-        rtRwMap.set(rtRw, current);
-      }
-    });
+      const getLansiaRtRw = (rtRw?: string | null) => {
+        return rtRw ? rtRw.trim() : 'RT ?/RW ?';
+      };
 
-    lansiaExams.forEach((exam) => {
-      const examDate = new Date(exam.tanggalPeriksa);
-      if ((examDate.getMonth() + 1) === targetMonth && examDate.getFullYear() === targetYear) {
-        const rtRw = exam.lansia.rtRw || 'RT ?/RW ?';
-        const current = rtRwMap.get(rtRw) || { total: 0, hadir: 0 };
-        current.hadir += 1;
-        rtRwMap.set(rtRw, current);
-      }
-    });
+      // Inisialisasi map RT/RW
+      const rtRwMap = new Map<string, {
+        total: number;
+        hadir: number;
+        balitaTotal: number;
+        balitaHadir: number;
+        lansiaTotal: number;
+        lansiaHadir: number;
+      }>();
 
-    // Set total count untuk setiap RT/RW
-    const allRtRw = new Set<string>();
-    balitas.forEach((b) => {
-      const match = b.alamat?.match(/RT\s*\d+\s*\/\s*RW\s*\d+/);
-      const rtRw = match ? match[0] : 'RT ?/RW ?';
-      allRtRw.add(rtRw);
-    });
-    lansias.forEach((l) => {
-      allRtRw.add(l.rtRw || 'RT ?/RW ?');
-    });
+      const getOrCreate = (rtRw: string) => {
+        if (!rtRwMap.has(rtRw)) {
+          rtRwMap.set(rtRw, {
+            total: 0,
+            hadir: 0,
+            balitaTotal: 0,
+            balitaHadir: 0,
+            lansiaTotal: 0,
+            lansiaHadir: 0,
+          });
+        }
+        return rtRwMap.get(rtRw)!;
+      };
 
-    allRtRw.forEach((rtRw) => {
-      const balitaCount = balitas.filter((b) => {
-        const match = b.alamat?.match(/RT\s*\d+\s*\/\s*RW\s*\d+/);
-        return (match ? match[0] : 'RT ?/RW ?') === rtRw;
-      }).length;
-      const lansiaCount = lansias.filter((l) => (l.rtRw || 'RT ?/RW ?') === rtRw).length;
-      const totalOrang = balitaCount + lansiaCount;
+      // Hitung total sasaran terdaftar per RT/RW
+      balitas.forEach((b) => {
+        const rtRw = getBalitaRtRw(b.alamat);
+        const row = getOrCreate(rtRw);
+        row.balitaTotal += 1;
+        row.total += 1;
+      });
 
-      if (!rtRwMap.has(rtRw)) {
-        rtRwMap.set(rtRw, { total: totalOrang, hadir: 0 });
-      } else {
-        const current = rtRwMap.get(rtRw)!;
-        current.total = Math.max(current.total, totalOrang);
-      }
-    });
+      lansias.forEach((l) => {
+        const rtRw = getLansiaRtRw(l.rtRw);
+        const row = getOrCreate(rtRw);
+        row.lansiaTotal += 1;
+        row.total += 1;
+      });
 
-    // Calculate persentase dan return
-    const result = Array.from(rtRwMap.entries())
-      .map(([rtRw, data]) => ({
-        rtRw,
-        total: data.total || 1,
-        hadir: data.hadir,
-        persentase: Math.round((data.hadir / (data.total || 1)) * 100),
-      }))
-      .sort((a, b) => b.persentase - a.persentase);
+      // Hitung kehadiran pemeriksaan pada periode aktif
+      balitaExams.forEach((exam) => {
+        const examDate = new Date(exam.tanggalPeriksa);
+        if ((examDate.getMonth() + 1) === targetMonth && examDate.getFullYear() === targetYear) {
+          const rtRw = getBalitaRtRw(exam.balita.alamat);
+          const row = getOrCreate(rtRw);
+          row.balitaHadir += 1;
+          row.hadir += 1;
+        }
+      });
 
-    return result;
+      lansiaExams.forEach((exam) => {
+        const examDate = new Date(exam.tanggalPeriksa);
+        if ((examDate.getMonth() + 1) === targetMonth && examDate.getFullYear() === targetYear) {
+          const rtRw = getLansiaRtRw(exam.lansia.rtRw);
+          const row = getOrCreate(rtRw);
+          row.lansiaHadir += 1;
+          row.hadir += 1;
+        }
+      });
+
+      return Array.from(rtRwMap.entries()).map(([rtRw, data]) => {
+        const balitaPersen = data.balitaTotal > 0 ? Math.round((data.balitaHadir / data.balitaTotal) * 100) : 0;
+        const lansiaPersen = data.lansiaTotal > 0 ? Math.round((data.lansiaHadir / data.lansiaTotal) * 100) : 0;
+        const totalPersen = data.total > 0 ? Math.round((data.hadir / data.total) * 100) : 0;
+
+        return {
+          rtRw,
+          total: data.total || 1,
+          hadir: data.hadir,
+          persentase: totalPersen,
+          balita: {
+            total: data.balitaTotal,
+            hadir: data.balitaHadir,
+            persentase: balitaPersen,
+          },
+          lansia: {
+            total: data.lansiaTotal,
+            hadir: data.lansiaHadir,
+            persentase: lansiaPersen,
+          },
+        };
+      });
+    }, 300);
+
+    const kat = (kategori || '').toLowerCase();
+    if (kat === 'balita') {
+      return [...rawData]
+        .map((item) => ({
+          rtRw: item.rtRw,
+          total: item.balita.total,
+          hadir: item.balita.hadir,
+          persentase: item.balita.persentase,
+          balita: item.balita,
+          lansia: item.lansia,
+        }))
+        .sort((a, b) => b.persentase - a.persentase);
+    }
+    if (kat === 'lansia') {
+      return [...rawData]
+        .map((item) => ({
+          rtRw: item.rtRw,
+          total: item.lansia.total,
+          hadir: item.lansia.hadir,
+          persentase: item.lansia.persentase,
+          balita: item.balita,
+          lansia: item.lansia,
+        }))
+        .sort((a, b) => b.persentase - a.persentase);
+    }
+
+    return [...rawData].sort((a, b) => b.persentase - a.persentase);
   },
 
   /**
    * Agregasi Aktivitas Kunjungan (Balita Selesai, Lansia Selesai, Belum Mengisi Data beserta daftar pasien)
    */
   async getAktivitasKunjungan(posyanduId: string) {
-    const [balitas, lansias] = await Promise.all([
+    return cacheService.getOrSet(`dashboard:aktivitas:${posyanduId}`, async () => {
+      const [balitas, lansias] = await Promise.all([
       prisma.balita.findMany({
         where: { posyanduId },
         include: {
@@ -488,5 +553,14 @@ export const dashboardService = {
       lansiaSelesaiList,
       belumMengisiList,
     };
+    }, 180);
+  },
+
+  /**
+   * Menghapus semua cache dashboard untuk posyandu tertentu saat data pemeriksaan/pasien diperbarui.
+   */
+  async invalidateDashboardCache(posyanduId: string) {
+    await cacheService.delByPattern(`dashboard:*:${posyanduId}*`);
   },
 };
+

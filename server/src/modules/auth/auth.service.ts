@@ -242,7 +242,7 @@ export const authService = {
   async forgotPassword(email: string) {
     const kader = await prisma.kader.findUnique({ where: { email } });
     if (!kader) {
-      return { message: 'Jika email terdaftar, instruksi reset password telah dikirim ke email Anda.' };
+      return { message: 'Jika email terdaftar, instruksi reset password telah dikirim ke email Anda. Silakan periksa Kotak Masuk (Inbox) atau folder Spam.' };
     }
 
     if (!kader.isActive) {
@@ -263,7 +263,7 @@ export const authService = {
       },
     });
 
-    const clientHost = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',')[0].trim() : 'http://localhost:3000';
+    const clientHost = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',')[0].trim() : 'https://sistem-posyandu.vercel.app';
     const resetUrl = `${clientHost}/reset-password?token=${resetToken}`;
 
     await sendResetPasswordEmail({
@@ -272,7 +272,7 @@ export const authService = {
       resetUrl,
     });
 
-    return { message: 'Instruksi reset password telah dikirim ke email Anda.' };
+    return { message: 'Instruksi reset password telah dikirim ke email Anda. Silakan periksa Kotak Masuk (Inbox) atau folder Spam.' };
   },
 
   async verifyResetToken(token: string) {

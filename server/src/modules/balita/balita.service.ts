@@ -1,6 +1,7 @@
 import prisma from '../../shared/config/prisma';
 import { hitungStatusBbU, hitungStatusTbU, hitungStatusBbTb } from '../../shared/utils/zScoreCalculator';
 import { hitungUsiaBulan, kelompokUsiaBulan } from './balita.helper';
+import cacheService from '../../shared/services/cache.service';
 
 export const balitaService = {
   async findAll(
@@ -79,19 +80,25 @@ export const balitaService = {
   },
 
   async create(posyanduId: string, data: any) {
-    return prisma.balita.create({
+    const result = await prisma.balita.create({
       data: { ...data, posyanduId },
     });
+    cacheService.delByPattern(`dashboard:*:${posyanduId}*`).catch(() => {});
+    return result;
   },
 
   async update(id: string, posyanduId: string, data: Parameters<typeof prisma.balita.update>[0]['data']) {
-    return prisma.balita.update({ where: { id }, data });
+    const result = await prisma.balita.update({ where: { id }, data });
+    cacheService.delByPattern(`dashboard:*:${posyanduId}*`).catch(() => {});
+    return result;
   },
 
   async delete(id: string, posyanduId: string) {
     const balita = await prisma.balita.findFirst({ where: { id, posyanduId } });
     if (!balita) throw new Error('Balita tidak ditemukan');
-    return prisma.balita.delete({ where: { id } });
+    const result = await prisma.balita.delete({ where: { id } });
+    cacheService.delByPattern(`dashboard:*:${posyanduId}*`).catch(() => {});
+    return result;
   },
 
   // ── Pemeriksaan Balita ─────────────────────────────────────
@@ -130,26 +137,62 @@ export const balitaService = {
     const statusTbU = hitungStatusTbU(Number(data.tinggiBadan), usiaBulan, balita.jenisKelamin);
     const statusBbTb = hitungStatusBbTb(Number(data.beratBadan), Number(data.tinggiBadan), balita.jenisKelamin);
 
-    return prisma.pemeriksaanBalita.create({
-      data: {
-        ...data,
-        statusBbU,
-        statusTbU,
-        statusBbTb,
+    const periksaDate = new Date(data.tanggalPeriksa);
+    const startOfMonth = new Date(Date.UTC(periksaDate.getUTCFullYear(), periksaDate.getUTCMonth(), 1));
+    const endOfMonth = new Date(Date.UTC(periksaDate.getUTCFullYear(), periksaDate.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+
+    const existingExam = await prisma.pemeriksaanBalita.findFirst({
+      where: {
         balitaId,
-        usiaBulan,
+        tanggalPeriksa: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
       },
+      orderBy: { createdAt: 'desc' },
     });
+
+    let result;
+    if (existingExam) {
+      result = await prisma.pemeriksaanBalita.update({
+        where: { id: existingExam.id },
+        data: {
+          ...data,
+          statusBbU,
+          statusTbU,
+          statusBbTb,
+          usiaBulan,
+        },
+      });
+    } else {
+      result = await prisma.pemeriksaanBalita.create({
+        data: {
+          ...data,
+          statusBbU,
+          statusTbU,
+          statusBbTb,
+          balitaId,
+          usiaBulan,
+        },
+      });
+    }
+
+    cacheService.delByPattern(`dashboard:*:${balita.posyanduId}*`).catch(() => {});
+    return result;
   },
 
   async updatePemeriksaan(
     id: string,
     data: Partial<Parameters<typeof prisma.pemeriksaanBalita.update>[0]['data']>
   ) {
-    return prisma.pemeriksaanBalita.update({ where: { id }, data });
+    const result = await prisma.pemeriksaanBalita.update({ where: { id }, data });
+    cacheService.delByPattern('dashboard:*').catch(() => {});
+    return result;
   },
 
   async deletePemeriksaan(id: string) {
-    return prisma.pemeriksaanBalita.delete({ where: { id } });
+    const result = await prisma.pemeriksaanBalita.delete({ where: { id } });
+    cacheService.delByPattern('dashboard:*').catch(() => {});
+    return result;
   },
 };

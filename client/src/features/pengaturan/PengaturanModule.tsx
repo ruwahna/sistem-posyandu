@@ -33,6 +33,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import PageHelmet from "../../components/PageHelmet";
 import Modal from "../../components/Modal";
 import { authApi, posyanduApi, ownerApi, AuditLogItem } from "../../lib/api";
+import toast from "react-hot-toast";
 
 // ─── Types ────────────────────────────────────────────────
 type SettingSection =
@@ -158,9 +159,12 @@ function ProfilSection() {
       if (res.success && res.data) {
         updateUser({ posyandu: { id: posyanduId, nama: res.data.nama } });
         setPosyanduNotice({ type: "success", message: "Informasi Posyandu berhasil disimpan!" });
+        toast.success("Informasi Posyandu berhasil disimpan!");
       }
     } catch (err: any) {
-      setPosyanduNotice({ type: "error", message: err.message || "Gagal menyimpan data posyandu." });
+      const msg = err.message || "Gagal menyimpan data posyandu.";
+      setPosyanduNotice({ type: "error", message: msg });
+      toast.error(msg);
     } finally {
       setSavingPosyandu(false);
     }
@@ -321,9 +325,12 @@ function AkunSection() {
         });
         setNewPassword("");
         setProfileNotice({ type: "success", message: "Profil dan akun berhasil diperbarui!" });
+        toast.success("Profil dan akun berhasil diperbarui!");
       }
     } catch (err: any) {
-      setProfileNotice({ type: "error", message: err.message || "Gagal memperbarui profil." });
+      const msg = err.message || "Gagal memperbarui profil.";
+      setProfileNotice({ type: "error", message: msg });
+      toast.error(msg);
     } finally {
       setSavingProfile(false);
     }
@@ -479,6 +486,16 @@ function TampilanSection() {
     { id: "system" as const, label: "Sistem", icon: Monitor },
   ];
 
+  const handleThemeChange = (id: "light" | "dark" | "system") => {
+    setTheme(id);
+    const labels: Record<string, string> = {
+      light: "Mode Terang diaktifkan",
+      dark: "Mode Gelap diaktifkan",
+      system: "Tema disesuaikan dengan preferensi Sistem"
+    };
+    toast.success(labels[id]);
+  };
+
   return (
     <div className="space-y-6">
       <SectionHeader
@@ -583,11 +600,11 @@ function TampilanSection() {
             return (
               <button
                 key={id}
-                onClick={() => setTheme(id)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border font-bold text-xs transition-all ${
+                onClick={() => handleThemeChange(id)}
+                className={`flex flex-col items-center gap-2.5 p-4 rounded-xl border font-bold text-xs transition-all ${
                   isActive
-                    ? "border-violet-600 bg-violet-50/50 text-violet-700 shadow-sm"
-                    : "border-gray-200 text-saas-muted hover:border-gray-300"
+                    ? "border-violet-600 bg-violet-500/10 text-violet-600 shadow-sm"
+                    : "border-gray-200 text-saas-muted hover:border-gray-300 hover:bg-gray-50/50"
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -760,6 +777,7 @@ function DataSection() {
 
       if (res.success) {
         setResetSuccess("Semua data Posyandu telah berhasil direset secara permanen.");
+        toast.success("Semua data Posyandu telah berhasil direset.");
         setConfirmText("");
         setOwnerPassword("");
         setTimeout(() => {
@@ -767,10 +785,14 @@ function DataSection() {
           fetchAuditLogs();
         }, 2000);
       } else {
-        setResetError(res.message || "Gagal mereset data.");
+        const msg = res.message || "Gagal mereset data.";
+        setResetError(msg);
+        toast.error(msg);
       }
     } catch (err: any) {
-      setResetError(err.message || "Terjadi kesalahan saat mereset data.");
+      const msg = err.message || "Terjadi kesalahan saat mereset data.";
+      setResetError(msg);
+      toast.error(msg);
     } finally {
       setIsResetting(false);
     }
